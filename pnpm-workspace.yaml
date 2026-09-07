@@ -1,0 +1,19 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+overrides:
+  '@tanstack/react-query': '^5.0.0'
+  'react': '19.2.3'
+  'react-dom': '19.2.3'
+peerDependencyRules:
+  allowedVersions:
+    '@tanstack/react-query': '^5.0.0'
+    'react': '19.2.3'
+    'react-dom': '19.2.3'
+allowBuilds:
+  '@scarf/scarf': true
+  bufferutil: true
+  core-js: true
+  es5-ext: true
+  esbuild: true
+  utf-8-validate: true

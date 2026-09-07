@@ -1,0 +1,20 @@
+{
+  "name": "@manhaj/telegram-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "login": "tsx login.ts",
+    "run": "tsx run.ts"
+  },
+  "dependencies": {
+    "@manhaj/db": "workspace:*",
+    "dotenv": "^16.4.0",
+    "input": "^1.0.1",
+    "telegram": "^2.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

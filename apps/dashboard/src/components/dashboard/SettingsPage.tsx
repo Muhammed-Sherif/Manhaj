@@ -1,0 +1,6 @@
+import { Bell, Settings, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Heading } from './Heading';
+
+export function SettingsPage({ notify }: { notify: (message: string) => void }) { const settings = [{ title: 'Profile & access', description: 'Update account details, roles, and preferences.', Icon: Users }, { title: 'Notifications', description: 'Choose how the team receives content review alerts.', Icon: Bell }, { title: 'Push updates', description: 'Send content-updated alerts after bulk assignments.', Icon: Settings }]; return <><Heading eyebrow="Workspace preferences" title="Settings" description="Configure how your team manages the content workspace." /><div className="grid max-w-3xl gap-4">{settings.map(({ title, description, Icon }) => <Card key={title}><CardContent className="flex items-center gap-4 p-5"><span className="grid size-10 place-items-center rounded-lg bg-teal-50 text-teal-700"><Icon size={19} /></span><div className="flex-1"><p className="font-semibold">{title}</p><p className="text-sm text-slate-500">{description}</p></div><Button variant="outline" onClick={() => notify(`${title} updated`)}>Manage</Button></CardContent></Card>)}</div></>; }

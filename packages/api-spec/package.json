@@ -1,0 +1,12 @@
+{
+  "name": "@manhaj/api-spec",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./openapi.json",
+  "scripts": {
+    "generate": "node scripts/generate-openapi.js"
+  },
+  "devDependencies": {
+    "swagger-jsdoc": "^6.2.8"
+  }
+}

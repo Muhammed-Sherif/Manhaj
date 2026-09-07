@@ -1,0 +1,22 @@
+{
+  "name": "manhaj",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Manhaj - Offline-First Student Question Bank",
+  "scripts": {
+    "dev": "pnpm --filter ./apps/api dev",
+    "build": "pnpm --filter ./apps/api build",
+    "db:generate": "pnpm --filter ./packages/db db:generate",
+    "db:migrate": "pnpm --filter ./packages/db db:migrate",
+    "db:push": "pnpm --filter ./packages/db db:push",
+    "db:studio": "pnpm --filter ./packages/db db:studio",
+    "generate:openapi": "pnpm --filter ./packages/api-spec generate",
+    "generate:client": "pnpm --filter ./packages/api-client generate",
+    "telegram:login": "pnpm --filter ./apps/telegram-worker login",
+    "telegram:run": "pnpm --filter ./apps/telegram-worker run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}
