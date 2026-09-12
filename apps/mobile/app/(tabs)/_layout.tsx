@@ -1,12 +1,12 @@
 import { Tabs } from 'expo-router';
-import { HomeIcon, BookOpenIcon, FlagIcon, SettingsIcon } from 'lucide-react-native';
+import { HomeIcon, BookOpenIcon, FlagIcon, SettingsIcon, CheckSquareIcon } from 'lucide-react-native';
+import CustomTabBar from '../../components/CustomTabBar';
 
 export default function TabLayout() {
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: '#0d9488',
-        tabBarInactiveTintColor: '#94a3b8',
         headerShown: false,
       }}
     >
@@ -29,6 +29,13 @@ export default function TabLayout() {
         options={{
           title: 'Review',
           tabBarIcon: ({ color }) => <FlagIcon size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: 'My Tasks',
+          tabBarIcon: ({ color }) => <CheckSquareIcon size={24} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -1,145 +1,102 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
-import { BookOpenIcon, ClockIcon, CheckCircleIcon, FlagIcon } from 'lucide-react-native';
+import { useProgressStore } from '../../store/progressStore';
+import { BookOpenIcon, FlagIcon } from 'lucide-react-native';
+import { ContinueSolvingCard, EmptyProgressCard } from '../../components/home';
+import { scheduleTaskReminders } from '../../services/pushNotifications';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { lastProgress, loadProgress } = useProgressStore();
 
-  // Mock data - in production, this would come from local SQLite
-  const recentProgress = [
+  useEffect(() => {
+    loadProgress();
+    scheduleTaskReminders().catch(console.error);
+  }, []);
+
+  const formatLastStudied = (timestamp: string | null) => {
+    if (!timestamp) return 'Recently';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  const recentProgress = lastProgress ? [
     {
-      id: '1',
-      subject: 'Cardiology',
-      lecture: 'Heart Failure',
-      progress: 12,
-      total: 50,
-      lastStudied: '2 hours ago',
+      id: lastProgress.lectureId || '1',
+      subject: lastProgress.subjectName || 'Unknown Subject',
+      lecture: lastProgress.lectureName || 'Unknown Lecture',
+      progress: lastProgress.questionIndex + 1,
+      total: lastProgress.totalQuestions,
+      lastStudied: formatLastStudied(lastProgress.lastStudied),
     },
-    {
-      id: '2',
-      subject: 'Pharmacology',
-      lecture: 'Antibiotics',
-      progress: 8,
-      total: 30,
-      lastStudied: 'Yesterday',
-    },
-  ];
+  ] : [];
 
   return (
-    <View className="flex-1 bg-slate-50">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView className="flex-1 p-6">
         {/* Header */}
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-slate-800">
+          <Text className="text-2xl font-bold text-slate-800 dark:text-slate-100">
             Welcome back, {user?.name || 'Student'}!
           </Text>
-          <Text className="text-slate-500 mt-1">Ready to continue learning?</Text>
+          <Text className="text-slate-500 dark:text-slate-400 mt-1">Ready to continue learning?</Text>
         </View>
 
         {/* Continue Solving - Prominent Section */}
         <View className="mb-6">
-          <Text className="text-lg font-semibold text-slate-800 mb-3">Continue Solving</Text>
+          <Text className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Continue Solving</Text>
 
           {recentProgress.length > 0 ? (
-            <TouchableOpacity
-              className="bg-teal-600 rounded-xl p-5 shadow-sm"
-              onPress={() => router.push('/solve')}
-            >
-              <View className="flex-row items-center mb-3">
-                <View className="bg-teal-500 rounded-full p-2 mr-3">
-                  <BookOpenIcon size={20} color="white" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white font-semibold text-lg">
-                    {recentProgress[0].subject}
-                  </Text>
-                  <Text className="text-teal-100 text-sm">
-                    {recentProgress[0].lecture}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <View className="bg-teal-700 rounded-full h-2 mb-1">
-                    <View
-                      className="bg-white rounded-full h-2"
-                      style={{ width: `${(recentProgress[0].progress / recentProgress[0].total) * 100}%` }}
-                    />
-                  </View>
-                  <Text className="text-teal-100 text-xs">
-                    {recentProgress[0].progress} of {recentProgress[0].total} questions
-                  </Text>
-                </View>
-                <View className="flex-row items-center ml-3">
-                  <ClockIcon size={16} color="white" />
-                  <Text className="text-teal-100 text-xs ml-1">
-                    {recentProgress[0].lastStudied}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+            <ContinueSolvingCard
+              item={recentProgress[0]}
+              lectureId={lastProgress?.lectureId}
+              questionIndex={lastProgress?.questionIndex}
+            />
           ) : (
-            <TouchableOpacity
-              className="bg-slate-200 rounded-xl p-5 items-center justify-center"
-              onPress={() => router.push('/browse')}
-            >
-              <BookOpenIcon size={32} color="#94a3b8" />
-              <Text className="text-slate-500 font-semibold mt-2">Start Your First Lecture</Text>
-            </TouchableOpacity>
+            <EmptyProgressCard />
           )}
         </View>
 
-        {/* Recent Progress */}
-        {recentProgress.length > 1 && (
-          <View>
-            <Text className="text-lg font-semibold text-slate-800 mb-3">Recent Progress</Text>
-
-            {recentProgress.slice(1).map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                className="bg-white rounded-xl p-4 mb-3 shadow-sm"
-                onPress={() => router.push('/solve')}
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="font-semibold text-slate-800">{item.subject}</Text>
-                    <Text className="text-slate-500 text-sm">{item.lecture}</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <CheckCircleIcon size={20} color="#0d9488" />
-                    <Text className="text-teal-600 ml-1 font-semibold">
-                      {item.progress}/{item.total}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
         {/* Quick Actions */}
         <View className="mt-6">
-          <Text className="text-lg font-semibold text-slate-800 mb-3">Quick Actions</Text>
+          <Text className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">Quick Actions</Text>
 
           <View className="flex-row gap-3">
             <TouchableOpacity
-              className="flex-1 bg-white rounded-xl p-4 shadow-sm items-center"
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
               onPress={() => router.push('/browse')}
             >
               <BookOpenIcon size={24} color="#0d9488" />
-              <Text className="text-slate-800 font-semibold mt-2">Browse</Text>
+              <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">Browse</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 bg-white rounded-xl p-4 shadow-sm items-center"
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
               onPress={() => router.push('/review')}
             >
               <FlagIcon size={24} color="#0d9488" />
-              <Text className="text-slate-800 font-semibold mt-2">Review</Text>
+              <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">Errors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
+              onPress={() => router.push('/flashcards' as any)}
+            >
+              <BookOpenIcon size={24} color="#0d9488" />
+              <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">SRS</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -2,11 +2,15 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": false,
+    "strictNullChecks": true,
     "jsx": "react-native",
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@manhaj/api-client": [
+        "../../packages/api-client/index.ts"
       ]
     }
   },

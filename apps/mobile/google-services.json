@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "893736664437",
+    "project_id": "manhaj-76a54",
+    "storage_bucket": "manhaj-76a54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:893736664437:android:84bbd1d4ec4406e766273c",
+        "android_client_info": {
+          "package_name": "com.manhaj.student"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuRQHR6JPOmakBFDnB9wfmEsEOsBeZlJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

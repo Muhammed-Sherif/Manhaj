@@ -16,17 +16,20 @@ Notifications.setNotificationHandler({
 });
 
 const handleContentUpdated = async () => {
+    
     if (await getAutoDownloadEnabled()) {
+        console.log(true)
         await syncContentFromServer();
     }
 };
 
 const CONTENT_UPDATE_TASK = 'manhaj-content-update';
 
-TaskManager.defineTask(CONTENT_UPDATE_TASK, async ({ data, error }) => {
+TaskManager.defineTask<Notifications.NotificationTaskPayload>(CONTENT_UPDATE_TASK, async ({ data, error }) => {
     if (error) return;
-    const notification = data as { notification?: { request?: { content?: { data?: Record<string, unknown> } } } };
-    if (notification.notification?.request?.content?.data?.type === 'content-updated') {
+    const payload = data as any;
+    if (payload?.data?.body && JSON.parse(payload.data.body).type === 'content-updated') {
+        console.log("content updated", data)
         await handleContentUpdated();
     }
 });
@@ -42,6 +45,15 @@ Notifications.addNotificationReceivedListener((notification) => {
 export const registerForPushNotifications = async (): Promise<void> => {
     if (Platform.OS === 'web') return;
 
+    if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+    }
+
     const permissions = await Notifications.getPermissionsAsync();
     let status = permissions.status;
     if (status !== 'granted') {
@@ -50,12 +62,44 @@ export const registerForPushNotifications = async (): Promise<void> => {
     if (status !== 'granted') return;
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    const token = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined
-    );
+    if (projectId) {
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+        const expoPushToken = tokenData.data;
 
-    await postStudentDevicesRegister({
-        pushToken: token.data,
-        platform: Platform.OS === 'ios' ? 'ios' : 'android',
+        await postStudentDevicesRegister({
+            deviceToken: expoPushToken,
+            platform: Platform.OS
+        }).catch((error) => console.warn('Failed to register device token', error));
+    }
+};
+
+export const scheduleTaskReminders = async () => {
+    // Cancel all existing scheduled reminders first
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Schedule daily reminder at 8:00 AM
+    await Notifications.scheduleNotificationAsync({
+        content: {
+            title: "Daily Tasks",
+            body: "Don't forget to complete your daily Zekr and Wird targets!",
+        },
+        trigger: {
+            hour: 8,
+            minute: 0,
+            repeats: true,
+        } as any,
+    });
+
+    // Schedule daily reminder at 8:00 PM for reviewables
+    await Notifications.scheduleNotificationAsync({
+        content: {
+            title: "Spaced Repetition Review",
+            body: "You have flashcards and cases due for review today.",
+        },
+        trigger: {
+            hour: 20,
+            minute: 0,
+            repeats: true,
+        } as any,
     });
 };

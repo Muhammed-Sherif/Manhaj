@@ -8,11 +8,14 @@ interface AuthState {
     name: string;
     email: string;
     role: 'student' | 'admin';
+    gradeId?: string | null;
+    grade?: string | null;
     termId: string | null;
   } | null;
   accessToken: string | null;
   refreshToken: string | null;
-  setAuth: (tokens: { accessToken: string; refreshToken: string }, user: any) => void;
+  setAuth: (tokens: { accessToken: string; refreshToken: string }, user: any) => Promise<void>;
+  updateTokens: (tokens: { accessToken: string; refreshToken: string }) => Promise<void>;
   updateUser: (updates: Partial<AuthState['user']>) => Promise<void>;
   logout: () => Promise<void>;
   loadAuth: () => Promise<void>;
@@ -24,15 +27,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   refreshToken: null,
 
-  setAuth: (tokens, user) => {
-    SecureStore.setItemAsync('accessToken', tokens.accessToken);
-    SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
-    SecureStore.setItemAsync('user', JSON.stringify(user));
+  setAuth: async (tokens, user) => {
+    await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+    await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+    await SecureStore.setItemAsync('user', JSON.stringify(user));
     set({
       isAuthenticated: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user,
+    });
+  },
+
+  updateTokens: async (tokens) => {
+    await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+    await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+    set({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     });
   },
 
@@ -45,6 +57,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    try {
+      const { authClient } = await import('../lib/auth-client');
+      await authClient.signOut();
+    } catch {}
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
     await SecureStore.deleteItemAsync('user');

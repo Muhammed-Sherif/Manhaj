@@ -1,242 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
-import { WifiIcon, WifiOffIcon, CheckCircleIcon, XCircleIcon, ChevronLeftIcon } from 'lucide-react-native';
-import { storeAnswer, syncAttempts } from '../services/syncService';
+import { fetchUnsolvedQuestions, fetchAllQuestions } from '../services/questionService';
 import { getQuestionWithChoices } from '../services/contentSyncService';
-
-const getSubjectIcon = (subject: string) => {
-  switch (subject) {
-    case 'Cardiology':
-      return '❤️';
-    case 'Pharmacology':
-      return '💊';
-    case 'Anatomy':
-      return '🫀';
-    default:
-      return '📚';
-  }
-};
+import {
+  ScreenHeader,
+  LoadingView,
+  ErrorView,
+  QuestionFlagButton,
+} from '../components';
+import {
+  QuestionChoices,
+  QuestionAnswerFooter,
+} from '../components/question';
+import { useSolveStore, type Question, type SolveMode } from '../store/solveStore';
 
 export default function SolveScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const mode = params.mode as 'solve' | 'review' || 'solve';
-  const questionId = params.questionId as string;
+  const mode = ((params.mode as SolveMode) || 'solve');
+  const questionId = params.questionId as string | undefined;
+  const lectureId = params.lectureId as string | undefined;
 
-  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
-  const [showAnswer, setShowAnswer] = useState(false);
+  const {
+    questions,
+    currentIndex,
+    loading,
+    setMode,
+    setLoading,
+    setQuestions,
+    setError,
+  } = useSolveStore();
+
   const [isOnline, setIsOnline] = useState(true);
-  const [question, setQuestion] = useState<any>(null);
-  const [explanation, setExplanation] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-
-  const currentIndex = 12; // Mock current index
-  const totalQuestions = 50; // Mock total
 
   useEffect(() => {
-    loadQuestion();
-    setupNetworkListener();
-  }, [questionId]);
+    setMode(mode);
+    loadQuestions();
 
-  const loadQuestion = async () => {
-    try {
-      const questionData = await getQuestionWithChoices(questionId);
-      if (questionData) {
-        setQuestion(questionData);
-      }
-    } catch (error) {
-      console.error('Failed to load question:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const setupNetworkListener = () => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsOnline(state.isConnected ?? false);
+    const unsubscribe = NetInfo.addEventListener((netState) => {
+      setIsOnline(netState.isConnected ?? false);
     });
     return unsubscribe;
-  };
+  }, [questionId, lectureId, mode]);
 
-  const handleChoiceSelect = async (choiceId: string) => {
-    if (showAnswer) return; // Prevent changing answer after showing result
-
-    setSelectedChoice(choiceId);
-    setShowAnswer(true);
-
+  const loadQuestions = async () => {
     try {
-      // Store answer locally first (Step 1 in sequence diagram)
-      const result = await storeAnswer({
-        id: `attempt-${Date.now()}`,
-        questionId: questionId,
-        choiceId: choiceId,
-        isCorrect: false, // Will be determined by SQLite
-        createdAt: new Date().toISOString(),
-      });
+      setLoading(true);
 
-      setExplanation(result.explanation);
-
-      // Sync to API if internet available (Step 5 in sequence diagram - optional)
-      if (isOnline) {
-        try {
-          await syncAttempts();
-        } catch (error) {
-          console.error('Sync failed, will retry later:', error);
+      // Scenario 1: Specific questionId passed
+      if (questionId) {
+        const single = await getQuestionWithChoices(questionId);
+        if (single) {
+          setQuestions([single]);
+          return;
         }
       }
-    } catch (error) {
-      console.error('Failed to store answer:', error);
-      Alert.alert('Error', 'Failed to save answer');
-    }
-  };
 
-  const handleContinue = () => {
-    if (mode === 'review') {
-      router.back();
-    } else {
-      // Navigate to next question
-      Alert.alert('Continue', 'Navigate to next question');
+      // Scenario 2: lectureId passed (from LectureQuestionsCard)
+      if (lectureId) {
+        let list: Question[] = [];
+
+        if (mode === 'unsolved') {
+          list = await fetchUnsolvedQuestions(lectureId);
+        } else {
+          list = await fetchAllQuestions(lectureId);
+        }
+        if (list.length > 0) {
+          setQuestions(list);
+          return;
+        }
+      }
+
+      setError();
+    } catch (error) {
+      console.error('Failed to load questions:', error);
+      setError();
     }
   };
 
   if (loading) {
+    return <LoadingView message="Loading questions..." />;
+  }
+
+  const currentQuestion = questions[currentIndex] ?? null;
+
+  if (!currentQuestion) {
     return (
-      <View className="flex-1 bg-slate-50 items-center justify-center">
-        <Text className="text-slate-400">Loading question...</Text>
+      <View className="flex-1 bg-slate-50 dark:bg-slate-900 justify-center items-center p-4">
+        <Text className="text-slate-600 dark:text-slate-400 text-center text-lg font-medium mb-2">
+          No Questions Available
+        </Text>
+        <Text className="text-slate-500 dark:text-slate-500 text-center text-sm">
+          {mode === 'unsolved' 
+            ? "You've answered all questions for this lecture. Great job!" 
+            : "No practice questions are available for this lecture yet."}
+        </Text>
       </View>
     );
   }
 
-  if (!question) {
-    return (
-      <View className="flex-1 bg-slate-50 items-center justify-center">
-        <Text className="text-slate-400">Question not found</Text>
-      </View>
-    );
-  }
-
+  const questionText = currentQuestion.questionText;
+  const headerTitle =
+    mode === 'solve' || mode === 'unsolved'
+      ? `Question ${currentIndex + 1} of ${questions.length}`
+      : currentQuestion.lecture?.name || 'Review Question';
+  const headerSubtitle = mode === 'review' ? currentQuestion.lecture?.subject?.name : undefined;
   return (
-    <View className="flex-1 bg-slate-50">
-      {/* Header */}
-      <View className="bg-white border-b border-slate-200 px-4 py-3">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-3">
-            <ChevronLeftIcon size={24} color="#0d9488" />
-          </TouchableOpacity>
-
-          <View className="flex-1">
-            <View className="flex-row items-center">
-              <Text className="text-2xl mr-2">{getSubjectIcon('Cardiology')}</Text>
-              <View className="flex-1">
-                {mode === 'solve' ? (
-                  <Text className="font-semibold text-slate-800">
-                    Question {currentIndex} of {totalQuestions}
-                  </Text>
-                ) : (
-                  <View>
-                    <Text className="font-semibold text-slate-800">Cardiology</Text>
-                    <Text className="text-slate-500 text-sm">Heart Failure</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-
-          {/* Persistent offline indicator */}
-          <View className={`flex-row items-center ${isOnline ? 'bg-green-50' : 'bg-amber-50'} px-2 py-1 rounded`}>
-            {isOnline ? (
-              <WifiIcon size={14} color="#22c55e" />
-            ) : (
-              <WifiOffIcon size={14} color="#f59e0b" />
-            )}
-            <Text className={`text-xs ml-1 ${isOnline ? 'text-green-600' : 'text-amber-600'}`}>
-              {isOnline ? 'Online' : 'Offline'}
-            </Text>
-          </View>
-        </View>
-      </View>
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <ScreenHeader
+        title={headerTitle}
+        subtitle={headerSubtitle}
+        onBack={() => router.back()}
+      />
 
       <ScrollView className="flex-1 p-4">
-        {/* Question */}
-        <View className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <Text className="text-lg text-slate-800 leading-relaxed">
-            {question.question_text}
-          </Text>
-        </View>
-
-        {/* Choices */}
-        <View className="space-y-3">
-          {question.choices.map((choice: any) => {
-            const isSelected = selectedChoice === choice.id;
-            const showResult = showAnswer && isSelected;
-
-            return (
-              <TouchableOpacity
-                key={choice.id}
-                className={`border-2 rounded-xl p-4 ${showResult
-                    ? choice.is_correct
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-red-500 bg-red-50'
-                    : isSelected
-                      ? 'border-teal-600 bg-teal-50'
-                      : 'border-slate-200 bg-white'
-                  }`}
-                onPress={() => handleChoiceSelect(choice.id)}
-                disabled={showAnswer}
-              >
-                <View className="flex-row items-start">
-                  <View
-                    className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${showResult
-                        ? choice.is_correct
-                          ? 'border-green-500 bg-green-500'
-                          : 'border-red-500 bg-red-500'
-                        : isSelected
-                          ? 'border-teal-600 bg-teal-600'
-                          : 'border-slate-300'
-                      }`}
-                  >
-                    {showResult && (
-                      choice.is_correct ? (
-                        <CheckCircleIcon size={14} color="white" />
-                      ) : isSelected ? (
-                        <XCircleIcon size={14} color="white" />
-                      ) : null)}
-                  </View>
-                  <Text className="flex-1 text-slate-800">{choice.choice_text}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Explanation (shown after answer) */}
-        {showAnswer && (
-          <View className="bg-white rounded-xl p-5 shadow-sm mt-4">
-            <Text className="font-semibold text-slate-800 mb-2">Explanation</Text>
-            <Text className="text-slate-600 leading-relaxed">
-              {explanation || question.explanation}
+        {/* Question Text with Flag Button */}
+        <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
+          <View className="flex-row items-start justify-between">
+            <Text className="flex-1 text-lg text-slate-800 dark:text-slate-100 leading-relaxed mr-3">
+              {questionText}
             </Text>
-
-            <View className="flex-row items-center mt-3 bg-slate-50 p-3 rounded-lg">
-              <CheckCircleIcon size={16} color="#22c55e" />
-              <Text className="text-green-600 text-sm ml-2">Saved on this device</Text>
-            </View>
+            <QuestionFlagButton questionId={currentQuestion.id} isOnline={isOnline} />
           </View>
-        )}
+        </View>
 
-        {/* Continue Button */}
-        {showAnswer && (
-          <TouchableOpacity
-            className="bg-teal-600 rounded-xl p-4 mt-4 items-center"
-            onPress={handleContinue}
-          >
-            <Text className="text-white font-semibold text-lg">
-              {mode === 'review' ? 'Back to Review' : 'Next Question'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Choices Component connected directly to Zustand Store */}
+        <QuestionChoices isOnline={isOnline} />
+
+        {/* Explanation & Continue Button connected directly to Zustand Store */}
+        <QuestionAnswerFooter />
       </ScrollView>
     </View>
   );

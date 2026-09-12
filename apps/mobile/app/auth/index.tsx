@@ -1,124 +1,126 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuthStore } from '../../store/authStore';
-import { postAuthLogin, postAuthRegister } from '@manhaj/api-client';
+import {
+  View,
+  Text,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { useForm } from 'react-hook-form';
+import {
+  AuthHeader,
+  GoogleSignInButton,
+  AuthSubmitButton,
+  ControlledInput,
+  AuthToggle,
+  type AuthFormData,
+} from '../../components/auth';
 
 export default function AuthScreen() {
-  const router = useRouter();
-  const { setAuth } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleGoogleAuth = async () => {
-    // In production, integrate with expo-auth-session
-    Alert.alert('Google Auth', 'Google authentication will be implemented with expo-auth-session');
-  };
-
-  const handleEmailAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (!isLogin && !name) {
-      Alert.alert('Error', 'Please enter your name');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      let response;
-      if (isLogin) {
-        response = await postAuthLogin({ email, password });
-      } else {
-        response = await postAuthRegister({ name, email, password });
-      }
-
-      const authData = response.data;
-      setAuth(
-        { 
-          accessToken: authData.accessToken || '', 
-          refreshToken: authData.refreshToken || '' 
-        },
-        authData.user
-      );
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      // Prefer the server's descriptive error message over the generic Axios one
-      const serverMessage = error?.response?.data?.error;
-      const message = serverMessage || error?.message || 'An unknown error occurred';
-      console.error('Authentication error:', message, error?.response?.data);
-      Alert.alert('Error', 'Authentication failed: ' + message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<AuthFormData>({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+    },
+    mode: 'onBlur',
+  });
 
   return (
-    <View className="flex-1 justify-center px-6 bg-white">
-      <Text className="text-4xl font-bold text-teal-600 text-center mb-2">Manhaj</Text>
-      <Text className="text-base text-slate-500 text-center mb-8">Offline-First Student Question Bank</Text>
-
-      <TouchableOpacity 
-        className="bg-white border border-slate-200 rounded-lg p-4 items-center mb-4"
-        onPress={handleGoogleAuth}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-white dark:bg-slate-900"
+    >
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingHorizontal: 24,
+          paddingVertical: 32,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-slate-800 text-base font-semibold">Continue with Google</Text>
-      </TouchableOpacity>
+        <AuthHeader />
 
-      <View className="flex-row items-center my-6">
-        <View className="flex-1 h-px bg-slate-200" />
-        <Text className="mx-4 text-slate-400">or</Text>
-        <View className="flex-1 h-px bg-slate-200" />
-      </View>
+        <GoogleSignInButton />
 
-      {!isLogin && (
-        <TextInput
-          className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4 text-base"
-          placeholder="Name"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
+        <View className="flex-row items-center my-6">
+          <View className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          <Text className="mx-4 text-slate-400 dark:text-slate-500 font-medium text-xs uppercase tracking-wider">
+            or
+          </Text>
+          <View className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        </View>
+
+        {!isLogin && (
+          <ControlledInput
+            control={control}
+            name="name"
+            placeholder="Full Name"
+            autoCapitalize="words"
+            editable={!isSubmitting}
+            rules={{
+              required: 'Full name is required',
+              minLength: {
+                value: 2,
+                message: 'Name must be at least 2 characters',
+              },
+            }}
+          />
+        )}
+
+        <ControlledInput
+          control={control}
+          name="email"
+          placeholder="Email Address"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!isSubmitting}
+          rules={{
+            required: 'Email address is required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: 'Please enter a valid email address',
+            },
+          }}
         />
-      )}
 
-      <TextInput
-        className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4 text-base"
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
+        <ControlledInput
+          control={control}
+          name="password"
+          placeholder="Password"
+          isPassword
+          editable={!isSubmitting}
+          rules={{
+            required: 'Password is required',
+            minLength: {
+              value: 6,
+              message: 'Password must be at least 6 characters',
+            },
+          }}
+        />
 
-      <TextInput
-        className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4 text-base"
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+        <AuthSubmitButton
+          isLogin={isLogin}
+          isSubmitting={isSubmitting}
+          handleSubmit={handleSubmit}
+        />
 
-      <TouchableOpacity
-        className={`rounded-lg p-4 items-center mb-4 ${loading ? 'bg-slate-400' : 'bg-teal-600'}`}
-        onPress={handleEmailAuth}
-        disabled={loading}
-      >
-        <Text className="text-white text-base font-semibold">
-          {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-        <Text className="text-teal-600 text-center text-sm">
-          {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <AuthToggle
+          isLogin={isLogin}
+          onToggle={() => {
+            setIsLogin((prev) => !prev);
+            reset();
+          }}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
