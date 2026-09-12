@@ -201,50 +201,100 @@ export class StudentService {
   // --- Cases ---
   
   async getCases(userId: string) {
-    return db.select().from(caseItems).where(eq(caseItems.userId, userId));
+    const results = await db.select({
+      reviewItem: reviewItems,
+      caseItem: caseItems,
+    }).from(caseItems)
+      .innerJoin(reviewItems, eq(caseItems.reviewItemId, reviewItems.id))
+      .where(eq(reviewItems.userId, userId));
+    
+    return results.map(r => ({ ...r.reviewItem, ...r.caseItem, id: r.reviewItem.id }));
   }
 
   async createCase(userId: string, data: any) {
-    const [newItem] = await db.insert(caseItems).values({ ...data, userId }).returning();
-    return newItem;
+    return await db.transaction(async (tx) => {
+      const [reviewItem] = await tx.insert(reviewItems).values({
+        userId,
+        itemType: 'case',
+      }).returning();
+
+      const [newItem] = await tx.insert(caseItems).values({
+        ...data,
+        reviewItemId: reviewItem.id,
+      }).returning();
+      
+      return { ...reviewItem, ...newItem, id: reviewItem.id };
+    });
   }
 
   async updateCase(userId: string, id: string, data: any) {
+    const [reviewItem] = await db.select().from(reviewItems).where(and(eq(reviewItems.id, id), eq(reviewItems.userId, userId)));
+    if (!reviewItem) throw new Error("Not found");
+
     const [updated] = await db
       .update(caseItems)
       .set(data)
-      .where(and(eq(caseItems.id, id), eq(caseItems.userId, userId)))
+      .where(eq(caseItems.reviewItemId, id))
       .returning();
-    return updated;
+      
+    return { ...reviewItem, ...updated, id: reviewItem.id };
   }
 
   async deleteCase(userId: string, id: string) {
-    await db.delete(caseItems).where(and(eq(caseItems.id, id), eq(caseItems.userId, userId)));
+    const [reviewItem] = await db.select().from(reviewItems).where(and(eq(reviewItems.id, id), eq(reviewItems.userId, userId)));
+    if (!reviewItem) throw new Error("Not found");
+
+    await db.delete(reviewItems).where(eq(reviewItems.id, id));
     return { success: true, id };
   }
 
   // --- Notes ---
 
   async getNotes(userId: string) {
-    return db.select().from(noteItems).where(eq(noteItems.userId, userId));
+    const results = await db.select({
+      reviewItem: reviewItems,
+      noteItem: noteItems,
+    }).from(noteItems)
+      .innerJoin(reviewItems, eq(noteItems.reviewItemId, reviewItems.id))
+      .where(eq(reviewItems.userId, userId));
+    
+    return results.map(r => ({ ...r.reviewItem, ...r.noteItem, id: r.reviewItem.id }));
   }
 
   async createNote(userId: string, data: any) {
-    const [newItem] = await db.insert(noteItems).values({ ...data, userId }).returning();
-    return newItem;
+    return await db.transaction(async (tx) => {
+      const [reviewItem] = await tx.insert(reviewItems).values({
+        userId,
+        itemType: 'note',
+      }).returning();
+
+      const [newItem] = await tx.insert(noteItems).values({
+        ...data,
+        reviewItemId: reviewItem.id,
+      }).returning();
+      
+      return { ...reviewItem, ...newItem, id: reviewItem.id };
+    });
   }
 
   async updateNote(userId: string, id: string, data: any) {
+    const [reviewItem] = await db.select().from(reviewItems).where(and(eq(reviewItems.id, id), eq(reviewItems.userId, userId)));
+    if (!reviewItem) throw new Error("Not found");
+
     const [updated] = await db
       .update(noteItems)
       .set(data)
-      .where(and(eq(noteItems.id, id), eq(noteItems.userId, userId)))
+      .where(eq(noteItems.reviewItemId, id))
       .returning();
-    return updated;
+      
+    return { ...reviewItem, ...updated, id: reviewItem.id };
   }
 
   async deleteNote(userId: string, id: string) {
-    await db.delete(noteItems).where(and(eq(noteItems.id, id), eq(noteItems.userId, userId)));
+    const [reviewItem] = await db.select().from(reviewItems).where(and(eq(reviewItems.id, id), eq(reviewItems.userId, userId)));
+    if (!reviewItem) throw new Error("Not found");
+
+    await db.delete(reviewItems).where(eq(reviewItems.id, id));
     return { success: true, id };
   }
 
@@ -365,12 +415,12 @@ export class StudentService {
   // --- Reviewable Items (SRS) ---
 
   async getDueReviewables(userId: string) {
-    // Get reviewable items where nextReviewDate <= now
+    // Get reviewable items where nextReviewAt <= now
     const now = new Date();
     return db.select().from(reviewItems).where(
       and(
         eq(reviewItems.userId, userId),
-        lt(reviewItems.nextReviewDate, now)
+        lt(reviewItems.nextReviewAt, now)
       )
     );
   }
@@ -388,7 +438,7 @@ export class StudentService {
         const mergedData = { ...data };
         if (existing.interval < data.interval) {
           mergedData.interval = existing.interval;
-          mergedData.nextReviewDate = existing.nextReviewDate;
+          mergedData.nextReviewAt = existing.nextReviewAt;
         }
         await db.update(reviewItems).set(mergedData).where(eq(reviewItems.id, id));
         results.push({ id, status: 'updated' });
