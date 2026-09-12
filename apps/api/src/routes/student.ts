@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import { requireAuth } from '../middleware/auth';
-import { StudentController } from '../controllers/studentController';
+import { requireAuth } from '../middleware/auth.js';
+import { StudentController } from '../controllers/studentController.js';
 
 const router: ExpressRouter = Router();
 const studentController = new StudentController();

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import {
   questions,
   choices,
@@ -17,7 +17,7 @@ import {
   betterAuthAccount,
 } from '@manhaj/db';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { notifyContentUpdated } from './pushService';
+import { notifyContentUpdated } from './pushService.js';
 
 export class AdminConflictError extends Error {
   statusCode = 409;

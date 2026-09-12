@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { choices, lectures, questions } from '@manhaj/db';
 import { eq } from 'drizzle-orm';
 

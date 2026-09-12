@@ -1,6 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import { requireAuth, optionalAuth } from '../middleware/auth';
-import { ContentController } from '../controllers/contentController';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { ContentController } from '../controllers/contentController.js';
 
 const router: ExpressRouter = Router();
 const contentController = new ContentController();

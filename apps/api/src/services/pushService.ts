@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { deviceTokens, users } from '@manhaj/db';
 import { eq } from 'drizzle-orm';
 

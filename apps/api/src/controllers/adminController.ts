@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { AdminConflictError, AdminService } from '../services/adminService';
-import { videoUploadService } from '../services/videoUploadService';
+import { AdminConflictError, AdminService } from '../services/adminService.js';
+import { videoUploadService } from '../services/videoUploadService.js';
 
 export class AdminController {
   private adminService: AdminService;

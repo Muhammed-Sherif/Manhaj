@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { attempts, deviceTokens, flags, questions, choices, grades, terms, users, lectures, caseItems, noteItems, tasks,  zekrCategories,
   zekrCatalog,
   zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs } from '@manhaj/db';

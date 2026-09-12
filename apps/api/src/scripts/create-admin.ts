@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { users } from '@manhaj/db';
 import { eq } from 'drizzle-orm';
 

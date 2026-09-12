@@ -3,11 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { toNodeHandler } from 'better-auth/node';
-import { auth } from './lib/auth';
-import { adminRoutes } from './routes/admin';
-import { studentRoutes } from './routes/student';
-import { contentRoutes } from './routes/content';
-import { errorHandler } from './middleware/errorHandler';
+import { auth } from './lib/auth.js';
+import { adminRoutes } from './routes/admin.js';
+import { studentRoutes } from './routes/student.js';
+import { contentRoutes } from './routes/content.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 import path from 'path';
 

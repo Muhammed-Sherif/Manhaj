@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { choices, grades, lectureFiles, lectureVideos, lectures, modules, questions, subjects, terms } from '@manhaj/db';
 import { and, eq } from 'drizzle-orm';
 

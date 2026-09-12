@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ContentService } from '../services/contentService';
+import { ContentService } from '../services/contentService.js';
 
 export class ContentController {
   private contentService: ContentService;

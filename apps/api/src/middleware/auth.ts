@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
-import { auth } from '../lib/auth';
+import { auth } from '../lib/auth.js';
 
 // Extend Express Request type to include user and session
 declare global {

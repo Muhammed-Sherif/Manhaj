@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { pipeline } from 'stream/promises';
-import { AdminService } from './adminService';
+import { AdminService } from './adminService.js';
 
 const adminService = new AdminService();
 

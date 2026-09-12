@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { db } from '../config/database';
+import { db } from '../config/database.js';
 import { users, refreshTokens } from '@manhaj/db';
 import { eq } from 'drizzle-orm';
 
