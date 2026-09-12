@@ -130,6 +130,34 @@ router.get('/grades-with-terms', studentController.getGradesWithTerms);
 router.post('/attempts/sync', studentController.syncAttempts);
 router.get('/attempts/wrong-or-flagged', studentController.getWrongOrFlagged);
 
+/**
+ * @swagger
+ * /student/questions/unsolved:
+ *   get:
+ *     summary: Get unsolved questions for a lecture
+ *     tags: [Student]
+ *     security:
+ *       - bearerAuth: []
+ *       - authToken: []
+ *     parameters:
+ *       - in: query
+ *         name: lectureId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Unsolved questions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Question'
+ */
+router.get('/questions/unsolved', studentController.getUnsolvedQuestions);
+
 // Flags
 /**
  * @swagger
@@ -201,5 +229,311 @@ router.delete('/flags/:questionId', studentController.deleteFlag);
  */
 router.post('/devices/register', studentController.registerDeviceToken);
 router.delete('/devices/register', studentController.unregisterDeviceToken);
+/**
+ * @swagger
+ * /student/cases:
+ *   get:
+ *     summary: Get all cases for the student
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: List of cases
+ *   post:
+ *     summary: Create a case
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [lectureId, category, title, content]
+ *             properties:
+ *               lectureId: { type: string, format: uuid }
+ *               category: { type: string, enum: ['case', 'disease', 'drug'] }
+ *               title: { type: string }
+ *               content: { type: string }
+ *               answer: { type: string }
+ *     responses:
+ *       201:
+ *         description: Case created
+ */
+router.get('/cases', studentController.getCases);
+router.post('/cases', studentController.createCase);
+
+/**
+ * @swagger
+ * /student/cases/{id}:
+ *   patch:
+ *     summary: Update a case
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category: { type: string, enum: ['case', 'disease', 'drug'] }
+ *               title: { type: string }
+ *               content: { type: string }
+ *               answer: { type: string }
+ *     responses:
+ *       200:
+ *         description: Case updated
+ *   delete:
+ *     summary: Delete a case
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Case deleted
+ */
+router.patch('/cases/:id', studentController.updateCase);
+router.delete('/cases/:id', studentController.deleteCase);
+
+/**
+ * @swagger
+ * /student/notes:
+ *   get:
+ *     summary: Get all notes for the student
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: List of notes
+ *   post:
+ *     summary: Create a note
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [lectureId, type, content]
+ *             properties:
+ *               lectureId: { type: string, format: uuid }
+ *               type: { type: string, enum: ['note', 'recurring_question'] }
+ *               content: { type: string }
+ *               sourceQuestionId: { type: string, format: uuid }
+ *     responses:
+ *       201:
+ *         description: Note created
+ */
+router.get('/notes', studentController.getNotes);
+router.post('/notes', studentController.createNote);
+
+/**
+ * @swagger
+ * /student/notes/{id}:
+ *   patch:
+ *     summary: Update a note
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type: { type: string, enum: ['note', 'recurring_question'] }
+ *               content: { type: string }
+ *               sourceQuestionId: { type: string, format: uuid, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Note updated
+ *   delete:
+ *     summary: Delete a note
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Note deleted
+ */
+router.patch('/notes/:id', studentController.updateNote);
+router.delete('/notes/:id', studentController.deleteNote);
+
+// Tasks
+/**
+ * @swagger
+ * /student/tasks:
+ *   get:
+ *     summary: Get all tasks for the student
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *   post:
+ *     summary: Create a task
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [taskType, status]
+ *             properties:
+ *               taskType: { type: string, enum: ['zekr', 'wird'] }
+ *               startTime: { type: string, format: date-time, nullable: true }
+ *               endTime: { type: string, format: date-time, nullable: true }
+ *               consumedTime: { type: number, nullable: true }
+ *               estimatedTime: { type: number, nullable: true }
+ *               status: { type: string, enum: ['pending', 'in_progress', 'done', 'missed'] }
+ *               achievedFrom: { type: string, nullable: true }
+ *               zekrTask: { type: object, nullable: true }
+ *               wirdTask: { type: object, nullable: true }
+ *     responses:
+ *       201:
+ *         description: Task created
+ */
+/**
+ * @swagger
+ * /student/zekr-catalog:
+ *   get:
+ *     summary: Get the complete Zekr catalog (categories and duas) for offline sync
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: Zekr catalog
+ */
+router.get('/zekr-catalog', studentController.getZekrCatalog);
+
+router.get('/tasks', studentController.getTasks);
+router.post('/tasks', studentController.createTask);
+
+/**
+ * @swagger
+ * /student/tasks/{id}:
+ *   patch:
+ *     summary: Update a task
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               taskType: { type: string, enum: ['zekr', 'wird'] }
+ *               status: { type: string, enum: ['pending', 'in_progress', 'done', 'missed'] }
+ *               zekrTask: { type: object, nullable: true }
+ *               wirdTask: { type: object, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Task updated
+ *   delete:
+ *     summary: Delete a task
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Task deleted
+ */
+router.patch('/tasks/:id', studentController.updateTask);
+router.delete('/tasks/:id', studentController.deleteTask);
+
+/**
+ * @swagger
+ * /student/tasks/complete-study:
+ *   post:
+ *     summary: Complete study tasks for a specific lecture and activity
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               lectureId:
+ *                 type: string
+ *               activityType:
+ *                 type: string
+ *                 enum: [watch, solve, revision]
+ *     responses:
+ *       200:
+ *         description: Study tasks completed
+ */
+router.post('/tasks/complete-study', studentController.completeStudyTasks);
+
+// Reviewables (SRS)
+/**
+ * @swagger
+ * /student/reviewables/due:
+ *   get:
+ *     summary: Get due reviewable items for the student
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: List of due reviewable items
+ */
+router.get('/reviewables/due', studentController.getDueReviewables);
+
+/**
+ * @swagger
+ * /student/reviewables/sync:
+ *   post:
+ *     summary: Sync reviewable items from mobile offline queue
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Sync results
+ */
+router.post('/reviewables/sync', studentController.syncReviewables);
 
 export { router as studentRoutes };

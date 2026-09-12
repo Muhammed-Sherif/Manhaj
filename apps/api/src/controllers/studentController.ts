@@ -55,6 +55,21 @@ export class StudentController {
     }
   };
 
+  getUnsolvedQuestions = async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const { lectureId } = req.query;
+      if (!lectureId) {
+        res.status(400).json({ error: 'lectureId is required' });
+        return;
+      }
+      const questions = await this.studentService.getUnsolvedQuestions(userId, lectureId as string);
+      res.json(questions);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
   createFlag = async (req: Request, res: Response) => {
     try {
       const { questionId } = req.body;
@@ -96,6 +111,142 @@ export class StudentController {
       const { pushToken } = req.body;
       await this.studentService.unregisterDeviceToken(req.user!.id, pushToken);
       res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Cases ---
+  getCases = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.getCases(req.user!.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  createCase = async (req: Request, res: Response) => {
+    try {
+      res.status(201).json(await this.studentService.createCase(req.user!.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  updateCase = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.updateCase(req.user!.id, req.params.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  deleteCase = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.deleteCase(req.user!.id, req.params.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Notes ---
+  getNotes = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.getNotes(req.user!.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  createNote = async (req: Request, res: Response) => {
+    try {
+      res.status(201).json(await this.studentService.createNote(req.user!.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  updateNote = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.updateNote(req.user!.id, req.params.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  deleteNote = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.deleteNote(req.user!.id, req.params.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Zekr Catalog ---
+  getZekrCatalog = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.getZekrCatalog());
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Tasks ---
+
+  getTasks = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.getTasks(req.user!.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  createTask = async (req: Request, res: Response) => {
+    try {
+      res.status(201).json(await this.studentService.createTask(req.user!.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  updateTask = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.updateTask(req.user!.id, req.params.id, req.body));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  deleteTask = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.deleteTask(req.user!.id, req.params.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  completeStudyTasks = async (req: Request, res: Response) => {
+    try {
+      const { lectureId, activityType } = req.body;
+      res.json(await this.studentService.completeStudyTasks(req.user!.id, lectureId, activityType));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Reviewables (SRS) ---
+
+  getDueReviewables = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.getDueReviewables(req.user!.id));
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  syncReviewables = async (req: Request, res: Response) => {
+    try {
+      res.json(await this.studentService.syncReviewables(req.user!.id, req.body.items || []));
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }

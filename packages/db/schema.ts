@@ -5,6 +5,7 @@ import { relations } from 'drizzle-orm';
 export const authProviderEnum = pgEnum('auth_provider', ['google', 'credentials']);
 export const roleEnum = pgEnum('role', ['student', 'admin']);
 export const questionSourceEnum = pgEnum('question_source', ['telegram_auto', 'admin_manual']);
+export const questionTypeEnum = pgEnum('question_type', ['mcq', 'written']);
 
 // Tables
 export const grades = pgTable('grades', {
@@ -96,10 +97,13 @@ export const questions = pgTable('questions', {
   id: uuid('id').defaultRandom().primaryKey(),
   lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }),
   createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  // Discriminator: determines which subclass table holds type-specific data
+  questionType: questionTypeEnum('question_type').notNull().default('mcq'),
   questionText: text('question_text').notNull(),
-  explanation: text('explanation').notNull(),
+  explanation: text('explanation'), // nullable — written questions often have none
   source: questionSourceEnum('source').notNull(),
   telegramMessageId: integer('telegram_message_id').unique(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const choices = pgTable('choices', {
@@ -113,7 +117,8 @@ export const attempts = pgTable('attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
-  choiceId: uuid('choice_id').notNull().references(() => choices.id, { onDelete: 'cascade' }),
+  // nullable: set for MCQ (the choice picked), null for written (student self-evaluates)
+  choiceId: uuid('choice_id').references(() => choices.id, { onDelete: 'cascade' }),
   isCorrect: boolean('is_correct').notNull(),
 }, (table) => ({
   uniqueUserQuestion: unique('unique_user_question').on(table.userId, table.questionId),
@@ -126,6 +131,217 @@ export const flags = pgTable('flags', {
 }, (table) => ({
   uniqueUserQuestion: unique('unique_user_flag').on(table.userId, table.questionId),
 }));
+
+// ── Question Subclass Tables (8A: Superclass + Subclasses) ────────────────────
+// Each row here has a 1-to-1 FK to questions.id (the superclass).
+// A question MUST have exactly one matching row in exactly one subclass table.
+
+// Subclass: MCQ — no extra columns needed; MCQ-specific data lives in choices table
+export const mcqQuestions = pgTable('mcq_questions', {
+  questionId: uuid('question_id').primaryKey().references(() => questions.id, { onDelete: 'cascade' }),
+});
+
+// Subclass: Written — stores the hidden model answer shown after student reveals it
+export const writtenQuestions = pgTable('written_questions', {
+  questionId: uuid('question_id').primaryKey().references(() => questions.id, { onDelete: 'cascade' }),
+  writtenAnswer: text('written_answer').notNull(), // the hidden/spoiler answer from Telegram
+});
+
+// Question Images — works for both MCQ and written (anatomy diagrams, labelling, etc.)
+export const questionImages = pgTable('question_images', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
+  imageUrl: text('image_url').notNull(),           // permanent URL (object storage / CDN)
+  displayOrder: integer('display_order').notNull().default(0),
+  telegramFileId: text('telegram_file_id'),        // original Telegram file_id for reference
+});
+
+// ── Spaced Repetition System (SRS) ────────────────────────────────────────────
+// Architecture: 8A Superclass + Subclasses (same pattern as questions).
+// `review_items` holds the SM-2 scheduling state per user per item.
+// Each subclass table holds the actual content for that item type.
+// ALL items are private per student (like Anki — no shared decks).
+
+export const reviewItemTypeEnum = pgEnum('review_item_type', [
+  'question', // links to existing questions table
+  'case',     // medical case scenario
+  'note',     // lecture note
+  'drug',     // drug/medication card
+  'fact',     // simple front/back flashcard (Anki-style)
+]);
+
+// SM-2 grade: 1=Again (forgot), 2=Hard, 3=Good, 4=Easy
+export const reviewGradeEnum = pgEnum('review_grade', ['again', 'hard', 'good', 'easy']);
+
+// Superclass: holds SM-2 scheduling state — one row per user per reviewable item
+export const reviewItems = pgTable('review_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemType: reviewItemTypeEnum('item_type').notNull(),
+  // SM-2 algorithm fields
+  interval: integer('interval').notNull().default(1),           // days until next review
+  easeFactor: integer('ease_factor').notNull().default(250),    // stored as x100 (250 = 2.5) to avoid floats
+  repetitions: integer('repetitions').notNull().default(0),     // consecutive correct answers
+  nextReviewAt: timestamp('next_review_at').notNull().defaultNow(), // when to show next
+  lastReviewedAt: timestamp('last_reviewed_at'),                // null = never reviewed
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  // A user can only have one review_item per question/case/etc.
+  // Uniqueness is enforced at subclass level via the PK on reviewItemId
+}));
+
+// Subclass: Question — links to the existing questions table (MCQ or Written)
+export const questionReviewItems = pgTable('question_review_items', {
+  reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
+});
+
+// Subclass: Case — medical case scenario added by student
+export const caseItems = pgTable('case_items', {
+  reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // optional link
+  title: text('title').notNull(),
+  scenario: text('scenario').notNull(),    // the clinical presentation story
+  diagnosis: text('diagnosis').notNull(),  // the answer / main diagnosis
+  management: text('management'),          // treatment plan (optional)
+  keyPoints: text('key_points'),           // bullet points to remember
+});
+
+// Subclass: Note — lecture note added by student
+export const noteItems = pgTable('note_items', {
+  reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // optional link
+  noteText: text('note_text').notNull(),   // the note content (markdown supported)
+  isStarred: boolean('is_starred').notNull().default(false), // for quick filtering
+});
+
+// Subclass: Drug — drug/medication flashcard added by student
+export const drugItems = pgTable('drug_items', {
+  reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  drugClass: text('drug_class'),           // e.g. "Beta blocker", "Antibiotic"
+  mechanism: text('mechanism'),
+  indications: text('indications'),
+  contraindications: text('contraindications'),
+  sideEffects: text('side_effects'),
+  mnemonic: text('mnemonic'),              // memory trick
+});
+
+// Subclass: Fact — simple front/back flashcard (Anki-style), most flexible type
+export const factItems = pgTable('fact_items', {
+  reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  front: text('front').notNull(),  // the question / prompt shown to student
+  back: text('back').notNull(),    // the answer shown after reveal
+});
+
+// Review log — every review session is recorded for analytics & SM-2 calculation
+export const reviewLogs = pgTable('review_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  reviewItemId: uuid('review_item_id').notNull().references(() => reviewItems.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  grade: reviewGradeEnum('grade').notNull(),          // student's self-rating
+  intervalBefore: integer('interval_before').notNull(), // interval BEFORE this review
+  intervalAfter: integer('interval_after').notNull(),   // interval AFTER this review (new schedule)
+  easeFactorAfter: integer('ease_factor_after').notNull(), // new ease factor after update
+  reviewedAt: timestamp('reviewed_at').notNull().defaultNow(),
+});
+
+// ── Tasks System ──────────────────────────────────────────────────────────────
+// Offline-first design: IDs are UUID (generated on device), updatedAt on all
+// mutable tables enables last-write-wins sync conflict resolution.
+//
+// Architecture: 8A superclass + subclasses.
+// Wird uses nullable columns within its subclass (simpler — only 4 optional fields,
+// controlled by wirdMode enum — no need for a second level of subclassing).
+
+export const taskTypeEnum = pgEnum('task_type', ['zekr', 'wird', 'work', 'study']);
+export const taskRecurrenceEnum = pgEnum('task_recurrence', ['once', 'daily', 'weekly']);
+export const wirdModeEnum = pgEnum('wird_mode', ['by_ayat', 'by_pages']);
+export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'done', 'missed']);
+export const workTaskCategoryEnum = pgEnum('work_task_category', ['programming', 'video_editing']);
+export const studyTaskActivityEnum = pgEnum('study_task_activity', ['watch', 'solve', 'revision']);
+
+// Superclass: shared task fields
+export const tasks = pgTable('tasks', {
+  id: uuid('id').defaultRandom().primaryKey(), // UUID generated on device for offline-first
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  taskType: taskTypeEnum('task_type').notNull(),
+  recurrence: taskRecurrenceEnum('recurrence').notNull().default('once'),
+  startTime: timestamp('start_time'),
+  endTime: timestamp('end_time'),
+  consumedTime: integer('consumed_time'),
+  estimatedTime: integer('estimated_time'),
+  status: taskStatusEnum('status').notNull().default('pending'),
+  achievedFrom: text('achieved_from'),
+  // Offline-first sync fields
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(), // updated on every change for sync
+  deletedAt: timestamp('deleted_at'),          // soft delete for offline-first safety
+}, (table) => {
+  return {
+    uniqueTaskConstraint: unique('unique_task_recurrence').on(table.userId, table.taskType, table.startTime, table.endTime),
+  };
+});
+
+// Zekr Categories — the 132 categories from Hisn al-Muslim
+export const zekrCategories = pgTable('zekr_categories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  categoryNumber: integer('category_number').notNull(),
+  nameEn: text('name_en').notNull(),
+  nameAr: text('name_ar').notNull(),
+});
+
+// Zekr Catalog — the 268 duas linked to categories
+export const zekrCatalog = pgTable('zekr_catalog', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  categoryId: uuid('category_id').references(() => zekrCategories.id, { onDelete: 'cascade' }).notNull(),
+  duaNumber: integer('dua_number').notNull(),
+  slug: text('slug'),
+  transliteration: text('transliteration'),
+  textEn: text('text_en').notNull(),
+  textAr: text('text_ar').notNull(),
+  virtue: text('virtue'),
+  source: text('source'),
+  repeatCount: integer('repeat_count').notNull().default(1),
+});
+
+// Subclass: Zekr task — separate table (8A), 1-to-many with tasks
+export const zekrTasks = pgTable('zekr_tasks', {
+  id: uuid('id').defaultRandom().primaryKey(), // its own ID for 1-to-many
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  zekrId: uuid('zekr_id').references(() => zekrCatalog.id, { onDelete: 'set null' }), // nullable: custom zekr not in list
+  customZekrText: text('custom_zekr_text'), // if zekrId is null, student typed their own
+  zekrCount: integer('zekr_count').notNull(),           // target: e.g. 33
+  zekrAchievedCount: integer('zekr_achieved_count').notNull().default(0), // progress
+});
+
+// Subclass: Wird task — uses nullable columns controlled by wirdMode enum
+// (simpler than a 2nd level of subclassing since only 4 optional fields total)
+export const wirdTasks = pgTable('wird_tasks', {
+  taskId: uuid('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
+  wirdMode: wirdModeEnum('wird_mode').notNull(), // controls which nullable fields are used
+  // Used when wirdMode = 'by_ayat'
+  startAya: text('start_aya'),   // e.g. "2:255" (surah:ayah notation)
+  endAya: text('end_aya'),       // e.g. "2:257"
+  // Used when wirdMode = 'by_pages'
+  pageCount: integer('page_count'),           // target: e.g. 5 pages
+  achievedPageCount: integer('achieved_page_count').default(0), // progress
+});
+
+export const workTasks = pgTable('work_tasks', {
+  taskId: uuid('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
+  category: workTaskCategoryEnum('category').notNull(),
+  projectName: text('project_name').notNull(),
+  description: text('description'),
+  link: text('link'),
+  cost: integer('cost').notNull(),
+});
+
+export const studyTasks = pgTable('study_tasks', {
+  taskId: uuid('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
+  lectureId: uuid('lecture_id').notNull().references(() => lectures.id, { onDelete: 'cascade' }),
+  activityType: studyTaskActivityEnum('activity_type').notNull(),
+});
 
 // Relations
 export const gradesRelations = relations(grades, ({ many }) => ({
@@ -164,6 +380,8 @@ export const lecturesRelations = relations(lectures, ({ one, many }) => ({
   lectureFiles: many(lectureFiles),
   lectureVideos: many(lectureVideos),
   questions: many(questions),
+  caseItems: many(caseItems),
+  noteItems: many(noteItems),
 }));
 
 export const lectureFilesRelations = relations(lectureFiles, ({ one }) => ({
@@ -203,6 +421,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   questions: many(questions),
   attempts: many(attempts),
   flags: many(flags),
+  reviewItems: many(reviewItems), // SRS
+  reviewLogs: many(reviewLogs),   // SRS
+  tasks: many(tasks),             // Tasks
 }));
 
 export const deviceTokensRelations = relations(deviceTokens, ({ one }) => ({
@@ -231,6 +452,16 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   choices: many(choices),
   attempts: many(attempts),
   flags: many(flags),
+  // Subclass relations
+  mcqQuestion: one(mcqQuestions, {
+    fields: [questions.id],
+    references: [mcqQuestions.questionId],
+  }),
+  writtenQuestion: one(writtenQuestions, {
+    fields: [questions.id],
+    references: [writtenQuestions.questionId],
+  }),
+  images: many(questionImages),
 }));
 
 export const choicesRelations = relations(choices, ({ one, many }) => ({
@@ -264,6 +495,159 @@ export const flagsRelations = relations(flags, ({ one }) => ({
   question: one(questions, {
     fields: [flags.questionId],
     references: [questions.id],
+  }),
+}));
+
+export const mcqQuestionsRelations = relations(mcqQuestions, ({ one }) => ({
+  question: one(questions, {
+    fields: [mcqQuestions.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const writtenQuestionsRelations = relations(writtenQuestions, ({ one }) => ({
+  question: one(questions, {
+    fields: [writtenQuestions.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const questionImagesRelations = relations(questionImages, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionImages.questionId],
+    references: [questions.id],
+  }),
+}));
+
+// ── SRS Relations ─────────────────────────────────────────────────────────────
+
+export const reviewItemsRelations = relations(reviewItems, ({ one, many }) => ({
+  user: one(users, {
+    fields: [reviewItems.userId],
+    references: [users.id],
+  }),
+  questionReviewItem: one(questionReviewItems, {
+    fields: [reviewItems.id],
+    references: [questionReviewItems.reviewItemId],
+  }),
+  caseItem: one(caseItems, {
+    fields: [reviewItems.id],
+    references: [caseItems.reviewItemId],
+  }),
+  noteItem: one(noteItems, {
+    fields: [reviewItems.id],
+    references: [noteItems.reviewItemId],
+  }),
+  drugItem: one(drugItems, {
+    fields: [reviewItems.id],
+    references: [drugItems.reviewItemId],
+  }),
+  factItem: one(factItems, {
+    fields: [reviewItems.id],
+    references: [factItems.reviewItemId],
+  }),
+  logs: many(reviewLogs),
+}));
+
+export const questionReviewItemsRelations = relations(questionReviewItems, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [questionReviewItems.reviewItemId],
+    references: [reviewItems.id],
+  }),
+  question: one(questions, {
+    fields: [questionReviewItems.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const caseItemsRelations = relations(caseItems, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [caseItems.reviewItemId],
+    references: [reviewItems.id],
+  }),
+  lecture: one(lectures, {
+    fields: [caseItems.lectureId],
+    references: [lectures.id],
+  }),
+}));
+
+export const noteItemsRelations = relations(noteItems, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [noteItems.reviewItemId],
+    references: [reviewItems.id],
+  }),
+  lecture: one(lectures, {
+    fields: [noteItems.lectureId],
+    references: [lectures.id],
+  }),
+}));
+
+export const drugItemsRelations = relations(drugItems, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [drugItems.reviewItemId],
+    references: [reviewItems.id],
+  }),
+}));
+
+export const factItemsRelations = relations(factItems, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [factItems.reviewItemId],
+    references: [reviewItems.id],
+  }),
+}));
+
+export const reviewLogsRelations = relations(reviewLogs, ({ one }) => ({
+  reviewItem: one(reviewItems, {
+    fields: [reviewLogs.reviewItemId],
+    references: [reviewItems.id],
+  }),
+  user: one(users, {
+    fields: [reviewLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+// ── Tasks Relations ─────────────────────────────────────────────────────────────
+
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  user: one(users, {
+    fields: [tasks.userId],
+    references: [users.id],
+  }),
+  zekrTasks: many(zekrTasks),
+  wirdTask: one(wirdTasks, {
+    fields: [tasks.id],
+    references: [wirdTasks.taskId],
+  }),
+}));
+
+export const zekrCategoriesRelations = relations(zekrCategories, ({ many }) => ({
+  catalog: many(zekrCatalog),
+}));
+
+export const zekrCatalogRelations = relations(zekrCatalog, ({ one, many }) => ({
+  category: one(zekrCategories, {
+    fields: [zekrCatalog.categoryId],
+    references: [zekrCategories.id],
+  }),
+  zekrTasks: many(zekrTasks),
+}));
+
+export const zekrTasksRelations = relations(zekrTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [zekrTasks.taskId],
+    references: [tasks.id],
+  }),
+  zekr: one(zekrCatalog, {
+    fields: [zekrTasks.zekrId],
+    references: [zekrCatalog.id],
+  }),
+}));
+
+export const wirdTasksRelations = relations(wirdTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [wirdTasks.taskId],
+    references: [tasks.id],
   }),
 }));
 
@@ -312,3 +696,110 @@ export type NewAttempt = typeof attempts.$inferInsert;
 
 export type Flag = typeof flags.$inferSelect;
 export type NewFlag = typeof flags.$inferInsert;
+
+export type McqQuestion = typeof mcqQuestions.$inferSelect;
+export type NewMcqQuestion = typeof mcqQuestions.$inferInsert;
+
+export type WrittenQuestion = typeof writtenQuestions.$inferSelect;
+export type NewWrittenQuestion = typeof writtenQuestions.$inferInsert;
+
+export type QuestionImage = typeof questionImages.$inferSelect;
+export type NewQuestionImage = typeof questionImages.$inferInsert;
+
+// SRS types
+export type ReviewItem = typeof reviewItems.$inferSelect;
+export type NewReviewItem = typeof reviewItems.$inferInsert;
+
+export type QuestionReviewItem = typeof questionReviewItems.$inferSelect;
+export type NewQuestionReviewItem = typeof questionReviewItems.$inferInsert;
+
+export type CaseItem = typeof caseItems.$inferSelect;
+export type NewCaseItem = typeof caseItems.$inferInsert;
+
+export type NoteItem = typeof noteItems.$inferSelect;
+export type NewNoteItem = typeof noteItems.$inferInsert;
+
+export type DrugItem = typeof drugItems.$inferSelect;
+export type NewDrugItem = typeof drugItems.$inferInsert;
+
+export type FactItem = typeof factItems.$inferSelect;
+export type NewFactItem = typeof factItems.$inferInsert;
+
+export type ReviewLog = typeof reviewLogs.$inferSelect;
+export type NewReviewLog = typeof reviewLogs.$inferInsert;
+
+// Tasks types
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
+
+export type ZekrCategory = typeof zekrCategories.$inferSelect;
+export type NewZekrCategory = typeof zekrCategories.$inferInsert;
+
+export type ZekrCatalogItem = typeof zekrCatalog.$inferSelect;
+export type NewZekrCatalogItem = typeof zekrCatalog.$inferInsert;
+
+export type ZekrTask = typeof zekrTasks.$inferSelect;
+export type NewZekrTask = typeof zekrTasks.$inferInsert;
+
+export type WirdTask = typeof wirdTasks.$inferSelect;
+export type NewWirdTask = typeof wirdTasks.$inferInsert;
+
+// ── Better Auth Tables ───────────────────────────────────────────────────────
+// Required by Better Auth. "user" is Better Auth's primary identity table.
+// We use additionalFields (role, termId) to carry our domain data.
+
+export const betterAuthUser = pgTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  // Domain-specific fields
+  role: text('role').notNull().default('student'), // 'student' | 'admin'
+  termId: uuid('term_id').references(() => terms.id, { onDelete: 'set null' }),
+});
+
+export const betterAuthSession = pgTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => betterAuthUser.id, { onDelete: 'cascade' }),
+});
+
+export const betterAuthAccount = pgTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => betterAuthUser.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const betterAuthVerification = pgTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export type BetterAuthUser = typeof betterAuthUser.$inferSelect;
+export type NewBetterAuthUser = typeof betterAuthUser.$inferInsert;

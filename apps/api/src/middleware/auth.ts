@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { users } from '@manhaj/db';
+import { fromNodeHeaders } from 'better-auth/node';
+import { auth } from '../lib/auth';
 
-// Extend Express Request type to include user
+// Extend Express Request type to include user and session
 declare global {
   namespace Express {
     interface Request {
@@ -10,45 +10,61 @@ declare global {
         id: string;
         email: string;
         role: 'student' | 'admin';
+        name?: string;
+        termId?: string | null;
       };
+      session?: any;
     }
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Check for Auth.js session token (dashboard/admin)
-    const sessionToken = req.headers.authorization?.replace('Bearer ', '');
-    
-    // Check for custom JWT (mobile)
-    const jwtToken = req.headers['x-auth-token'] as string;
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
 
-    if (!sessionToken && !jwtToken) {
-      return res.status(401).json({ error: 'No authentication token provided' });
+    if (!session) {
+      return res.status(401).json({ error: 'Unauthorized: No active session' });
     }
 
-    let decoded: any;
-
-    if (jwtToken) {
-      // Mobile JWT verification
-      decoded = jwt.verify(jwtToken, JWT_SECRET);
-    } else {
-      // Auth.js session verification (simplified - in production, verify with session store)
-      // For now, we'll assume sessionToken is a JWT as well
-      decoded = jwt.verify(sessionToken!, JWT_SECRET);
-    }
-
+    const u = session.user as any;
     req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
+      id: u.id,
+      email: u.email,
+      role: (u.role as 'student' | 'admin') || 'student',
+      name: u.name,
+      termId: u.termId ?? null,
     };
+    req.session = session.session;
 
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Invalid or expired session' });
+  }
+};
+
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    if (session) {
+      const u = session.user as any;
+      req.user = {
+        id: u.id,
+        email: u.email,
+        role: (u.role as 'student' | 'admin') || 'student',
+        name: u.name,
+        termId: u.termId ?? null,
+      };
+      req.session = session.session;
+    }
+
+    next();
+  } catch {
+    next();
   }
 };
 

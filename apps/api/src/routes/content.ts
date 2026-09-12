@@ -1,5 +1,5 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, optionalAuth } from '../middleware/auth';
 import { ContentController } from '../controllers/contentController';
 
 const router: ExpressRouter = Router();
@@ -70,6 +70,55 @@ const contentController = new ContentController();
  *                   format: date-time
  */
 router.get('/sync', requireAuth, contentController.syncContent);
+
+/**
+ * @swagger
+ * /content/hierarchy:
+ *   get:
+ *     summary: Get complete nested content hierarchy
+ *     tags: [Content]
+ *     security:
+ *       - bearerAuth: []
+ *       - authToken: []
+ *     responses:
+ *       200:
+ *         description: Structured content hierarchy retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/StructuredGrade'
+ */
+router.get('/hierarchy', optionalAuth , contentController.getContentHierarchy);
+
+/**
+ * @swagger
+ * /content/lectures/{id}:
+ *   get:
+ *     summary: Get lecture details with videos, files, and questions
+ *     tags: [Content]
+ *     security:
+ *       - bearerAuth: []
+ *       - authToken: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Lecture details retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LectureDetails'
+ *       404:
+ *         description: Lecture not found
+ */
+router.get('/lectures/:id', requireAuth, contentController.getLectureDetails);
 
 /**
  * @swagger

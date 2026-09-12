@@ -27,11 +27,21 @@ import type {
 import type {
   GetStudentGradesWithTerms200Item,
   GetStudentProfile200,
+  GetStudentQuestionsUnsolvedParams,
+  PatchStudentCasesIdBody,
+  PatchStudentNotesIdBody,
   PatchStudentProfileBody,
+  PatchStudentTasksIdBody,
   PostStudentAttemptsSync200,
   PostStudentAttemptsSyncBody,
+  PostStudentCasesBody,
   PostStudentDevicesRegisterBody,
-  PostStudentFlagsBody
+  PostStudentFlagsBody,
+  PostStudentNotesBody,
+  PostStudentReviewablesSyncBody,
+  PostStudentTasksBody,
+  PostStudentTasksCompleteStudyBody,
+  Question
 } from '.././model';
 
 import { customAxios } from '.././mutator';
@@ -357,6 +367,99 @@ export const usePostStudentAttemptsSync = <TError = unknown,
       return useMutation(mutationOptions, queryClient);
     }
     /**
+ * @summary Get unsolved questions for a lecture
+ */
+export const getStudentQuestionsUnsolved = (
+    params: GetStudentQuestionsUnsolvedParams,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Question[]>(
+      {url: `/student/questions/unsolved`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentQuestionsUnsolvedQueryKey = (params?: GetStudentQuestionsUnsolvedParams,) => {
+    return [
+    `/student/questions/unsolved`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetStudentQuestionsUnsolvedQueryOptions = <TData = Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError = unknown>(params: GetStudentQuestionsUnsolvedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentQuestionsUnsolvedQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>> = ({ signal }) => getStudentQuestionsUnsolved(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentQuestionsUnsolvedQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>>
+export type GetStudentQuestionsUnsolvedQueryError = unknown
+
+
+export function useGetStudentQuestionsUnsolved<TData = Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError = unknown>(
+ params: GetStudentQuestionsUnsolvedParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentQuestionsUnsolved<TData = Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError = unknown>(
+ params: GetStudentQuestionsUnsolvedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentQuestionsUnsolved<TData = Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError = unknown>(
+ params: GetStudentQuestionsUnsolvedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get unsolved questions for a lecture
+ */
+
+export function useGetStudentQuestionsUnsolved<TData = Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError = unknown>(
+ params: GetStudentQuestionsUnsolvedParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuestionsUnsolved>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentQuestionsUnsolvedQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
  * @summary Flag a question
  */
 export const postStudentFlags = (
@@ -542,6 +645,1069 @@ export const usePostStudentDevicesRegister = <TError = unknown,
       > => {
 
       const mutationOptions = getPostStudentDevicesRegisterMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Get all cases for the student
+ */
+export const getStudentCases = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/cases`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentCasesQueryKey = () => {
+    return [
+    `/student/cases`
+    ] as const;
+    }
+
+    
+export const getGetStudentCasesQueryOptions = <TData = Awaited<ReturnType<typeof getStudentCases>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentCasesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentCases>>> = ({ signal }) => getStudentCases(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentCasesQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentCases>>>
+export type GetStudentCasesQueryError = unknown
+
+
+export function useGetStudentCases<TData = Awaited<ReturnType<typeof getStudentCases>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentCases>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentCases>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentCases<TData = Awaited<ReturnType<typeof getStudentCases>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentCases>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentCases>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentCases<TData = Awaited<ReturnType<typeof getStudentCases>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get all cases for the student
+ */
+
+export function useGetStudentCases<TData = Awaited<ReturnType<typeof getStudentCases>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentCases>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentCasesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Create a case
+ */
+export const postStudentCases = (
+    postStudentCasesBody: PostStudentCasesBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/cases`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentCasesBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentCasesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentCases>>, TError,{data: PostStudentCasesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentCases>>, TError,{data: PostStudentCasesBody}, TContext> => {
+
+const mutationKey = ['postStudentCases'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentCases>>, {data: PostStudentCasesBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postStudentCases(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentCasesMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentCases>>>
+    export type PostStudentCasesMutationBody = PostStudentCasesBody
+    export type PostStudentCasesMutationError = unknown
+
+    /**
+ * @summary Create a case
+ */
+export const usePostStudentCases = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentCases>>, TError,{data: PostStudentCasesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentCases>>,
+        TError,
+        {data: PostStudentCasesBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentCasesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Update a case
+ */
+export const patchStudentCasesId = (
+    id: string,
+    patchStudentCasesIdBody: PatchStudentCasesIdBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/cases/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchStudentCasesIdBody
+    },
+      options);
+    }
+  
+
+
+export const getPatchStudentCasesIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentCasesId>>, TError,{id: string;data: PatchStudentCasesIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchStudentCasesId>>, TError,{id: string;data: PatchStudentCasesIdBody}, TContext> => {
+
+const mutationKey = ['patchStudentCasesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchStudentCasesId>>, {id: string;data: PatchStudentCasesIdBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchStudentCasesId(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchStudentCasesIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchStudentCasesId>>>
+    export type PatchStudentCasesIdMutationBody = PatchStudentCasesIdBody
+    export type PatchStudentCasesIdMutationError = unknown
+
+    /**
+ * @summary Update a case
+ */
+export const usePatchStudentCasesId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentCasesId>>, TError,{id: string;data: PatchStudentCasesIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchStudentCasesId>>,
+        TError,
+        {id: string;data: PatchStudentCasesIdBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchStudentCasesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Delete a case
+ */
+export const deleteStudentCasesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/cases/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteStudentCasesIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentCasesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudentCasesId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteStudentCasesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudentCasesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStudentCasesId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudentCasesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudentCasesId>>>
+    
+    export type DeleteStudentCasesIdMutationError = unknown
+
+    /**
+ * @summary Delete a case
+ */
+export const useDeleteStudentCasesId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentCasesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudentCasesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteStudentCasesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Get all notes for the student
+ */
+export const getStudentNotes = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/notes`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentNotesQueryKey = () => {
+    return [
+    `/student/notes`
+    ] as const;
+    }
+
+    
+export const getGetStudentNotesQueryOptions = <TData = Awaited<ReturnType<typeof getStudentNotes>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentNotesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentNotes>>> = ({ signal }) => getStudentNotes(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentNotesQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentNotes>>>
+export type GetStudentNotesQueryError = unknown
+
+
+export function useGetStudentNotes<TData = Awaited<ReturnType<typeof getStudentNotes>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentNotes<TData = Awaited<ReturnType<typeof getStudentNotes>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentNotes>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentNotes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentNotes<TData = Awaited<ReturnType<typeof getStudentNotes>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get all notes for the student
+ */
+
+export function useGetStudentNotes<TData = Awaited<ReturnType<typeof getStudentNotes>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentNotes>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentNotesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Create a note
+ */
+export const postStudentNotes = (
+    postStudentNotesBody: PostStudentNotesBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/notes`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentNotesBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentNotesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentNotes>>, TError,{data: PostStudentNotesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentNotes>>, TError,{data: PostStudentNotesBody}, TContext> => {
+
+const mutationKey = ['postStudentNotes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentNotes>>, {data: PostStudentNotesBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postStudentNotes(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentNotesMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentNotes>>>
+    export type PostStudentNotesMutationBody = PostStudentNotesBody
+    export type PostStudentNotesMutationError = unknown
+
+    /**
+ * @summary Create a note
+ */
+export const usePostStudentNotes = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentNotes>>, TError,{data: PostStudentNotesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentNotes>>,
+        TError,
+        {data: PostStudentNotesBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentNotesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Update a note
+ */
+export const patchStudentNotesId = (
+    id: string,
+    patchStudentNotesIdBody: PatchStudentNotesIdBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/notes/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchStudentNotesIdBody
+    },
+      options);
+    }
+  
+
+
+export const getPatchStudentNotesIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentNotesId>>, TError,{id: string;data: PatchStudentNotesIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchStudentNotesId>>, TError,{id: string;data: PatchStudentNotesIdBody}, TContext> => {
+
+const mutationKey = ['patchStudentNotesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchStudentNotesId>>, {id: string;data: PatchStudentNotesIdBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchStudentNotesId(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchStudentNotesIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchStudentNotesId>>>
+    export type PatchStudentNotesIdMutationBody = PatchStudentNotesIdBody
+    export type PatchStudentNotesIdMutationError = unknown
+
+    /**
+ * @summary Update a note
+ */
+export const usePatchStudentNotesId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentNotesId>>, TError,{id: string;data: PatchStudentNotesIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchStudentNotesId>>,
+        TError,
+        {id: string;data: PatchStudentNotesIdBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchStudentNotesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Delete a note
+ */
+export const deleteStudentNotesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/notes/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteStudentNotesIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentNotesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudentNotesId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteStudentNotesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudentNotesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStudentNotesId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudentNotesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudentNotesId>>>
+    
+    export type DeleteStudentNotesIdMutationError = unknown
+
+    /**
+ * @summary Delete a note
+ */
+export const useDeleteStudentNotesId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentNotesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudentNotesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteStudentNotesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Get all tasks for the student
+ */
+export const getStudentTasks = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/tasks`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentTasksQueryKey = () => {
+    return [
+    `/student/tasks`
+    ] as const;
+    }
+
+    
+export const getGetStudentTasksQueryOptions = <TData = Awaited<ReturnType<typeof getStudentTasks>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentTasksQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentTasks>>> = ({ signal }) => getStudentTasks(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentTasksQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentTasks>>>
+export type GetStudentTasksQueryError = unknown
+
+
+export function useGetStudentTasks<TData = Awaited<ReturnType<typeof getStudentTasks>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentTasks>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentTasks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentTasks<TData = Awaited<ReturnType<typeof getStudentTasks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentTasks>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentTasks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentTasks<TData = Awaited<ReturnType<typeof getStudentTasks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get all tasks for the student
+ */
+
+export function useGetStudentTasks<TData = Awaited<ReturnType<typeof getStudentTasks>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentTasks>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Create a task
+ */
+export const postStudentTasks = (
+    postStudentTasksBody: PostStudentTasksBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/tasks`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentTasksBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentTasksMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentTasks>>, TError,{data: PostStudentTasksBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentTasks>>, TError,{data: PostStudentTasksBody}, TContext> => {
+
+const mutationKey = ['postStudentTasks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentTasks>>, {data: PostStudentTasksBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postStudentTasks(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentTasksMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentTasks>>>
+    export type PostStudentTasksMutationBody = PostStudentTasksBody
+    export type PostStudentTasksMutationError = unknown
+
+    /**
+ * @summary Create a task
+ */
+export const usePostStudentTasks = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentTasks>>, TError,{data: PostStudentTasksBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentTasks>>,
+        TError,
+        {data: PostStudentTasksBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentTasksMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Update a task
+ */
+export const patchStudentTasksId = (
+    id: string,
+    patchStudentTasksIdBody: PatchStudentTasksIdBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/tasks/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchStudentTasksIdBody
+    },
+      options);
+    }
+  
+
+
+export const getPatchStudentTasksIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentTasksId>>, TError,{id: string;data: PatchStudentTasksIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchStudentTasksId>>, TError,{id: string;data: PatchStudentTasksIdBody}, TContext> => {
+
+const mutationKey = ['patchStudentTasksId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchStudentTasksId>>, {id: string;data: PatchStudentTasksIdBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchStudentTasksId(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchStudentTasksIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchStudentTasksId>>>
+    export type PatchStudentTasksIdMutationBody = PatchStudentTasksIdBody
+    export type PatchStudentTasksIdMutationError = unknown
+
+    /**
+ * @summary Update a task
+ */
+export const usePatchStudentTasksId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchStudentTasksId>>, TError,{id: string;data: PatchStudentTasksIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchStudentTasksId>>,
+        TError,
+        {id: string;data: PatchStudentTasksIdBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchStudentTasksIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Delete a task
+ */
+export const deleteStudentTasksId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/tasks/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteStudentTasksIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentTasksId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudentTasksId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteStudentTasksId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudentTasksId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStudentTasksId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudentTasksIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudentTasksId>>>
+    
+    export type DeleteStudentTasksIdMutationError = unknown
+
+    /**
+ * @summary Delete a task
+ */
+export const useDeleteStudentTasksId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentTasksId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudentTasksId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteStudentTasksIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Complete study tasks for a specific lecture and activity
+ */
+export const postStudentTasksCompleteStudy = (
+    postStudentTasksCompleteStudyBody: PostStudentTasksCompleteStudyBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/tasks/complete-study`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentTasksCompleteStudyBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentTasksCompleteStudyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>, TError,{data: PostStudentTasksCompleteStudyBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>, TError,{data: PostStudentTasksCompleteStudyBody}, TContext> => {
+
+const mutationKey = ['postStudentTasksCompleteStudy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>, {data: PostStudentTasksCompleteStudyBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postStudentTasksCompleteStudy(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentTasksCompleteStudyMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>>
+    export type PostStudentTasksCompleteStudyMutationBody = PostStudentTasksCompleteStudyBody
+    export type PostStudentTasksCompleteStudyMutationError = unknown
+
+    /**
+ * @summary Complete study tasks for a specific lecture and activity
+ */
+export const usePostStudentTasksCompleteStudy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>, TError,{data: PostStudentTasksCompleteStudyBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentTasksCompleteStudy>>,
+        TError,
+        {data: PostStudentTasksCompleteStudyBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentTasksCompleteStudyMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Get due reviewable items for the student
+ */
+export const getStudentReviewablesDue = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/reviewables/due`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentReviewablesDueQueryKey = () => {
+    return [
+    `/student/reviewables/due`
+    ] as const;
+    }
+
+    
+export const getGetStudentReviewablesDueQueryOptions = <TData = Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentReviewablesDueQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentReviewablesDue>>> = ({ signal }) => getStudentReviewablesDue(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentReviewablesDueQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentReviewablesDue>>>
+export type GetStudentReviewablesDueQueryError = unknown
+
+
+export function useGetStudentReviewablesDue<TData = Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentReviewablesDue>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentReviewablesDue>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentReviewablesDue<TData = Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentReviewablesDue>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentReviewablesDue>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentReviewablesDue<TData = Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get due reviewable items for the student
+ */
+
+export function useGetStudentReviewablesDue<TData = Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentReviewablesDue>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentReviewablesDueQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Sync reviewable items from mobile offline queue
+ */
+export const postStudentReviewablesSync = (
+    postStudentReviewablesSyncBody: PostStudentReviewablesSyncBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/reviewables/sync`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentReviewablesSyncBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentReviewablesSyncMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentReviewablesSync>>, TError,{data: PostStudentReviewablesSyncBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentReviewablesSync>>, TError,{data: PostStudentReviewablesSyncBody}, TContext> => {
+
+const mutationKey = ['postStudentReviewablesSync'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentReviewablesSync>>, {data: PostStudentReviewablesSyncBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postStudentReviewablesSync(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentReviewablesSyncMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentReviewablesSync>>>
+    export type PostStudentReviewablesSyncMutationBody = PostStudentReviewablesSyncBody
+    export type PostStudentReviewablesSyncMutationError = unknown
+
+    /**
+ * @summary Sync reviewable items from mobile offline queue
+ */
+export const usePostStudentReviewablesSync = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentReviewablesSync>>, TError,{data: PostStudentReviewablesSyncBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentReviewablesSync>>,
+        TError,
+        {data: PostStudentReviewablesSyncBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentReviewablesSyncMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

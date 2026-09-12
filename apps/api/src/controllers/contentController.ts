@@ -18,6 +18,28 @@ export class ContentController {
     }
   };
 
+  getContentHierarchy = async (_req: Request, res: Response) => {
+    try {
+      const hierarchy = await this.contentService.getContentHierarchy();
+      res.json(hierarchy);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  getLectureDetails = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const lecture = await this.contentService.getLectureDetails(id);
+      if (!lecture) {
+        return res.status(404).json({ error: 'Lecture not found' });
+      }
+      res.json(lecture);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
   getLectureVideos = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

@@ -25,6 +25,131 @@
       }
     },
     "schemas": {
+      "StructuredSubject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "moduleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lectures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lecture"
+            }
+          }
+        }
+      },
+      "StructuredModule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "termId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StructuredSubject"
+            }
+          }
+        }
+      },
+      "StructuredTerm": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gradeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StructuredModule"
+            }
+          }
+        }
+      },
+      "StructuredGrade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StructuredTerm"
+            }
+          }
+        }
+      },
       "Grade": {
         "type": "object",
         "properties": {
@@ -150,6 +275,63 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "LectureDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "lectureVideos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LectureVideo"
+            }
+          },
+          "lectureFiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LectureFile"
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
           }
         }
       },
@@ -448,6 +630,38 @@
             }
           }
         }
+      },
+      "Zekr": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "transliteration": {
+            "type": "string"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "defaultCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   },
@@ -645,6 +859,48 @@
         }
       }
     },
+    "/student/questions/unsolved": {
+      "get": {
+        "summary": "Get unsolved questions for a lecture",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lectureId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsolved questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Question"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/student/flags": {
       "post": {
         "summary": "Flag a question",
@@ -764,6 +1020,644 @@
         }
       }
     },
+    "/student/cases": {
+      "get": {
+        "summary": "Get all cases for the student",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cases"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a case",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lectureId",
+                  "category",
+                  "title",
+                  "content"
+                ],
+                "properties": {
+                  "lectureId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "case",
+                      "disease",
+                      "drug"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Case created"
+          }
+        }
+      }
+    },
+    "/student/cases/{id}": {
+      "patch": {
+        "summary": "Update a case",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "case",
+                      "disease",
+                      "drug"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Case updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a case",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case deleted"
+          }
+        }
+      }
+    },
+    "/student/notes": {
+      "get": {
+        "summary": "Get all notes for the student",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notes"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a note",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lectureId",
+                  "type",
+                  "content"
+                ],
+                "properties": {
+                  "lectureId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "note",
+                      "recurring_question"
+                    ]
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "sourceQuestionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note created"
+          }
+        }
+      }
+    },
+    "/student/notes/{id}": {
+      "patch": {
+        "summary": "Update a note",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "note",
+                      "recurring_question"
+                    ]
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "sourceQuestionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a note",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note deleted"
+          }
+        }
+      }
+    },
+    "/student/tasks": {
+      "get": {
+        "summary": "Get all tasks for the student",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tasks"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a task",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "taskType",
+                  "status"
+                ],
+                "properties": {
+                  "taskType": {
+                    "type": "string",
+                    "enum": [
+                      "zekr",
+                      "wird"
+                    ]
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "consumedTime": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "estimatedTime": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "in_progress",
+                      "done",
+                      "missed"
+                    ]
+                  },
+                  "achievedFrom": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "zekrTask": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "wirdTask": {
+                    "type": "object",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created"
+          }
+        }
+      }
+    },
+    "/student/tasks/{id}": {
+      "patch": {
+        "summary": "Update a task",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "taskType": {
+                    "type": "string",
+                    "enum": [
+                      "zekr",
+                      "wird"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "in_progress",
+                      "done",
+                      "missed"
+                    ]
+                  },
+                  "zekrTask": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "wirdTask": {
+                    "type": "object",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a task",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted"
+          }
+        }
+      }
+    },
+    "/student/tasks/complete-study": {
+      "post": {
+        "summary": "Complete study tasks for a specific lecture and activity",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lectureId": {
+                    "type": "string"
+                  },
+                  "activityType": {
+                    "type": "string",
+                    "enum": [
+                      "watch",
+                      "solve",
+                      "revision"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Study tasks completed"
+          }
+        }
+      }
+    },
+    "/student/reviewables/due": {
+      "get": {
+        "summary": "Get due reviewable items for the student",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of due reviewable items"
+          }
+        }
+      }
+    },
+    "/student/reviewables/sync": {
+      "post": {
+        "summary": "Sync reviewable items from mobile offline queue",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync results"
+          }
+        }
+      }
+    },
     "/content/sync": {
       "get": {
         "summary": "Sync content for offline use",
@@ -859,6 +1753,79 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/content/hierarchy": {
+      "get": {
+        "summary": "Get complete nested content hierarchy",
+        "tags": [
+          "Content"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structured content hierarchy retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StructuredGrade"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/lectures/{id}": {
+      "get": {
+        "summary": "Get lecture details with videos, files, and questions",
+        "tags": [
+          "Content"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lecture details retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LectureDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lecture not found"
           }
         }
       }
@@ -1152,6 +2119,34 @@
             "description": "Grade created"
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of grades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Grade"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/grades/{id}": {
@@ -1201,6 +2196,38 @@
             "description": "Grade updated"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grade deleted"
+          },
+          "409": {
+            "description": "Cannot delete grade with dependencies"
+          }
+        }
       }
     },
     "/admin/terms": {
@@ -1245,6 +2272,44 @@
         "responses": {
           "200": {
             "description": "Term created"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "gradeId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of terms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Term"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1299,6 +2364,38 @@
             "description": "Term updated"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term deleted"
+          },
+          "409": {
+            "description": "Cannot delete term with dependencies"
+          }
+        }
       }
     },
     "/admin/modules": {
@@ -1343,6 +2440,44 @@
         "responses": {
           "200": {
             "description": "Module created"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "termId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of modules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Module"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1397,6 +2532,38 @@
             "description": "Module updated"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Module deleted"
+          },
+          "409": {
+            "description": "Cannot delete module with dependencies"
+          }
+        }
       }
     },
     "/admin/subjects": {
@@ -1437,6 +2604,44 @@
         "responses": {
           "200": {
             "description": "Subject created"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "moduleId",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of subjects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Subject"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1486,6 +2691,38 @@
         "responses": {
           "200": {
             "description": "Subject updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subject deleted"
+          },
+          "409": {
+            "description": "Cannot delete subject with dependencies"
           }
         }
       }
@@ -1780,6 +3017,392 @@
         "responses": {
           "200": {
             "description": "Lecture updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lecture deleted"
+          },
+          "409": {
+            "description": "Cannot delete lecture with dependencies"
+          }
+        }
+      }
+    },
+    "/admin/lectures/{id}/videos": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sourceName",
+                  "url"
+                ],
+                "properties": {
+                  "sourceName": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "default": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Video added to lecture"
+          }
+        }
+      }
+    },
+    "/admin/lectures/{id}/files": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sourceName",
+                  "fileUrl",
+                  "fileType"
+                ],
+                "properties": {
+                  "sourceName": {
+                    "type": "string"
+                  },
+                  "fileUrl": {
+                    "type": "string"
+                  },
+                  "fileType": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File or audio added to lecture"
+          }
+        }
+      }
+    },
+    "/admin/profile": {
+      "get": {
+        "summary": "Get admin profile",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "role": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update admin profile",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated"
+          }
+        }
+      }
+    },
+    "/admin/zekr-catalog": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Zekr items"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "transliteration": {
+                    "type": "string"
+                  },
+                  "meaning": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "defaultCount": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Zekr item created"
+          }
+        }
+      }
+    },
+    "/admin/zekr-catalog/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "transliteration": {
+                    "type": "string"
+                  },
+                  "meaning": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "defaultCount": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Zekr item updated"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zekr item deleted"
           }
         }
       }

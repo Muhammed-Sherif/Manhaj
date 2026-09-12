@@ -26,20 +26,33 @@ import type {
 
 import type {
   GetAdminLecturesParams,
+  GetAdminModulesParams,
+  GetAdminProfile200,
   GetAdminQuestionsParams,
+  GetAdminSubjectsParams,
+  GetAdminTermsParams,
+  Grade,
   Lecture,
+  Module,
   PatchAdminGradesIdBody,
   PatchAdminLecturesIdBody,
   PatchAdminModulesIdBody,
+  PatchAdminProfileBody,
   PatchAdminQuestionsBulkAssignLectureBody,
   PatchAdminSubjectsIdBody,
   PatchAdminTermsIdBody,
+  PatchAdminZekrCatalogIdBody,
   PostAdminGradesBody,
   PostAdminLecturesBody,
+  PostAdminLecturesIdFilesBody,
+  PostAdminLecturesIdVideosBody,
   PostAdminModulesBody,
   PostAdminSubjectsBody,
   PostAdminTermsBody,
-  Question
+  PostAdminZekrCatalogBody,
+  Question,
+  Subject,
+  Term
 } from '.././model';
 
 import { customAxios } from '.././mutator';
@@ -111,7 +124,93 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const patchAdminGradesId = (
+    export const getAdminGrades = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Grade[]>(
+      {url: `/admin/grades`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminGradesQueryKey = () => {
+    return [
+    `/admin/grades`
+    ] as const;
+    }
+
+    
+export const getGetAdminGradesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminGrades>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminGradesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminGrades>>> = ({ signal }) => getAdminGrades(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminGradesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminGrades>>>
+export type GetAdminGradesQueryError = unknown
+
+
+export function useGetAdminGrades<TData = Awaited<ReturnType<typeof getAdminGrades>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminGrades>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminGrades>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminGrades<TData = Awaited<ReturnType<typeof getAdminGrades>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminGrades>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminGrades>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminGrades<TData = Awaited<ReturnType<typeof getAdminGrades>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+
+export function useGetAdminGrades<TData = Awaited<ReturnType<typeof getAdminGrades>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminGrades>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminGradesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const patchAdminGradesId = (
     id: string,
     patchAdminGradesIdBody: PatchAdminGradesIdBody,
  options?: SecondParameter<typeof customAxios>,) => {
@@ -166,6 +265,61 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminGradesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminGradesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/grades/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminGradesIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminGradesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminGradesId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminGradesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminGradesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminGradesId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminGradesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminGradesId>>>
+    
+    export type DeleteAdminGradesIdMutationError = void
+
+    export const useDeleteAdminGradesId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminGradesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminGradesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminGradesIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -227,7 +381,94 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const patchAdminTermsId = (
+    export const getAdminTerms = (
+    params?: GetAdminTermsParams,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Term[]>(
+      {url: `/admin/terms`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminTermsQueryKey = (params?: GetAdminTermsParams,) => {
+    return [
+    `/admin/terms`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAdminTermsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminTerms>>, TError = unknown>(params?: GetAdminTermsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminTermsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminTerms>>> = ({ signal }) => getAdminTerms(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminTermsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminTerms>>>
+export type GetAdminTermsQueryError = unknown
+
+
+export function useGetAdminTerms<TData = Awaited<ReturnType<typeof getAdminTerms>>, TError = unknown>(
+ params: undefined |  GetAdminTermsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminTerms>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminTerms>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminTerms<TData = Awaited<ReturnType<typeof getAdminTerms>>, TError = unknown>(
+ params?: GetAdminTermsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminTerms>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminTerms>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminTerms<TData = Awaited<ReturnType<typeof getAdminTerms>>, TError = unknown>(
+ params?: GetAdminTermsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+
+export function useGetAdminTerms<TData = Awaited<ReturnType<typeof getAdminTerms>>, TError = unknown>(
+ params?: GetAdminTermsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminTerms>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminTermsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const patchAdminTermsId = (
     id: string,
     patchAdminTermsIdBody: PatchAdminTermsIdBody,
  options?: SecondParameter<typeof customAxios>,) => {
@@ -282,6 +523,61 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminTermsIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminTermsId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/terms/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminTermsIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminTermsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminTermsId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminTermsId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminTermsId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminTermsId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminTermsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminTermsId>>>
+    
+    export type DeleteAdminTermsIdMutationError = void
+
+    export const useDeleteAdminTermsId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminTermsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminTermsId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminTermsIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -343,7 +639,94 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const patchAdminModulesId = (
+    export const getAdminModules = (
+    params?: GetAdminModulesParams,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Module[]>(
+      {url: `/admin/modules`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminModulesQueryKey = (params?: GetAdminModulesParams,) => {
+    return [
+    `/admin/modules`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAdminModulesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminModules>>, TError = unknown>(params?: GetAdminModulesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminModulesQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminModules>>> = ({ signal }) => getAdminModules(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminModulesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminModules>>>
+export type GetAdminModulesQueryError = unknown
+
+
+export function useGetAdminModules<TData = Awaited<ReturnType<typeof getAdminModules>>, TError = unknown>(
+ params: undefined |  GetAdminModulesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminModules>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminModules>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminModules<TData = Awaited<ReturnType<typeof getAdminModules>>, TError = unknown>(
+ params?: GetAdminModulesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminModules>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminModules>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminModules<TData = Awaited<ReturnType<typeof getAdminModules>>, TError = unknown>(
+ params?: GetAdminModulesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+
+export function useGetAdminModules<TData = Awaited<ReturnType<typeof getAdminModules>>, TError = unknown>(
+ params?: GetAdminModulesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminModules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminModulesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const patchAdminModulesId = (
     id: string,
     patchAdminModulesIdBody: PatchAdminModulesIdBody,
  options?: SecondParameter<typeof customAxios>,) => {
@@ -398,6 +781,61 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminModulesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminModulesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/modules/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminModulesIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminModulesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminModulesId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminModulesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminModulesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminModulesId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminModulesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminModulesId>>>
+    
+    export type DeleteAdminModulesIdMutationError = void
+
+    export const useDeleteAdminModulesId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminModulesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminModulesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminModulesIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -459,7 +897,94 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const patchAdminSubjectsId = (
+    export const getAdminSubjects = (
+    params?: GetAdminSubjectsParams,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Subject[]>(
+      {url: `/admin/subjects`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminSubjectsQueryKey = (params?: GetAdminSubjectsParams,) => {
+    return [
+    `/admin/subjects`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetAdminSubjectsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSubjects>>, TError = unknown>(params?: GetAdminSubjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminSubjectsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminSubjects>>> = ({ signal }) => getAdminSubjects(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminSubjectsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSubjects>>>
+export type GetAdminSubjectsQueryError = unknown
+
+
+export function useGetAdminSubjects<TData = Awaited<ReturnType<typeof getAdminSubjects>>, TError = unknown>(
+ params: undefined |  GetAdminSubjectsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSubjects>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSubjects>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminSubjects<TData = Awaited<ReturnType<typeof getAdminSubjects>>, TError = unknown>(
+ params?: GetAdminSubjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSubjects>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSubjects>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminSubjects<TData = Awaited<ReturnType<typeof getAdminSubjects>>, TError = unknown>(
+ params?: GetAdminSubjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+
+export function useGetAdminSubjects<TData = Awaited<ReturnType<typeof getAdminSubjects>>, TError = unknown>(
+ params?: GetAdminSubjectsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSubjects>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminSubjectsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const patchAdminSubjectsId = (
     id: string,
     patchAdminSubjectsIdBody: PatchAdminSubjectsIdBody,
  options?: SecondParameter<typeof customAxios>,) => {
@@ -514,6 +1039,61 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminSubjectsIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminSubjectsId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/subjects/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminSubjectsIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminSubjectsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminSubjectsId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminSubjectsId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminSubjectsId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminSubjectsId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminSubjectsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminSubjectsId>>>
+    
+    export type DeleteAdminSubjectsIdMutationError = void
+
+    export const useDeleteAdminSubjectsId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminSubjectsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminSubjectsId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminSubjectsIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -974,6 +1554,591 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminLecturesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminLecturesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/lectures/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminLecturesIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminLecturesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminLecturesId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminLecturesId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminLecturesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminLecturesId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminLecturesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminLecturesId>>>
+    
+    export type DeleteAdminLecturesIdMutationError = void
+
+    export const useDeleteAdminLecturesId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminLecturesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminLecturesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminLecturesIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const postAdminLecturesIdVideos = (
+    id: string,
+    postAdminLecturesIdVideosBody: PostAdminLecturesIdVideosBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/lectures/${id}/videos`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postAdminLecturesIdVideosBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAdminLecturesIdVideosMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdVideos>>, TError,{id: string;data: PostAdminLecturesIdVideosBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdVideos>>, TError,{id: string;data: PostAdminLecturesIdVideosBody}, TContext> => {
+
+const mutationKey = ['postAdminLecturesIdVideos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminLecturesIdVideos>>, {id: string;data: PostAdminLecturesIdVideosBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postAdminLecturesIdVideos(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAdminLecturesIdVideosMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminLecturesIdVideos>>>
+    export type PostAdminLecturesIdVideosMutationBody = PostAdminLecturesIdVideosBody
+    export type PostAdminLecturesIdVideosMutationError = unknown
+
+    export const usePostAdminLecturesIdVideos = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdVideos>>, TError,{id: string;data: PostAdminLecturesIdVideosBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postAdminLecturesIdVideos>>,
+        TError,
+        {id: string;data: PostAdminLecturesIdVideosBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAdminLecturesIdVideosMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const postAdminLecturesIdFiles = (
+    id: string,
+    postAdminLecturesIdFilesBody: PostAdminLecturesIdFilesBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/lectures/${id}/files`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postAdminLecturesIdFilesBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAdminLecturesIdFilesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdFiles>>, TError,{id: string;data: PostAdminLecturesIdFilesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdFiles>>, TError,{id: string;data: PostAdminLecturesIdFilesBody}, TContext> => {
+
+const mutationKey = ['postAdminLecturesIdFiles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminLecturesIdFiles>>, {id: string;data: PostAdminLecturesIdFilesBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postAdminLecturesIdFiles(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAdminLecturesIdFilesMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminLecturesIdFiles>>>
+    export type PostAdminLecturesIdFilesMutationBody = PostAdminLecturesIdFilesBody
+    export type PostAdminLecturesIdFilesMutationError = unknown
+
+    export const usePostAdminLecturesIdFiles = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminLecturesIdFiles>>, TError,{id: string;data: PostAdminLecturesIdFilesBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postAdminLecturesIdFiles>>,
+        TError,
+        {id: string;data: PostAdminLecturesIdFilesBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAdminLecturesIdFilesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Get admin profile
+ */
+export const getAdminProfile = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<GetAdminProfile200>(
+      {url: `/admin/profile`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminProfileQueryKey = () => {
+    return [
+    `/admin/profile`
+    ] as const;
+    }
+
+    
+export const getGetAdminProfileQueryOptions = <TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminProfileQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminProfile>>> = ({ signal }) => getAdminProfile(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminProfile>>>
+export type GetAdminProfileQueryError = unknown
+
+
+export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get admin profile
+ */
+
+export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Update admin profile
+ */
+export const patchAdminProfile = (
+    patchAdminProfileBody: PatchAdminProfileBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/profile`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchAdminProfileBody
+    },
+      options);
+    }
+  
+
+
+export const getPatchAdminProfileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminProfile>>, TError,{data: PatchAdminProfileBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchAdminProfile>>, TError,{data: PatchAdminProfileBody}, TContext> => {
+
+const mutationKey = ['patchAdminProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchAdminProfile>>, {data: PatchAdminProfileBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchAdminProfile(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchAdminProfileMutationResult = NonNullable<Awaited<ReturnType<typeof patchAdminProfile>>>
+    export type PatchAdminProfileMutationBody = PatchAdminProfileBody
+    export type PatchAdminProfileMutationError = unknown
+
+    /**
+ * @summary Update admin profile
+ */
+export const usePatchAdminProfile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminProfile>>, TError,{data: PatchAdminProfileBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchAdminProfile>>,
+        TError,
+        {data: PatchAdminProfileBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchAdminProfileMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const getAdminZekrCatalog = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/zekr-catalog`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetAdminZekrCatalogQueryKey = () => {
+    return [
+    `/admin/zekr-catalog`
+    ] as const;
+    }
+
+    
+export const getGetAdminZekrCatalogQueryOptions = <TData = Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminZekrCatalogQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminZekrCatalog>>> = ({ signal }) => getAdminZekrCatalog(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetAdminZekrCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminZekrCatalog>>>
+export type GetAdminZekrCatalogQueryError = unknown
+
+
+export function useGetAdminZekrCatalog<TData = Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminZekrCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminZekrCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminZekrCatalog<TData = Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminZekrCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminZekrCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetAdminZekrCatalog<TData = Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+
+export function useGetAdminZekrCatalog<TData = Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetAdminZekrCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const postAdminZekrCatalog = (
+    postAdminZekrCatalogBody: PostAdminZekrCatalogBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/zekr-catalog`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postAdminZekrCatalogBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAdminZekrCatalogMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminZekrCatalog>>, TError,{data: PostAdminZekrCatalogBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminZekrCatalog>>, TError,{data: PostAdminZekrCatalogBody}, TContext> => {
+
+const mutationKey = ['postAdminZekrCatalog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminZekrCatalog>>, {data: PostAdminZekrCatalogBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAdminZekrCatalog(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAdminZekrCatalogMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminZekrCatalog>>>
+    export type PostAdminZekrCatalogMutationBody = PostAdminZekrCatalogBody
+    export type PostAdminZekrCatalogMutationError = unknown
+
+    export const usePostAdminZekrCatalog = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminZekrCatalog>>, TError,{data: PostAdminZekrCatalogBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postAdminZekrCatalog>>,
+        TError,
+        {data: PostAdminZekrCatalogBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAdminZekrCatalogMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const patchAdminZekrCatalogId = (
+    id: string,
+    patchAdminZekrCatalogIdBody: PatchAdminZekrCatalogIdBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/zekr-catalog/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchAdminZekrCatalogIdBody
+    },
+      options);
+    }
+  
+
+
+export const getPatchAdminZekrCatalogIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminZekrCatalogId>>, TError,{id: string;data: PatchAdminZekrCatalogIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchAdminZekrCatalogId>>, TError,{id: string;data: PatchAdminZekrCatalogIdBody}, TContext> => {
+
+const mutationKey = ['patchAdminZekrCatalogId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchAdminZekrCatalogId>>, {id: string;data: PatchAdminZekrCatalogIdBody}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchAdminZekrCatalogId(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchAdminZekrCatalogIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAdminZekrCatalogId>>>
+    export type PatchAdminZekrCatalogIdMutationBody = PatchAdminZekrCatalogIdBody
+    export type PatchAdminZekrCatalogIdMutationError = unknown
+
+    export const usePatchAdminZekrCatalogId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminZekrCatalogId>>, TError,{id: string;data: PatchAdminZekrCatalogIdBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchAdminZekrCatalogId>>,
+        TError,
+        {id: string;data: PatchAdminZekrCatalogIdBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchAdminZekrCatalogIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const deleteAdminZekrCatalogId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/zekr-catalog/${id}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteAdminZekrCatalogIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteAdminZekrCatalogId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminZekrCatalogId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminZekrCatalogIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>>
+    
+    export type DeleteAdminZekrCatalogIdMutationError = unknown
+
+    export const useDeleteAdminZekrCatalogId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminZekrCatalogId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteAdminZekrCatalogIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

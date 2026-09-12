@@ -26,6 +26,42 @@ export class ContentService {
     return content;
   }
 
+  async getContentHierarchy() {
+    return db.query.grades.findMany({
+      with: {
+        terms: {
+          with: {
+            modules: {
+              with: {
+                subjects: {
+                  with: {
+                    lectures: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async getLectureDetails(lectureId: string) {
+    return db.query.lectures.findFirst({
+      where: eq(lectures.id, lectureId),
+      with: {
+        subject: true,
+        lectureVideos: true,
+        lectureFiles: true,
+        questions: {
+          with: {
+            choices: true,
+          },
+        },
+      },
+    });
+  }
+
   async getLectureVideos(lectureId: string) {
     return db.query.lectureVideos.findMany({
       where: eq(lectureVideos.lectureId, lectureId),

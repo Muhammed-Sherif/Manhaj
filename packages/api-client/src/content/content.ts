@@ -27,8 +27,10 @@ import type {
 import type {
   GetContentSync200,
   GetContentSyncParams,
+  LectureDetails,
   LectureVideo,
   PostContentVideoProgressBody,
+  StructuredGrade,
   VideoProgress
 } from '.././model';
 
@@ -125,6 +127,190 @@ export function useGetContentSync<TData = Awaited<ReturnType<typeof getContentSy
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
   const queryOptions = getGetContentSyncQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Get complete nested content hierarchy
+ */
+export const getContentHierarchy = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<StructuredGrade[]>(
+      {url: `/content/hierarchy`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetContentHierarchyQueryKey = () => {
+    return [
+    `/content/hierarchy`
+    ] as const;
+    }
+
+    
+export const getGetContentHierarchyQueryOptions = <TData = Awaited<ReturnType<typeof getContentHierarchy>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetContentHierarchyQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentHierarchy>>> = ({ signal }) => getContentHierarchy(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetContentHierarchyQueryResult = NonNullable<Awaited<ReturnType<typeof getContentHierarchy>>>
+export type GetContentHierarchyQueryError = unknown
+
+
+export function useGetContentHierarchy<TData = Awaited<ReturnType<typeof getContentHierarchy>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getContentHierarchy>>,
+          TError,
+          Awaited<ReturnType<typeof getContentHierarchy>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetContentHierarchy<TData = Awaited<ReturnType<typeof getContentHierarchy>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getContentHierarchy>>,
+          TError,
+          Awaited<ReturnType<typeof getContentHierarchy>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetContentHierarchy<TData = Awaited<ReturnType<typeof getContentHierarchy>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get complete nested content hierarchy
+ */
+
+export function useGetContentHierarchy<TData = Awaited<ReturnType<typeof getContentHierarchy>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentHierarchy>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetContentHierarchyQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Get lecture details with videos, files, and questions
+ */
+export const getContentLecturesId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<LectureDetails>(
+      {url: `/content/lectures/${id}`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetContentLecturesIdQueryKey = (id?: string,) => {
+    return [
+    `/content/lectures/${id}`
+    ] as const;
+    }
+
+    
+export const getGetContentLecturesIdQueryOptions = <TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetContentLecturesIdQueryKey(id);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentLecturesId>>> = ({ signal }) => getContentLecturesId(id, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetContentLecturesIdQueryResult = NonNullable<Awaited<ReturnType<typeof getContentLecturesId>>>
+export type GetContentLecturesIdQueryError = void
+
+
+export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getContentLecturesId>>,
+          TError,
+          Awaited<ReturnType<typeof getContentLecturesId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getContentLecturesId>>,
+          TError,
+          Awaited<ReturnType<typeof getContentLecturesId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get lecture details with videos, files, and questions
+ */
+
+export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetContentLecturesIdQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 

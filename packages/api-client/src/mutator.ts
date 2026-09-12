@@ -1,6 +1,9 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 
+declare const process: any;
+declare const require: any;
+
 const getBaseURL = (): string => {
   try {
     const viteUrl = (import.meta as any)?.env?.VITE_API_URL;
@@ -19,7 +22,7 @@ const getBaseURL = (): string => {
 };
 
 // Configure axios with base URL from environment variable
-const apiClient = axios.create({
+export const apiClient = axios.create({
   baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',

@@ -1,14 +1,15 @@
-import { Pencil, Plus, X } from 'lucide-react';
+import { Pencil, Plus, X, Trash2 } from 'lucide-react';
 import { useGetContentSync } from '@manhaj/api-client/src/content/content';
-import { usePostAdminGrades, usePostAdminTerms, usePostAdminModules, usePostAdminSubjects, usePatchAdminGradesId, usePatchAdminTermsId, usePatchAdminModulesId, usePatchAdminSubjectsId } from '@manhaj/api-client/src/admin/admin';
+import { usePostAdminGrades, usePostAdminTerms, usePostAdminModules, usePostAdminSubjects, usePatchAdminGradesId, usePatchAdminTermsId, usePatchAdminModulesId, usePatchAdminSubjectsId, useDeleteAdminQuestionsId, useDeleteAdminGradesId, useDeleteAdminTermsId, useDeleteAdminModulesId, useDeleteAdminSubjectsId, useDeleteAdminLecturesId } from '@manhaj/api-client/src/admin/admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { Page } from './types';
 import { Heading } from './Heading';
 import { useState } from 'react';
+import { toast } from '@/components/ui/sonner';
 
-export function EntityPage({ type, notify }: { type: Page; notify: (message: string) => void }) {
+export function EntityPage({ type }: { type: Page }) {
   const title = type[0].toUpperCase() + type.slice(1);
   const query = useGetContentSync();
   const key = type === 'grades' ? 'grades' : type === 'terms' ? 'terms' : type === 'modules' ? 'modules' : type === 'subjects' ? 'subjects' : null;
@@ -29,6 +30,13 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
   const updateTermsMutation = usePatchAdminTermsId();
   const updateModulesMutation = usePatchAdminModulesId();
   const updateSubjectsMutation = usePatchAdminSubjectsId();
+  
+  const deleteQuestionsMutation = useDeleteAdminQuestionsId();
+  const deleteGradesMutation = useDeleteAdminGradesId();
+  const deleteTermsMutation = useDeleteAdminTermsId();
+  const deleteModulesMutation = useDeleteAdminModulesId();
+  const deleteSubjectsMutation = useDeleteAdminSubjectsId();
+  const deleteLecturesMutation = useDeleteAdminLecturesId();
 
   const getMutation = () => {
     switch (type) {
@@ -50,12 +58,24 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
     }
   };
 
+  const getDeleteMutation = () => {
+    switch (type) {
+      case 'grades': return deleteGradesMutation;
+      case 'terms': return deleteTermsMutation;
+      case 'modules': return deleteModulesMutation;
+      case 'subjects': return deleteSubjectsMutation;
+      case 'lectures': return deleteLecturesMutation;
+      case 'questions': return deleteQuestionsMutation;
+      default: return null;
+    }
+  };
+
   const mutation = getMutation();
   const updateMutation = getUpdateMutation();
 
   const handleAddClick = () => {
     if (!key) {
-      notify('User management requires an admin API endpoint');
+      toast.info('User management requires an admin API endpoint');
       return;
     }
     setFormData({});
@@ -78,6 +98,25 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
     setIsDialogOpen(true);
   };
 
+  const handleDeleteClick = async (item: { id?: string; name?: string }) => {
+    if (!item.id) return;
+    if (!confirm(`Are you sure you want to delete "${item.name || item.id}"?`)) return;
+    
+    try {
+      const deleteMutation = getDeleteMutation();
+      if (!deleteMutation) {
+        toast.info('Delete functionality not yet implemented for this entity type');
+        return;
+      }
+      
+      await deleteMutation.mutateAsync({ id: item.id });
+      toast.success(`${title.slice(0, -1)} deleted successfully`);
+      query.refetch();
+    } catch (error) {
+      toast.error(`Failed to delete ${title.slice(0, -1)}`);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -98,7 +137,7 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
             await updateSubjectsMutation.mutateAsync({ id: editingItemId, data: { moduleId: formData.moduleId, name: formData.name } });
             break;
         }
-        notify(`${title.slice(0, -1)} updated successfully`);
+        toast.success(`${title.slice(0, -1)} updated successfully`);
       } else {
         // Create new item
         switch (type) {
@@ -115,16 +154,17 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
             await subjectsMutation.mutateAsync({ data: { moduleId: formData.moduleId, name: formData.name } });
             break;
         }
-        notify(`${title.slice(0, -1)} created successfully`);
+        toast.success(`${title.slice(0, -1)} created successfully`);
       }
       setIsDialogOpen(false);
       setIsEditMode(false);
       setEditingItemId(null);
       query.refetch();
     } catch (error) {
-      notify(`Failed to ${isEditMode ? 'update' : 'create'} ${title.slice(0, -1)}`);
+      toast.error(`Failed to ${isEditMode ? 'update' : 'create'} ${title.slice(0, -1)}`);
     }
   };
+
 
   const renderFormFields = () => {
     switch (type) {
@@ -146,8 +186,23 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
           <>
             {!isEditMode && (
               <div>
-                <label className="block text-sm font-medium mb-1">Grade ID</label>
-                <Input value={formData.gradeId || ''} onChange={(e) => setFormData({ ...formData, gradeId: e.target.value })} placeholder="Grade ID" required />
+                <label className="block text-sm font-medium mb-1">Grade</label>
+                <select 
+                  value={formData.gradeId || ''} 
+                  onChange={(e) => setFormData({ ...formData, gradeId: e.target.value })} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a grade</option>
+                  {(query.data?.data as Record<string, unknown[]> | undefined)?.grades?.map((gradeItem: unknown) => {
+                    const grade = gradeItem as { id?: string; name?: string };
+                    return (
+                      <option key={grade.id || ''} value={grade.id || ''}>
+                        {grade.name}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
             <div>
@@ -165,8 +220,23 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
           <>
             {!isEditMode && (
               <div>
-                <label className="block text-sm font-medium mb-1">Term ID</label>
-                <Input value={formData.termId || ''} onChange={(e) => setFormData({ ...formData, termId: e.target.value })} placeholder="Term ID" required />
+                <label className="block text-sm font-medium mb-1">Term</label>
+                <select 
+                  value={formData.termId || ''} 
+                  onChange={(e) => setFormData({ ...formData, termId: e.target.value })} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a term</option>
+                  {(query.data?.data as Record<string, unknown[]> | undefined)?.terms?.map((termItem: unknown) => {
+                    const term = termItem as { id?: string; name?: string };
+                    return (
+                      <option key={term.id || ''} value={term.id || ''}>
+                        {term.name}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
             <div>
@@ -184,8 +254,23 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
           <>
             {!isEditMode && (
               <div>
-                <label className="block text-sm font-medium mb-1">Module ID</label>
-                <Input value={formData.moduleId || ''} onChange={(e) => setFormData({ ...formData, moduleId: e.target.value })} placeholder="Module ID" required />
+                <label className="block text-sm font-medium mb-1">Module</label>
+                <select 
+                  value={formData.moduleId || ''} 
+                  onChange={(e) => setFormData({ ...formData, moduleId: e.target.value })} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select a module</option>
+                  {(query.data?.data as Record<string, unknown[]> | undefined)?.modules?.map((moduleItem: unknown) => {
+                    const mod = moduleItem as { id?: string; name?: string };
+                    return (
+                      <option key={mod.id || ''} value={mod.id || ''}>
+                        {mod.name}
+                      </option>
+                    );
+                  })}
+                </select>
               </div>
             )}
             <div>
@@ -229,6 +314,11 @@ export function EntityPage({ type, notify }: { type: Page; notify: (message: str
                   <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
                     <Pencil size={15} />
                   </Button>
+                  {(type === 'grades' || type === 'terms' || type === 'modules' || type === 'subjects' || type === 'lectures' || type === 'questions') && (
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                      <Trash2 size={15} />
+                    </Button>
+                  )}
                 </div>
               );
             })}

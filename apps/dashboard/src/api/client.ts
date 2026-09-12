@@ -2,6 +2,7 @@ import axios from 'axios';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('manhaj_access_token');

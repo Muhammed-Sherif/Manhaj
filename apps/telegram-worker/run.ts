@@ -72,24 +72,26 @@ async function getLastProcessedMessageId(): Promise<number | null> {
   return result[0]?.maxId || backfillFromId || null;
 }
 
-// Voting function disabled due to API compatibility issues
-// async function voteOnPoll(client: TelegramClient, channel: any, messageId: number, pollId: string) {
-//   try {
-//     // Vote on the first option to reveal correct answer
-//     await client.invoke(
-//       new Api.messages.SendVote({
-//         peer: channel,
-//         msgId: messageId,
-//         answers: [Buffer.from([0])],
-//       })
-//     );
-//     console.log(`🗳️  Voted on poll (message ${messageId}) to reveal correct answer`);
-//     stats.pollsVotedOn = stats.pollsVotedOn + 1;
-//   } catch (error) {
-//     console.error(`Failed to vote on poll (message ${messageId}):`, error);
-//     stats.errors.push(`Vote failed for message ${messageId}: ${error}`);
-//   }
-// }
+async function voteOnPoll(client: TelegramClient, channel: any, messageId: number, pollId: string) {
+  try {
+    // Vote on the first option (index 0) to reveal correct answer
+    // In MTProto, the parameter is 'options' and takes a vector of bytes representing the option
+    const result = await client.invoke(
+      new Api.messages.SendVote({
+        peer: channel,
+        msgId: messageId,
+        options: [Buffer.from('0')],
+      })
+    );
+    console.log(`🗳️  Voted on poll (message ${messageId}) to reveal correct answer`);
+    stats.pollsVotedOn = stats.pollsVotedOn + 1;
+    return result;
+  } catch (error) {
+    console.error(`Failed to vote on poll (message ${messageId}):`, error);
+    stats.errors.push(`Vote failed for message ${messageId}: ${error}`);
+    return null;
+  }
+}
 
 async function insertQuestion(
   poll: any,
@@ -201,7 +203,7 @@ async function processMessage(message: any, channel: any): Promise<void> {
   // Handle poll messages
   if (message.poll) {
     const mediaPoll = message.poll;
-    const poll = mediaPoll.poll || mediaPoll; // Handle nested structure
+    let poll = mediaPoll.poll || mediaPoll; // Handle nested structure
 
     // Extract question text from TextWithEntities object
     const questionText = poll.question?.text || poll.question;
@@ -214,10 +216,30 @@ async function processMessage(message: any, channel: any): Promise<void> {
     }
 
     // Check if correct answer is visible
-    const hasCorrectAnswer = poll.results?.correctAnswers && poll.results.correctAnswers.length > 0;
+    let hasCorrectAnswer = poll.results?.correctAnswers && poll.results.correctAnswers.length > 0;
 
-    // Skip voting due to API compatibility issues
-    // Polls will be inserted without correct answers for now
+    // If correct answer is hidden and it's a quiz, we must vote to reveal it
+    if (!hasCorrectAnswer && poll.quiz) {
+      await voteOnPoll(client, channel, message.id, poll.id.toString());
+      
+      // Fetch the updated message to get the poll results
+      const updatedMessages: any = await client.invoke(
+        new Api.messages.GetHistory({
+          peer: channel,
+          offsetId: message.id + 1,
+          limit: 1,
+          reverse: true,
+        })
+      );
+
+      if (updatedMessages && updatedMessages.messages && updatedMessages.messages.length > 0) {
+        const updatedMessage = updatedMessages.messages[0];
+        if (updatedMessage.id === message.id && updatedMessage.poll) {
+          poll = updatedMessage.poll.poll || updatedMessage.poll;
+          hasCorrectAnswer = poll.results?.correctAnswers && poll.results.correctAnswers.length > 0;
+        }
+      }
+    }
 
     // Insert poll question (will skip if already exists)
     await insertQuestion({ ...poll, question: questionText }, message.id);

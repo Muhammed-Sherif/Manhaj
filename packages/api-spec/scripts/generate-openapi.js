@@ -30,6 +30,64 @@ const options = {
         },
       },
       schemas: {
+        StructuredSubject: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            moduleId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            lectures: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Lecture' },
+            },
+          },
+        },
+        StructuredModule: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            termId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            subjects: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/StructuredSubject' },
+            },
+          },
+        },
+        StructuredTerm: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            gradeId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            modules: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/StructuredModule' },
+            },
+          },
+        },
+        StructuredGrade: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            terms: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/StructuredTerm' },
+            },
+          },
+        },
         Grade: {
           type: 'object',
           properties: {
@@ -81,6 +139,36 @@ const options = {
             description: { type: 'string' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        LectureDetails: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            subjectId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            subject: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                name: { type: 'string' },
+              },
+            },
+            lectureVideos: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/LectureVideo' },
+            },
+            lectureFiles: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/LectureFile' },
+            },
+            questions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Question' },
+            },
           },
         },
         Question: {
@@ -208,6 +296,19 @@ const options = {
                 },
               },
             },
+          },
+        },
+        Zekr: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            text: { type: 'string' },
+            transliteration: { type: 'string' },
+            meaning: { type: 'string' },
+            source: { type: 'string' },
+            defaultCount: { type: 'integer' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
       },

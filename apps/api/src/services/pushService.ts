@@ -15,8 +15,8 @@ export const notifyContentUpdated = async (termId: string) => {
     for (let index = 0; index < tokens.length; index += 100) {
         const messages = tokens.slice(index, index + 100).map(({ pushToken }) => ({
             to: pushToken,
-            title: 'New content available',
-            body: 'Your question bank has been updated.',
+            title: 'Content Updated',
+            body: 'Your course content has been updated.',
             data: { type: 'content-updated' },
         }));
 
