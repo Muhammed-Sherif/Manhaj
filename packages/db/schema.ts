@@ -39,6 +39,8 @@ export const lectures = pgTable('lectures', {
   subjectId: uuid('subject_id').notNull().references(() => subjects.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const lectureFiles = pgTable('lecture_files', {
@@ -47,6 +49,8 @@ export const lectureFiles = pgTable('lecture_files', {
   sourceName: text('source_name').notNull(),
   fileUrl: text('file_url').notNull(),
   fileType: text('file_type').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const lectureVideos = pgTable('lecture_videos', {
@@ -55,6 +59,8 @@ export const lectureVideos = pgTable('lecture_videos', {
   sourceName: text('source_name').notNull(),
   url: text('url').notNull(),
   duration: integer('duration').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const videoProgress = pgTable('video_progress', {
@@ -103,6 +109,7 @@ export const questions = pgTable('questions', {
   explanation: text('explanation'), // nullable — written questions often have none
   source: questionSourceEnum('source').notNull(),
   telegramMessageId: integer('telegram_message_id').unique(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
 
@@ -173,18 +180,26 @@ export const reviewItemTypeEnum = pgEnum('review_item_type', [
 // SM-2 grade: 1=Again (forgot), 2=Hard, 3=Good, 4=Easy
 export const reviewGradeEnum = pgEnum('review_grade', ['again', 'hard', 'good', 'easy']);
 
-// Superclass: holds SM-2 scheduling state — one row per user per reviewable item
+// Anki card states: new → learning → review ⇄ relearning
+export const reviewStateEnum = pgEnum('review_state', ['new', 'learning', 'review', 'relearning']);
+
+// Superclass: holds Anki scheduling state — one row per user per reviewable item
 export const reviewItems = pgTable('review_items', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   itemType: reviewItemTypeEnum('item_type').notNull(),
-  // SM-2 algorithm fields
-  interval: integer('interval').notNull().default(1),           // days until next review
+  // Anki scheduler fields
+  state: reviewStateEnum('state').notNull().default('new'),   // new/learning/review/relearning
+  currentStepIndex: integer('current_step_index'),              // index into learning/relearning steps; null when state='review'
+  interval: integer('interval').notNull().default(0),           // days until next review (0 while learning)
   easeFactor: integer('ease_factor').notNull().default(250),    // stored as x100 (250 = 2.5) to avoid floats
   repetitions: integer('repetitions').notNull().default(0),     // consecutive correct answers
+  lapses: integer('lapses').notNull().default(0),               // times forgotten in review state
   nextReviewAt: timestamp('next_review_at').notNull().defaultNow(), // when to show next
   lastReviewedAt: timestamp('last_reviewed_at'),                // null = never reviewed
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),   // for sync
+  deletedAt: timestamp('deleted_at'),                           // for sync (soft delete)
 }, (table) => ({
   // A user can only have one review_item per question/case/etc.
   // Uniqueness is enforced at subclass level via the PK on reviewItemId
@@ -199,20 +214,24 @@ export const questionReviewItems = pgTable('question_review_items', {
 // Subclass: Case — medical case scenario added by student
 export const caseItems = pgTable('case_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
-  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // optional link
+  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
   title: text('title').notNull(),
   scenario: text('scenario').notNull(),    // the clinical presentation story
   diagnosis: text('diagnosis').notNull(),  // the answer / main diagnosis
   management: text('management'),          // treatment plan (optional)
   keyPoints: text('key_points'),           // bullet points to remember
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // Subclass: Note — lecture note added by student
 export const noteItems = pgTable('note_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
-  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // optional link
+  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
   noteText: text('note_text').notNull(),   // the note content (markdown supported)
   isStarred: boolean('is_starred').notNull().default(false), // for quick filtering
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // Subclass: Drug — drug/medication flashcard added by student
@@ -225,6 +244,8 @@ export const drugItems = pgTable('drug_items', {
   contraindications: text('contraindications'),
   sideEffects: text('side_effects'),
   mnemonic: text('mnemonic'),              // memory trick
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 // Subclass: Fact — simple front/back flashcard (Anki-style), most flexible type
@@ -232,27 +253,23 @@ export const factItems = pgTable('fact_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
   front: text('front').notNull(),  // the question / prompt shown to student
   back: text('back').notNull(),    // the answer shown after reveal
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
-// Review log — every review session is recorded for analytics & SM-2 calculation
+// Review log — every review session is recorded for analytics & scheduler history
 export const reviewLogs = pgTable('review_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
   reviewItemId: uuid('review_item_id').notNull().references(() => reviewItems.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   grade: reviewGradeEnum('grade').notNull(),          // student's self-rating
+  stateBefore: reviewStateEnum('state_before').notNull().default('review'), // card state before this review
   intervalBefore: integer('interval_before').notNull(), // interval BEFORE this review
   intervalAfter: integer('interval_after').notNull(),   // interval AFTER this review (new schedule)
   easeFactorAfter: integer('ease_factor_after').notNull(), // new ease factor after update
   reviewedAt: timestamp('reviewed_at').notNull().defaultNow(),
 });
 
-// ── Tasks System ──────────────────────────────────────────────────────────────
-// Offline-first design: IDs are UUID (generated on device), updatedAt on all
-// mutable tables enables last-write-wins sync conflict resolution.
-//
-// Architecture: 8A superclass + subclasses.
-// Wird uses nullable columns within its subclass (simpler — only 4 optional fields,
-// controlled by wirdMode enum — no need for a second level of subclassing).
 
 export const taskTypeEnum = pgEnum('task_type', ['zekr', 'wird', 'work', 'study']);
 export const taskRecurrenceEnum = pgEnum('task_recurrence', ['once', 'daily', 'weekly']);
@@ -281,6 +298,23 @@ export const tasks = pgTable('tasks', {
   return {
     uniqueTaskConstraint: unique('unique_task_recurrence').on(table.userId, table.taskType, table.startTime, table.endTime),
   };
+});
+
+// Quran Chapters (Surahs)
+export const quranChapters = pgTable('quran_chapters', {
+  id: integer('id').primaryKey(), // 1-114
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  versesCount: integer('verses_count').notNull(),
+});
+
+// Quran Verses (Ayat)
+export const quranVerses = pgTable('quran_verses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  chapterId: integer('chapter_id').references(() => quranChapters.id, { onDelete: 'cascade' }).notNull(),
+  ayaNumber: integer('aya_number').notNull(),
+  page: integer('page').notNull(),
+  textAr: text('text_ar').notNull(),
 });
 
 // Zekr Categories — the 132 categories from Hisn al-Muslim
@@ -321,11 +355,12 @@ export const wirdTasks = pgTable('wird_tasks', {
   taskId: uuid('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
   wirdMode: wirdModeEnum('wird_mode').notNull(), // controls which nullable fields are used
   // Used when wirdMode = 'by_ayat'
-  startAya: text('start_aya'),   // e.g. "2:255" (surah:ayah notation)
-  endAya: text('end_aya'),       // e.g. "2:257"
+  startVerseId: uuid('start_verse_id').references(() => quranVerses.id, { onDelete: 'cascade' }),
+  endVerseId: uuid('end_verse_id').references(() => quranVerses.id, { onDelete: 'cascade' }),
   // Used when wirdMode = 'by_pages'
-  pageCount: integer('page_count'),           // target: e.g. 5 pages
-  achievedPageCount: integer('achieved_page_count').default(0), // progress
+  startPage: integer('start_page'),
+  endPage: integer('end_page'),
+  lastAchievedPage: integer('last_achieved_page'), // tracks the actual page number reached
 });
 
 export const workTasks = pgTable('work_tasks', {
@@ -621,6 +656,17 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
 }));
 
+export const quranChaptersRelations = relations(quranChapters, ({ many }) => ({
+  verses: many(quranVerses),
+}));
+
+export const quranVersesRelations = relations(quranVerses, ({ one }) => ({
+  chapter: one(quranChapters, {
+    fields: [quranVerses.chapterId],
+    references: [quranChapters.id],
+  }),
+}));
+
 export const zekrCategoriesRelations = relations(zekrCategories, ({ many }) => ({
   catalog: many(zekrCatalog),
 }));
@@ -648,6 +694,14 @@ export const wirdTasksRelations = relations(wirdTasks, ({ one }) => ({
   task: one(tasks, {
     fields: [wirdTasks.taskId],
     references: [tasks.id],
+  }),
+  startVerse: one(quranVerses, {
+    fields: [wirdTasks.startVerseId],
+    references: [quranVerses.id],
+  }),
+  endVerse: one(quranVerses, {
+    fields: [wirdTasks.endVerseId],
+    references: [quranVerses.id],
   }),
 }));
 
@@ -743,6 +797,12 @@ export type NewZekrTask = typeof zekrTasks.$inferInsert;
 
 export type WirdTask = typeof wirdTasks.$inferSelect;
 export type NewWirdTask = typeof wirdTasks.$inferInsert;
+
+export type QuranChapter = typeof quranChapters.$inferSelect;
+export type NewQuranChapter = typeof quranChapters.$inferInsert;
+
+export type QuranVerse = typeof quranVerses.$inferSelect;
+export type NewQuranVerse = typeof quranVerses.$inferInsert;
 
 // ── Better Auth Tables ───────────────────────────────────────────────────────
 // Required by Better Auth. "user" is Better Auth's primary identity table.

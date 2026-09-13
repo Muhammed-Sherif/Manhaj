@@ -1,9 +1,11 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { StudentController } from '../controllers/studentController.js';
+import { StudentSyncController } from '../controllers/studentSyncController.js';
 
 const router: ExpressRouter = Router();
 const studentController = new StudentController();
+const studentSyncController = new StudentSyncController();
 
 // All student routes require authentication
 router.use(requireAuth);
@@ -428,6 +430,19 @@ router.delete('/notes/:id', studentController.deleteNote);
  */
 router.get('/zekr-catalog', studentController.getZekrCatalog);
 
+/**
+ * @swagger
+ * /student/quran-data:
+ *   get:
+ *     summary: Get the complete Quran data (chapters and verses) for offline sync
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: Quran data
+ */
+router.get('/quran-data', studentController.getQuranData);
+
 router.get('/tasks', studentController.getTasks);
 router.post('/tasks', studentController.createTask);
 
@@ -535,5 +550,40 @@ router.get('/reviewables/due', studentController.getDueReviewables);
  *         description: Sync results
  */
 router.post('/reviewables/sync', studentController.syncReviewables);
+
+/**
+ * @swagger
+ * /student/sync:
+ *   post:
+ *     summary: Bidirectional sync for student-owned items (review items, tasks)
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: since
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Cursor for delta sync (optional)
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reviewItems:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               tasks:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: Sync results with server changes and next cursor
+ */
+router.post('/sync', studentSyncController.syncStudentItems);
 
 export { router as studentRoutes };

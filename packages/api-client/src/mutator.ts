@@ -14,6 +14,14 @@ const getBaseURL = (): string => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
+  // Try to get from Expo app.json extra
+  try {
+    const Constants = require('expo-constants');
+    if (Constants?.expoConfig?.extra?.apiUrl) {
+      return Constants.expoConfig.extra.apiUrl;
+    }
+  } catch {}
+
   if (typeof window !== 'undefined') {
     return 'http://localhost:3000';
   }

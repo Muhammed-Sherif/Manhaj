@@ -1,8 +1,10 @@
 import { db } from '../config/database.js';
 import { attempts, deviceTokens, flags, questions, choices, grades, terms, users, lectures, caseItems, noteItems, tasks,  zekrCategories,
   zekrCatalog,
-  zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs } from '@manhaj/db';
-import { eq, and, not, inArray, lt } from 'drizzle-orm';
+  zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs, questionReviewItems,
+  quranChapters,
+  quranVerses } from '@manhaj/db/schema';
+import { eq, and, not, inArray, lt, isNull } from 'drizzle-orm';
 
 export class StudentService {
   async getProfile(userId: string) {
@@ -305,11 +307,18 @@ export class StudentService {
     return { categories, catalog };
   }
 
+  // --- Quran Data ---
+  async getQuranData() {
+    const chapters = await db.select().from(quranChapters);
+    const verses = await db.select().from(quranVerses);
+    return { chapters, verses };
+  }
+
   // --- Tasks ---
 
   async getTasks(userId: string) {
-    // Return all tasks with their specific subclass data
-    const userTasks = await db.select().from(tasks).where(eq(tasks.userId, userId));
+    // Return all non-deleted tasks with their specific subclass data
+    const userTasks = await db.select().from(tasks).where(and(eq(tasks.userId, userId), isNull(tasks.deletedAt)));
     const zTasks = await db.select().from(zekrTasks).where(inArray(zekrTasks.taskId, userTasks.map(t => t.id).concat(['00000000-0000-0000-0000-000000000000'])));
     const wTasks = await db.select().from(wirdTasks).where(inArray(wirdTasks.taskId, userTasks.map(t => t.id).concat(['00000000-0000-0000-0000-000000000000'])));
     const woTasks = await db.select().from(workTasks).where(inArray(workTasks.taskId, userTasks.map(t => t.id).concat(['00000000-0000-0000-0000-000000000000'])));
@@ -386,8 +395,10 @@ export class StudentService {
   }
 
   async deleteTask(userId: string, id: string) {
-    // Cascade delete handles subclasses
-    await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
+    // Use soft delete for offline-first sync
+    await db.update(tasks)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
     return { success: true };
   }
 
@@ -416,13 +427,48 @@ export class StudentService {
 
   async getDueReviewables(userId: string) {
     // Get reviewable items where nextReviewAt <= now
+    // Exclude items whose source questions have been soft-deleted
     const now = new Date();
-    return db.select().from(reviewItems).where(
+
+    const allDueItems = await db.select().from(reviewItems).where(
       and(
         eq(reviewItems.userId, userId),
-        lt(reviewItems.nextReviewAt, now)
+        lt(reviewItems.nextReviewAt, now),
+        isNull(reviewItems.deletedAt)
       )
     );
+
+    // Filter out question review items whose questions have been deleted
+    const questionReviewItemIds = allDueItems
+      .filter(item => item.itemType === 'question')
+      .map(item => item.id);
+
+    if (questionReviewItemIds.length > 0) {
+      // Get question review items whose questions are NOT deleted
+      const validQuestionReviewItems = await db
+        .select({ reviewItemId: questionReviewItems.reviewItemId })
+        .from(questionReviewItems)
+        .innerJoin(questions, eq(questionReviewItems.questionId, questions.id))
+        .where(
+          and(
+            inArray(questionReviewItems.reviewItemId, questionReviewItemIds),
+            isNull(questions.deletedAt)
+          )
+        );
+
+      const validQuestionReviewItemIds = new Set(
+        validQuestionReviewItems.map(q => q.reviewItemId)
+      );
+
+      return allDueItems.filter(item => {
+        if (item.itemType === 'question') {
+          return validQuestionReviewItemIds.has(item.id);
+        }
+        return true; // Non-question items are always valid
+      });
+    }
+
+    return allDueItems;
   }
 
   async syncReviewables(userId: string, items: any[]) {

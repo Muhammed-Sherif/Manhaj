@@ -1,4 +1,4 @@
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, notInArray, isNull } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { getContentSync } from '@manhaj/api-client';
@@ -95,112 +95,169 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
         });
     }
 
-    // Sync lectures
+    // Sync lectures (handle tombstones)
     for (const lecture of contentData.lectures) {
-      await tx
-        .insert(schema.lectures)
-        .values({
-          id: lecture.id,
-          subjectId: lecture.subjectId,
-          name: lecture.name,
-          description: lecture.description ?? '',
-        })
-        .onConflictDoUpdate({
-          target: schema.lectures.id,
-          set: {
+      if (lecture.deletedAt) {
+        // Soft delete locally
+        await tx
+          .update(schema.lectures)
+          .set({ deletedAt: lecture.deletedAt })
+          .where(eq(schema.lectures.id, lecture.id));
+      } else {
+        await tx
+          .insert(schema.lectures)
+          .values({
+            id: lecture.id,
             subjectId: lecture.subjectId,
             name: lecture.name,
             description: lecture.description ?? '',
-          },
-        });
+            updatedAt: lecture.updatedAt ?? new Date().toISOString(),
+            deletedAt: lecture.deletedAt,
+          })
+          .onConflictDoUpdate({
+            target: schema.lectures.id,
+            set: {
+              subjectId: lecture.subjectId,
+              name: lecture.name,
+              description: lecture.description ?? '',
+              updatedAt: lecture.updatedAt ?? new Date().toISOString(),
+              deletedAt: lecture.deletedAt,
+            },
+          });
+      }
     }
 
-    // Sync questions
+    // Sync questions (handle tombstones)
     for (const question of contentData.questions) {
-      await tx
-        .insert(schema.questions)
-        .values({
-          id: question.id,
-          lectureId: question.lectureId || null,
-          createdBy: question.createdBy || null,
-          questionText: question.questionText,
-          explanation: question.explanation ?? '',
-          source: question.source ?? 'manual',
-        })
-        .onConflictDoUpdate({
-          target: schema.questions.id,
-          set: {
+      if (question.deletedAt) {
+        // Soft delete locally
+        await tx
+          .update(schema.questions)
+          .set({ deletedAt: question.deletedAt })
+          .where(eq(schema.questions.id, question.id));
+      } else {
+        await tx
+          .insert(schema.questions)
+          .values({
+            id: question.id,
             lectureId: question.lectureId || null,
             createdBy: question.createdBy || null,
             questionText: question.questionText,
             explanation: question.explanation ?? '',
             source: question.source ?? 'manual',
-          },
-        });
+            updatedAt: question.updatedAt ?? new Date().toISOString(),
+            deletedAt: question.deletedAt,
+          })
+          .onConflictDoUpdate({
+            target: schema.questions.id,
+            set: {
+              lectureId: question.lectureId || null,
+              createdBy: question.createdBy || null,
+              questionText: question.questionText,
+              explanation: question.explanation ?? '',
+              source: question.source ?? 'manual',
+              updatedAt: question.updatedAt ?? new Date().toISOString(),
+              deletedAt: question.deletedAt,
+            },
+          });
+      }
     }
 
-    // Sync choices
-    for (const choice of contentData.choices) {
-      await tx
-        .insert(schema.choices)
-        .values({
-          id: choice.id,
-          questionId: choice.questionId,
-          choiceText: choice.choiceText,
-          isCorrect: choice.isCorrect ? 1 : 0,
-        })
-        .onConflictDoUpdate({
-          target: schema.choices.id,
-          set: {
+    // Sync choices (aggregate sync - replace all choices for updated questions)
+    // First, get the question IDs from the choices we received
+    if (contentData.choices && contentData.choices.length > 0) {
+      const questionIdsWithUpdatedChoices = Array.from(new Set(
+        contentData.choices.map(choice => choice.questionId)
+      ));
+
+      // Delete all existing choices for these questions, then insert the new ones
+      for (const questionId of questionIdsWithUpdatedChoices) {
+        await tx
+          .delete(schema.choices)
+          .where(eq(schema.choices.questionId, questionId));
+      }
+
+      // Insert the new choices
+      for (const choice of contentData.choices) {
+        await tx
+          .insert(schema.choices)
+          .values({
+            id: choice.id,
             questionId: choice.questionId,
             choiceText: choice.choiceText,
             isCorrect: choice.isCorrect ? 1 : 0,
-          },
-        });
+          });
+      }
     }
 
-    // Sync lecture videos
+    // Sync lecture videos (handle tombstones)
     for (const video of contentData.lectureVideos) {
-      await tx
-        .insert(schema.lectureVideos)
-        .values({
-          id: video.id,
-          lectureId: video.lectureId,
-          sourceName: video.sourceName,
-          url: video.url,
-          duration: video.duration ?? 0,
-        })
-        .onConflictDoUpdate({
-          target: schema.lectureVideos.id,
-          set: {
+      if (video.deletedAt) {
+        // Soft delete locally
+        await tx
+          .update(schema.lectureVideos)
+          .set({ deletedAt: video.deletedAt })
+          .where(eq(schema.lectureVideos.id, video.id));
+      } else {
+        await tx
+          .insert(schema.lectureVideos)
+          .values({
+            id: video.id,
             lectureId: video.lectureId,
             sourceName: video.sourceName,
             url: video.url,
             duration: video.duration ?? 0,
-          },
-        });
+            localFilePath: video.localFilePath,
+            updatedAt: video.updatedAt ?? new Date().toISOString(),
+            deletedAt: video.deletedAt,
+          })
+          .onConflictDoUpdate({
+            target: schema.lectureVideos.id,
+            set: {
+              lectureId: video.lectureId,
+              sourceName: video.sourceName,
+              url: video.url,
+              duration: video.duration ?? 0,
+              localFilePath: video.localFilePath,
+              updatedAt: video.updatedAt ?? new Date().toISOString(),
+              deletedAt: video.deletedAt,
+            },
+          });
+      }
     }
 
-    // Sync lecture files
+    // Sync lecture files (handle tombstones)
     for (const file of contentData.lectureFiles) {
-      await tx
-        .insert(schema.lectureFiles)
-        .values({
-          id: file.id,
-          lectureId: file.lectureId,
-          sourceName: file.sourceName,
-          fileUrl: file.fileUrl,
-          fileType: file.fileType ?? 'pdf',
-        })
-        .onConflictDoUpdate({
-          target: schema.lectureFiles.id,
-          set: {
+      if (file.deletedAt) {
+        // Soft delete locally
+        await tx
+          .update(schema.lectureFiles)
+          .set({ deletedAt: file.deletedAt })
+          .where(eq(schema.lectureFiles.id, file.id));
+      } else {
+        await tx
+          .insert(schema.lectureFiles)
+          .values({
+            id: file.id,
             lectureId: file.lectureId,
             sourceName: file.sourceName,
             fileUrl: file.fileUrl,
             fileType: file.fileType ?? 'pdf',
-          },
-        });
+            updatedAt: file.updatedAt ?? new Date().toISOString(),
+            deletedAt: file.deletedAt,
+          })
+          .onConflictDoUpdate({
+            target: schema.lectureFiles.id,
+            set: {
+              lectureId: file.lectureId,
+              sourceName: file.sourceName,
+              fileUrl: file.fileUrl,
+              fileType: file.fileType ?? 'pdf',
+              updatedAt: file.updatedAt ?? new Date().toISOString(),
+              deletedAt: file.deletedAt,
+            },
+          });
+      }
     }
 
     // Store sync cursor
@@ -220,7 +277,9 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
 };
 
 export const syncContentFromServer = async (): Promise<void> => {
+  console.log('[ContentSync] syncContentFromServer: starting');
   const cursor = await getLastSyncCursor();
+  console.log(`[ContentSync] using cursor: ${cursor ?? 'none (full sync)'}`);
   const response = await getContentSync(cursor ? { since: cursor } : {});
   const contentData: ContentSyncData = {
     grades: response.data.grades || [],
@@ -234,44 +293,175 @@ export const syncContentFromServer = async (): Promise<void> => {
     lectureFiles: response.data.lectureFiles || [],
     nextCursor: response.data.nextCursor,
   };
+  console.log(
+    `[ContentSync] fetched from server: ${contentData.grades.length} grades, ${contentData.terms.length} terms, ${contentData.modules.length} modules, ${contentData.subjects.length} subjects, ${contentData.lectures.length} lectures, ${contentData.questions.length} questions, ${contentData.choices.length} choices, ${contentData.lectureVideos.length} videos, ${contentData.lectureFiles.length} files, nextCursor: ${contentData.nextCursor ?? 'none'}`
+  );
   await syncContent(contentData);
+  console.log('[ContentSync] syncContentFromServer: finished successfully');
 };
 
+export const syncQuranData = async (): Promise<void> => {
+  // Check if we already have it
+  const existing = await db.select().from(schema.quranChapters).limit(1);
+  if (existing.length > 0) return;
+
+  const { getStudentQuranData } = await import('@manhaj/api-client');
+  const response = await getStudentQuranData();
+  if (!response || !('data' in response) || typeof response.data !== 'object') {
+    console.warn('[ContentSync] syncQuranData: invalid response', response);
+    return;
+  }
+  const data = response.data as any;
+  const { chapters, verses } = data;
+  
+  await db.transaction(async (tx) => {
+    // Sync chapters
+    if (chapters && Array.isArray(chapters)) {
+      for (const chapter of chapters) {
+        await tx
+          .insert(schema.quranChapters)
+          .values({
+            id: chapter.id,
+            nameAr: chapter.nameAr,
+            nameEn: chapter.nameEn,
+            versesCount: chapter.versesCount,
+          })
+          .onConflictDoNothing();
+      }
+    }
+
+    // Sync verses (batching to avoid too many variables)
+    if (verses && Array.isArray(verses)) {
+      const batchSize = 100;
+      for (let i = 0; i < verses.length; i += batchSize) {
+        const batch = verses.slice(i, i + batchSize);
+        await tx
+          .insert(schema.quranVerses)
+          .values(batch.map(v => ({
+            id: v.id,
+            chapterId: v.chapterId,
+            ayaNumber: v.ayaNumber,
+            page: v.page,
+            textAr: v.textAr,
+          })))
+          .onConflictDoNothing();
+      }
+    }
+  });
+};
+
+// Bump this whenever the server-side zekr catalog changes (e.g. categories
+// were re-seeded or cleaned up) so devices re-sync instead of keeping stale data.
+const ZEKR_CATALOG_VERSION = '2';
+
 export const syncZekrCatalog = async (): Promise<void> => {
+  // Check if we already have this catalog version
+  const [state] = await db
+    .select()
+    .from(schema.syncState)
+    .where(eq(schema.syncState.key, 'zekr_catalog_version'))
+    .limit(1);
+  if (state && state.value === ZEKR_CATALOG_VERSION) return;
+
   const { getStudentZekrCatalog } = await import('@manhaj/api-client');
   const response = await getStudentZekrCatalog();
-  if (response.data) {
-    const { categories, catalog } = response.data;
-    await db.transaction(async (tx) => {
-      // Sync categories
-      if (categories && Array.isArray(categories)) {
-        for (const cat of categories) {
+  if (!response || !('data' in response) || typeof response.data !== 'object') {
+    console.warn('[ContentSync] syncZekrCatalog: invalid response', response);
+    return;
+  }
+  const data = response.data as any;
+  const { categories, catalog } = data;
+  
+  await db.transaction(async (tx) => {
+    // Remove stale local rows that no longer exist on the server
+    // (e.g. empty leftover categories from an old seed). Foreign keys are
+    // OFF in SQLite by default, so we clean up references explicitly.
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      const serverCatIds = categories.map((c: any) => c.id);
+      const localCats = await tx.select().from(schema.zekrCategories);
+      const staleCatIds = localCats
+        .map((c) => c.id)
+        .filter((id) => !serverCatIds.includes(id));
+
+      if (staleCatIds.length > 0) {
+        // Null out task references to stale categories (mirrors ON DELETE SET NULL)
+        for (const staleId of staleCatIds) {
           await tx
-            .insert(schema.zekrCategories)
-            .values({
-              id: cat.id,
+            .update(schema.zekrTasks)
+            .set({ categoryId: null })
+            .where(eq(schema.zekrTasks.categoryId, staleId));
+        }
+        await tx
+          .delete(schema.zekrCatalog)
+          .where(notInArray(schema.zekrCatalog.categoryId, serverCatIds));
+        await tx
+          .delete(schema.zekrCategories)
+          .where(notInArray(schema.zekrCategories.id, serverCatIds));
+      }
+    }
+
+    // Sync categories
+    if (categories && Array.isArray(categories)) {
+      for (const cat of categories) {
+        await tx
+          .insert(schema.zekrCategories)
+          .values({
+            id: cat.id,
+            categoryNumber: cat.categoryNumber,
+            nameEn: cat.nameEn,
+            nameAr: cat.nameAr,
+          })
+          .onConflictDoUpdate({
+            target: schema.zekrCategories.id,
+            set: {
               categoryNumber: cat.categoryNumber,
               nameEn: cat.nameEn,
               nameAr: cat.nameAr,
-            })
-            .onConflictDoUpdate({
-              target: schema.zekrCategories.id,
-              set: {
-                categoryNumber: cat.categoryNumber,
-                nameEn: cat.nameEn,
-                nameAr: cat.nameAr,
-              },
-            });
+            },
+          });
+      }
+    }
+
+    // Sync catalog
+    if (catalog && Array.isArray(catalog)) {
+      // Remove duas that no longer exist on the server
+      if (catalog.length > 0) {
+        const serverDuaIds = catalog.map((d: any) => d.id);
+        const localDuas = await tx.select({ id: schema.zekrCatalog.id }).from(schema.zekrCatalog);
+        const staleDuaIds = localDuas.map((d) => d.id).filter((id) => !serverDuaIds.includes(id));
+
+        if (staleDuaIds.length > 0) {
+          // Null out task references to stale duas (mirrors ON DELETE SET NULL)
+          for (const staleId of staleDuaIds) {
+            await tx
+              .update(schema.zekrTasks)
+              .set({ zekrId: null })
+              .where(eq(schema.zekrTasks.zekrId, staleId));
+          }
+          await tx
+            .delete(schema.zekrCatalog)
+            .where(notInArray(schema.zekrCatalog.id, serverDuaIds));
         }
       }
-      
-      // Sync catalog
-      if (catalog && Array.isArray(catalog)) {
-        for (const item of catalog) {
-          await tx
-            .insert(schema.zekrCatalog)
-            .values({
-              id: item.id,
+
+      for (const item of catalog) {
+        await tx
+          .insert(schema.zekrCatalog)
+          .values({
+            id: item.id,
+            categoryId: item.categoryId,
+            duaNumber: item.duaNumber,
+            slug: item.slug,
+            transliteration: item.transliteration,
+            textEn: item.textEn,
+            textAr: item.textAr,
+            virtue: item.virtue,
+            source: item.source,
+            repeatCount: item.repeatCount,
+          })
+          .onConflictDoUpdate({
+            target: schema.zekrCatalog.id,
+            set: {
               categoryId: item.categoryId,
               duaNumber: item.duaNumber,
               slug: item.slug,
@@ -281,25 +471,20 @@ export const syncZekrCatalog = async (): Promise<void> => {
               virtue: item.virtue,
               source: item.source,
               repeatCount: item.repeatCount,
-            })
-            .onConflictDoUpdate({
-              target: schema.zekrCatalog.id,
-              set: {
-                categoryId: item.categoryId,
-                duaNumber: item.duaNumber,
-                slug: item.slug,
-                transliteration: item.transliteration,
-                textEn: item.textEn,
-                textAr: item.textAr,
-                virtue: item.virtue,
-                source: item.source,
-                repeatCount: item.repeatCount,
-              },
-            });
-        }
+            },
+          });
       }
-    });
-  }
+    }
+
+    // Mark this catalog version as synced
+    await tx
+      .insert(schema.syncState)
+      .values({ key: 'zekr_catalog_version', value: ZEKR_CATALOG_VERSION })
+      .onConflictDoUpdate({
+        target: schema.syncState.key,
+        set: { value: ZEKR_CATALOG_VERSION },
+      });
+  });
 };
 
 export const getAutoDownloadEnabled = async (): Promise<boolean> => {
@@ -548,6 +733,8 @@ export const saveHierarchyToSqlite = async (hierarchy: any[]): Promise<void> => 
                           subjectId: subj.id,
                           name: lec.name ?? '',
                           description: lec.description ?? '',
+                          updatedAt: new Date().toISOString(),
+                          deletedAt: null,
                         })
                         .onConflictDoUpdate({
                           target: schema.lectures.id,
@@ -555,6 +742,8 @@ export const saveHierarchyToSqlite = async (hierarchy: any[]): Promise<void> => 
                             subjectId: subj.id,
                             name: lec.name ?? '',
                             description: lec.description ?? '',
+                            updatedAt: new Date().toISOString(),
+                            deletedAt: null,
                           },
                         });
                     }
@@ -580,12 +769,17 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
         subjectId: lecture.subjectId ?? lecture.subject?.id ?? '',
         name: lecture.name ?? '',
         description: lecture.description ?? '',
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
       })
       .onConflictDoUpdate({
         target: schema.lectures.id,
         set: {
+          subjectId: lecture.subjectId ?? lecture.subject?.id ?? '',
           name: lecture.name ?? '',
           description: lecture.description ?? '',
+          updatedAt: new Date().toISOString(),
+          deletedAt: null,
         },
       });
 
@@ -600,6 +794,9 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
             sourceName: v.sourceName ?? '',
             url: v.url ?? '',
             duration: v.duration ?? 0,
+            localFilePath: v.localFilePath,
+            updatedAt: new Date().toISOString(),
+            deletedAt: null,
           })
           .onConflictDoUpdate({
             target: schema.lectureVideos.id,
@@ -607,6 +804,9 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
               sourceName: v.sourceName ?? '',
               url: v.url ?? '',
               duration: v.duration ?? 0,
+              localFilePath: v.localFilePath,
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
             },
           });
       }
@@ -623,6 +823,8 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
             sourceName: f.sourceName ?? '',
             fileUrl: f.fileUrl ?? '',
             fileType: f.fileType ?? 'pdf',
+            updatedAt: new Date().toISOString(),
+            deletedAt: null,
           })
           .onConflictDoUpdate({
             target: schema.lectureFiles.id,
@@ -630,6 +832,8 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
               sourceName: f.sourceName ?? '',
               fileUrl: f.fileUrl ?? '',
               fileType: f.fileType ?? 'pdf',
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
             },
           });
       }
@@ -647,12 +851,19 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
             questionText: q.questionText ?? q.question_text ?? '',
             explanation: q.explanation ?? '',
             source: q.source ?? 'manual',
+            updatedAt: new Date().toISOString(),
+            deletedAt: null,
           })
           .onConflictDoUpdate({
             target: schema.questions.id,
             set: {
+              lectureId: lecture.id,
+              createdBy: q.createdBy ?? null,
               questionText: q.questionText ?? q.question_text ?? '',
               explanation: q.explanation ?? '',
+              source: q.source ?? 'manual',
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
             },
           });
 

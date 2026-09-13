@@ -246,7 +246,17 @@ export class StudentController {
 
   syncReviewables = async (req: Request, res: Response) => {
     try {
-      res.json(await this.studentService.syncReviewables(req.user!.id, req.body.items || []));
+      const result = await this.studentService.syncReviewables(req.user!.id, req.body.items);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  getQuranData = async (req: Request, res: Response) => {
+    try {
+      const data = await this.studentService.getQuranData();
+      res.json(data);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }

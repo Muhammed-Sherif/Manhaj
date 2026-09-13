@@ -41,6 +41,8 @@ export const lectures = sqliteTable('lectures', {
     .references(() => subjects.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 });
 
 export const lectureVideos = sqliteTable('lecture_videos', {
@@ -52,6 +54,8 @@ export const lectureVideos = sqliteTable('lecture_videos', {
   url: text('url').notNull(),
   duration: integer('duration').notNull(),
   localFilePath: text('local_file_path'),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 });
 
 export const lectureFiles = sqliteTable('lecture_files', {
@@ -62,6 +66,8 @@ export const lectureFiles = sqliteTable('lecture_files', {
   sourceName: text('source_name').notNull(),
   fileUrl: text('file_url').notNull(),
   fileType: text('file_type').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 });
 
 export const questions = sqliteTable('questions', {
@@ -72,6 +78,8 @@ export const questions = sqliteTable('questions', {
   questionText: text('question_text').notNull(),
   explanation: text('explanation').notNull(),
   source: text('source').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 });
 
 export const mcqQuestions = sqliteTable('mcq_questions', {
@@ -127,12 +135,19 @@ export const syncState = sqliteTable('sync_state', {
 
 export const reviewableItems = sqliteTable('reviewable_items', {
   id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
   itemType: text('item_type').notNull(),
+  state: text('state').notNull().default('new'),
+  currentStepIndex: integer('current_step_index'),
   interval: integer('interval').notNull().default(0),
-  easeFactor: integer('ease_factor').notNull().default(2.5),
+  easeFactor: integer('ease_factor').notNull().default(250),
   repetitionCount: integer('repetition_count').notNull().default(0),
+  lapses: integer('lapses').notNull().default(0),
   nextReviewDate: text('next_review_date').notNull(),
   lastReviewedAt: text('last_reviewed_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 });
 
 export const questionReviewable = sqliteTable('question_reviewable', {
@@ -180,10 +195,27 @@ export const tasks = sqliteTable('tasks', {
   status: text('status').notNull().default('pending'),
   achievedFrom: text('achieved_from'),
   createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
 }, (table) => {
   return {
-    uniqueTaskConstraint: unique('unique_mobile_task').on(table.taskType, table.startTime, table.endTime),
+    uniqueTaskConstraint: unique('unique_mobile_task').on(table.taskType, table.startTime, table.endTime, table.createdAt),
   };
+});
+
+export const quranChapters = sqliteTable('quran_chapters', {
+  id: integer('id').primaryKey(),
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  versesCount: integer('verses_count').notNull(),
+});
+
+export const quranVerses = sqliteTable('quran_verses', {
+  id: text('id').primaryKey(),
+  chapterId: integer('chapter_id').references(() => quranChapters.id, { onDelete: 'cascade' }).notNull(),
+  ayaNumber: integer('aya_number').notNull(),
+  page: integer('page').notNull(),
+  textAr: text('text_ar').notNull(),
 });
 
 export const zekrCategories = sqliteTable('zekr_categories', {
@@ -207,20 +239,19 @@ export const zekrCatalog = sqliteTable('zekr_catalog', {
 });
 
 export const zekrTasks = sqliteTable('zekr_tasks', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
-  zekrId: text('zekr_id'),
-  customZekrText: text('custom_zekr_text'),
-  zekrCount: integer('zekr_count'),
-  zekrAchievedCount: integer('zekr_achieved_count').default(0),
+  taskId: text('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
+  categoryId: text('category_id').references(() => zekrCategories.id, { onDelete: 'set null' }),
+  zekrId: text('zekr_id').references(() => zekrCatalog.id, { onDelete: 'set null' }),
 });
 
 export const wirdTasks = sqliteTable('wird_tasks', {
   taskId: text('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
   wirdMode: text('wird_mode').notNull().default('daily'),
-  startAya: integer('start_aya'),
-  endAya: integer('end_aya'),
-  pageCount: integer('page_count'),
+  startVerseId: text('start_verse_id').references(() => quranVerses.id, { onDelete: 'cascade' }),
+  endVerseId: text('end_verse_id').references(() => quranVerses.id, { onDelete: 'cascade' }),
+  startPage: integer('start_page'),
+  endPage: integer('end_page'),
+  lastAchievedPage: integer('last_achieved_page'),
 });
 
 export const workTasks = sqliteTable('work_tasks', {
