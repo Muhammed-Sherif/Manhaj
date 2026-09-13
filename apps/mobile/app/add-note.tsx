@@ -6,7 +6,8 @@ import { Edit3Icon, SaveIcon } from 'lucide-react-native';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
-import { calculateSM2 } from '../utils/sm2';
+import { newCard } from '@manhaj/srs/src/anki';
+import { useAuthStore } from '../store/authStore';
 
 export default function AddNoteScreen() {
   const { lectureId } = useLocalSearchParams<{ lectureId: string }>();
@@ -26,12 +27,7 @@ export default function AddNoteScreen() {
       const reviewableId = Crypto.randomUUID();
       const nowStr = new Date().toISOString();
 
-      // Default SM-2 properties
-      const sm2Initial = calculateSM2(4, {
-        repetitionCount: 0,
-        easeFactor: 2.5,
-        interval: 0,
-      });
+      const card = newCard();
 
       // Insert note
       await db.insert(schema.noteItems).values({
@@ -45,11 +41,17 @@ export default function AddNoteScreen() {
       // Insert reviewable item
       await db.insert(schema.reviewableItems).values({
         id: reviewableId,
+        userId: useAuthStore.getState().user?.id ?? 'temp_user_id',
         itemType: 'note',
-        interval: sm2Initial.interval,
-        easeFactor: sm2Initial.easeFactor,
-        repetitionCount: sm2Initial.repetitionCount,
-        nextReviewDate: sm2Initial.nextReviewDate.toISOString(),
+        state: card.state,
+        currentStepIndex: card.currentStepIndex,
+        interval: card.interval,
+        easeFactor: card.easeFactor,
+        repetitionCount: card.repetitionCount,
+        lapses: card.lapses,
+        nextReviewDate: nowStr, // new cards are due immediately
+        createdAt: nowStr,
+        updatedAt: nowStr,
       });
 
       // Link note to reviewable
@@ -78,20 +80,7 @@ export default function AddNoteScreen() {
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
         <View className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
           
-          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Type</Text>
-          <View className="flex-row mb-4 space-x-2">
-            {['note', 'recurring_question'].map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                onPress={() => setType(cat)}
-                className={`px-4 py-2 rounded-full border ${type === cat ? 'bg-teal-600 border-teal-600' : 'bg-transparent border-slate-300 dark:border-slate-600'}`}
-              >
-                <Text className={`${type === cat ? 'text-white' : 'text-slate-600 dark:text-slate-300'} font-medium capitalize`}>
-                  {cat.replace('_', ' ')}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+
 
           <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Content</Text>
           <TextInput

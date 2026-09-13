@@ -104,24 +104,22 @@ export const processRecurringTasks = async (): Promise<void> => {
                   estimatedTime: baseTask.estimatedTime,
                   status: 'pending',
                   createdAt: now.toISOString(),
+                  updatedAt: now.toISOString(),
                 });
               } catch (e: any) {
-                // If it fails due to the UNIQUE(taskType, startTime, endTime) constraint, safely ignore
+                // If it fails due to the UNIQUE(taskType, startTime, endTime, createdAt) constraint, safely ignore
                 console.log('Task duplication skipped due to constraint', e?.message);
                 continue;
               }
 
               // 2. Clone Subclass Task
               if (taskType === 'zekr') {
-                const zekrRows = await tx.select().from(schema.zekrTasks).where(eq(schema.zekrTasks.taskId, baseTask.id));
-                for (const zekr of zekrRows) {
+                const [zekr] = await tx.select().from(schema.zekrTasks).where(eq(schema.zekrTasks.taskId, baseTask.id));
+                if (zekr) {
                   await tx.insert(schema.zekrTasks).values({
-                    id: Crypto.randomUUID(),
                     taskId: newTaskId,
+                    categoryId: zekr.categoryId,
                     zekrId: zekr.zekrId,
-                    customZekrText: zekr.customZekrText,
-                    zekrCount: zekr.zekrCount,
-                    zekrAchievedCount: 0,
                   });
                 }
               } else if (taskType === 'wird') {
@@ -130,9 +128,11 @@ export const processRecurringTasks = async (): Promise<void> => {
                   await tx.insert(schema.wirdTasks).values({
                     taskId: newTaskId,
                     wirdMode: wird.wirdMode,
-                    startAya: wird.startAya,
-                    endAya: wird.endAya,
-                    pageCount: wird.pageCount,
+                    startVerseId: wird.startVerseId,
+                    endVerseId: wird.endVerseId,
+                    startPage: wird.startPage,
+                    endPage: wird.endPage,
+                    lastAchievedPage: wird.startPage ? wird.startPage - 1 : null,
                   });
                 }
               } else if (taskType === 'work') {

@@ -58,6 +58,7 @@ export const initializeDatabase = () => {
       source_name TEXT NOT NULL,
       url TEXT NOT NULL,
       duration INTEGER NOT NULL,
+      local_file_path TEXT,
       FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
     );
     
@@ -131,7 +132,7 @@ export const initializeDatabase = () => {
     // Ignore error if column already exists
   }
 
-  expoDb.execSync(`
+  const secondBatch = `
     CREATE TABLE IF NOT EXISTS mcq_questions (
       question_id TEXT PRIMARY KEY,
       FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
@@ -145,10 +146,14 @@ export const initializeDatabase = () => {
 
     CREATE TABLE IF NOT EXISTS reviewable_items (
       id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       item_type TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'new',
+      current_step_index INTEGER,
       interval INTEGER NOT NULL DEFAULT 0,
-      ease_factor INTEGER NOT NULL DEFAULT 2.5,
+      ease_factor INTEGER NOT NULL DEFAULT 250,
       repetition_count INTEGER NOT NULL DEFAULT 0,
+      lapses INTEGER NOT NULL DEFAULT 0,
       next_review_date TEXT NOT NULL,
       last_reviewed_at TEXT
     );
@@ -204,7 +209,7 @@ export const initializeDatabase = () => {
       status TEXT NOT NULL DEFAULT 'pending',
       achieved_from TEXT,
       created_at TEXT NOT NULL,
-      UNIQUE(task_type, start_time, end_time)
+      UNIQUE(task_type, start_time, end_time, created_at)
     );
 
     CREATE TABLE IF NOT EXISTS zekr_categories (
@@ -229,22 +234,41 @@ export const initializeDatabase = () => {
     );
 
     CREATE TABLE IF NOT EXISTS zekr_tasks (
-      id TEXT PRIMARY KEY,
-      task_id TEXT NOT NULL,
+      task_id TEXT PRIMARY KEY,
+      category_id TEXT,
       zekr_id TEXT,
-      custom_zekr_text TEXT,
-      zekr_count INTEGER,
-      zekr_achieved_count INTEGER DEFAULT 0,
-      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES zekr_categories(id) ON DELETE SET NULL,
+      FOREIGN KEY (zekr_id) REFERENCES zekr_catalog(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS quran_chapters (
+      id INTEGER PRIMARY KEY,
+      name_ar TEXT NOT NULL,
+      name_en TEXT NOT NULL,
+      verses_count INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS quran_verses (
+      id TEXT PRIMARY KEY,
+      chapter_id INTEGER NOT NULL,
+      aya_number INTEGER NOT NULL,
+      page INTEGER NOT NULL,
+      text_ar TEXT NOT NULL,
+      FOREIGN KEY (chapter_id) REFERENCES quran_chapters(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS wird_tasks (
       task_id TEXT PRIMARY KEY,
       wird_mode TEXT NOT NULL DEFAULT 'daily',
-      start_aya INTEGER,
-      end_aya INTEGER,
-      page_count INTEGER,
-      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+      start_verse_id TEXT,
+      end_verse_id TEXT,
+      start_page INTEGER,
+      end_page INTEGER,
+      last_achieved_page INTEGER,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (start_verse_id) REFERENCES quran_verses(id) ON DELETE CASCADE,
+      FOREIGN KEY (end_verse_id) REFERENCES quran_verses(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS work_tasks (
@@ -263,10 +287,130 @@ export const initializeDatabase = () => {
       activity_type TEXT NOT NULL,
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
-  `);
+  `;
+  
+  const statements = secondBatch.split(';').map(s => s.trim()).filter(s => s.length > 0);
+  for (const stmt of statements) {
+    try {
+      expoDb.execSync(stmt + ';');
+    } catch (err) {
+      console.warn('Failed to execute statement:', stmt, err);
+    }
+  }
+
+  // ── Migrations for existing installs ──────────────────────────────────────
+  // Old wird_tasks used start_aya/end_aya/page_count; rebuild it to match the
+  // current Drizzle schema (start_verse_id/end_verse_id/start_page/end_page/last_achieved_page).
+  const wirdColumns = expoDb
+    .getAllSync(`PRAGMA table_info(wird_tasks)`) as Array<{ name: string }>;
+  const wirdColumnNames = wirdColumns.map((c) => c.name);
+  if (wirdColumnNames.length > 0 && !wirdColumnNames.includes('start_verse_id')) {
+    expoDb.execSync(`
+      CREATE TABLE wird_tasks_new (
+        task_id TEXT PRIMARY KEY,
+        wird_mode TEXT NOT NULL DEFAULT 'daily',
+        start_verse_id TEXT,
+        end_verse_id TEXT,
+        start_page INTEGER,
+        end_page INTEGER,
+        last_achieved_page INTEGER,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (start_verse_id) REFERENCES quran_verses(id) ON DELETE CASCADE,
+        FOREIGN KEY (end_verse_id) REFERENCES quran_verses(id) ON DELETE CASCADE
+      );
+      INSERT INTO wird_tasks_new (task_id, wird_mode, start_page, end_page, last_achieved_page)
+        SELECT task_id, wird_mode, NULL, NULL, NULL FROM wird_tasks;
+      DROP TABLE wird_tasks;
+      ALTER TABLE wird_tasks_new RENAME TO wird_tasks;
+    `);
+  }
+
+  // ── Migration: tasks used UNIQUE(task_type, start_time, end_time), which blocked
+  // creating a second task of the same type in the same time window. Rebuild the
+  // table with created_at included so each insert is distinct. (CREATE TABLE IF
+  // NOT EXISTS cannot change the constraint of an existing table.)
+  const tasksTableSqlRows = expoDb.getAllSync(
+    `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'tasks'`
+  ) as Array<{ sql: string }>;
+  const tasksTableSql = tasksTableSqlRows[0]?.sql ?? '';
+  if (tasksTableSql.length > 0 && !tasksTableSql.includes('end_time, created_at')) {
+    // Disable FKs during the rebuild: DROP TABLE runs an implicit DELETE FROM,
+    // which would cascade-delete zekr_tasks/wird_tasks/work_tasks/study_tasks.
+    const fkRows = expoDb.getAllSync(`PRAGMA foreign_keys`) as Array<{ foreign_keys: number }>;
+    const fkWasOn = fkRows[0]?.foreign_keys === 1;
+    expoDb.execSync(`PRAGMA foreign_keys = OFF;`);
+    try {
+      expoDb.execSync(`
+        CREATE TABLE tasks_new (
+          id TEXT PRIMARY KEY,
+          task_type TEXT NOT NULL,
+          recurrence TEXT NOT NULL DEFAULT 'once',
+          start_time TEXT,
+          end_time TEXT,
+          consumed_time INTEGER,
+          estimated_time INTEGER,
+          status TEXT NOT NULL DEFAULT 'pending',
+          achieved_from TEXT,
+          created_at TEXT NOT NULL,
+          UNIQUE(task_type, start_time, end_time, created_at)
+        );
+        INSERT INTO tasks_new (id, task_type, recurrence, start_time, end_time, consumed_time, estimated_time, status, achieved_from, created_at)
+          SELECT id, task_type, recurrence, start_time, end_time, consumed_time, estimated_time, status, achieved_from, created_at
+          FROM tasks;
+        DROP TABLE tasks;
+        ALTER TABLE tasks_new RENAME TO tasks;
+      `);
+    } finally {
+      if (fkWasOn) expoDb.execSync(`PRAGMA foreign_keys = ON;`);
+    }
+  }
+
+  // ── Migration: zekr_tasks was 1-to-many (one row per dua with count tracking).
+  // Rebuild it as a single row per task: exactly one of category_id / zekr_id is
+  // set, no partial progress fields. Old rows are dropped (progress is not
+  // representable in the new model).
+  const zekrTableSqlRows = expoDb.getAllSync(
+    `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'zekr_tasks'`
+  ) as Array<{ sql: string }>;
+  const zekrTableSql = zekrTableSqlRows[0]?.sql ?? '';
+  if (zekrTableSql.length > 0 && !zekrTableSql.includes('category_id')) {
+    expoDb.execSync(`
+      DROP TABLE IF EXISTS zekr_tasks;
+    `);
+    // Recreate with the new single-row layout
+    expoDb.execSync(`
+      CREATE TABLE zekr_tasks (
+        task_id TEXT PRIMARY KEY,
+        category_id TEXT,
+        zekr_id TEXT,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES zekr_categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (zekr_id) REFERENCES zekr_catalog(id) ON DELETE SET NULL
+      );
+    `);
+  }
+
+  // ── Migration: reviewable_items was created without user_id (and without
+  // state/current_step_index/lapses, with ease_factor defaulting to 2.5 instead
+  // of 250). Each student needs independent SRS progress for the same
+  // question/case/note, so add the missing columns. NOT NULL columns require a
+  // DEFAULT in ALTER TABLE ADD COLUMN. (No FK to a users table on mobile — the
+  // logged-in user id comes from the auth store; Postgres has the real FK.)
+  const reviewableColumns = expoDb
+    .getAllSync(`PRAGMA table_info(reviewable_items)`) as Array<{ name: string }>;
+  const reviewableColumnNames = reviewableColumns.map((c) => c.name);
+  if (reviewableColumnNames.length > 0 && !reviewableColumnNames.includes('user_id')) {
+    expoDb.execSync(`
+      ALTER TABLE reviewable_items ADD COLUMN user_id TEXT NOT NULL DEFAULT 'temp_user_id';
+      ALTER TABLE reviewable_items ADD COLUMN state TEXT NOT NULL DEFAULT 'new';
+      ALTER TABLE reviewable_items ADD COLUMN current_step_index INTEGER;
+      ALTER TABLE reviewable_items ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;
+      UPDATE reviewable_items SET ease_factor = 250 WHERE ease_factor < 100;
+    `);
+  }
 };
 
-import { seedInitialSqliteData } from './seedData';
+// import { seedInitialSqliteData } from './seedData';
 
 // Run schema initialization once on import
 initializeDatabase();
@@ -300,6 +444,8 @@ export const clearDatabase = async () => {
     DROP TABLE IF EXISTS tasks;
     DROP TABLE IF EXISTS zekr_tasks;
     DROP TABLE IF EXISTS wird_tasks;
+    DROP TABLE IF EXISTS quran_verses;
+    DROP TABLE IF EXISTS quran_chapters;
     DROP TABLE IF EXISTS work_tasks;
     DROP TABLE IF EXISTS study_tasks;
   `);

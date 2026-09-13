@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, View, LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['[Reanimated] dependencies should only be used in web implementation']);
 import NetInfo from '@react-native-community/netinfo';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +15,7 @@ import { syncPendingChanges } from '../services/syncService';
 import { ThemeProvider } from '../components/ThemeProvider';
 import '../global.css';
 import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundTask from 'expo-background-task';
 import { processRecurringTasks } from '../services/taskRecurrenceService';
 
 const BACKGROUND_RECURRENCE_TASK = 'background-recurrence-task';
@@ -21,10 +23,10 @@ const BACKGROUND_RECURRENCE_TASK = 'background-recurrence-task';
 TaskManager.defineTask(BACKGROUND_RECURRENCE_TASK, async () => {
   try {
     await processRecurringTasks();
-    return BackgroundFetch.BackgroundFetchResult.NewData;
+    return BackgroundTask.BackgroundTaskResult.NewData;
   } catch (err) {
     console.error('Background Recurrence Task Failed:', err);
-    return BackgroundFetch.BackgroundFetchResult.Failed;
+    return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
 
@@ -48,9 +50,8 @@ function AppLayout() {
         console.warn('Push registration failed', error);
       });
 
-      void BackgroundFetch.registerTaskAsync(BACKGROUND_RECURRENCE_TASK, {
+      void BackgroundTask.registerTaskAsync(BACKGROUND_RECURRENCE_TASK, {
         minimumInterval: 15 * 60, // 15 minutes
-        stopOnTerminate: false, // android only
         startOnBoot: true,      // android only
       }).catch((error) => {
         console.warn('Background recurrence task registration failed', error);

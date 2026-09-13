@@ -6,7 +6,8 @@ import { BookOpenIcon, SaveIcon } from 'lucide-react-native';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
-import { calculateSM2 } from '../utils/sm2';
+import { newCard } from '@manhaj/srs/src/anki';
+import { useAuthStore } from '../store/authStore';
 
 export default function AddCaseScreen() {
   const { lectureId } = useLocalSearchParams<{ lectureId: string }>();
@@ -28,12 +29,7 @@ export default function AddCaseScreen() {
       const reviewableId = Crypto.randomUUID();
       const nowStr = new Date().toISOString();
 
-      // Default SM-2 properties
-      const sm2Initial = calculateSM2(4, {
-        repetitionCount: 0,
-        easeFactor: 2.5,
-        interval: 0,
-      });
+      const card = newCard();
 
       // Insert case
       await db.insert(schema.caseItems).values({
@@ -49,11 +45,17 @@ export default function AddCaseScreen() {
       // Insert reviewable item
       await db.insert(schema.reviewableItems).values({
         id: reviewableId,
+        userId: useAuthStore.getState().user?.id ?? 'temp_user_id',
         itemType: 'case',
-        interval: sm2Initial.interval,
-        easeFactor: sm2Initial.easeFactor,
-        repetitionCount: sm2Initial.repetitionCount,
-        nextReviewDate: sm2Initial.nextReviewDate.toISOString(),
+        state: card.state,
+        currentStepIndex: card.currentStepIndex,
+        interval: card.interval,
+        easeFactor: card.easeFactor,
+        repetitionCount: card.repetitionCount,
+        lapses: card.lapses,
+        nextReviewDate: nowStr, // new cards are due immediately
+        createdAt: nowStr,
+        updatedAt: nowStr,
       });
 
       // Link case to reviewable
@@ -88,7 +90,7 @@ export default function AddCaseScreen() {
               <TouchableOpacity
                 key={cat}
                 onPress={() => setCategory(cat)}
-                className={`px-4 py-2 rounded-full border ${category === cat ? 'bg-teal-600 border-teal-600' : 'bg-transparent border-slate-300 dark:border-slate-600'}`}
+                className={`px-4 py-2 mr-2 rounded-full border ${category === cat ? 'bg-teal-600 border-teal-600' : 'bg-transparent border-slate-300 dark:border-slate-600'}`}
               >
                 <Text className={`${category === cat ? 'text-white' : 'text-slate-600 dark:text-slate-300'} font-medium capitalize`}>
                   {cat}
