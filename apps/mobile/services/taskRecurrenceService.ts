@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { db } from './database';
-import * as schema from '../db/schema';
+import * as schema from '../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 
 /**

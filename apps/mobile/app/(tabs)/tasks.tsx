@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema';
+import * as schema from '../../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 import * as Haptics from 'expo-haptics';
 import { ScreenHeader } from '../../components';

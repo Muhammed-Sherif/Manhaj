@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenHeader } from '../components';
 import { BookOpenIcon, SaveIcon } from 'lucide-react-native';
 import { db } from '../services/database';
-import * as schema from '../db/schema';
+import * as schema from '../db/schema.js';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';

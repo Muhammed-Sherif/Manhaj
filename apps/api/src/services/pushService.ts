@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { deviceTokens, users } from '@manhaj/db/schema';
+import { deviceTokens, users } from '@manhaj/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';

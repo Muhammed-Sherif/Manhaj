@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenHeader } from '../../components';
 import { BookOpenIcon, CheckCircle2Icon } from 'lucide-react-native';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema';
+import * as schema from '../../db/schema.js';
 import { eq, asc } from 'drizzle-orm';
 
 export default function MushafChapterScreen() {

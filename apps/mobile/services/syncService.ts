@@ -1,7 +1,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import { eq, and } from 'drizzle-orm';
 import { db } from './database';
-import * as schema from '../db/schema';
+import * as schema from '../db/schema.js';
 import { useAuthStore } from '../store/authStore';
 import { syncContentFromServer } from './contentSyncService';
 import {

@@ -6,7 +6,7 @@ import { CircleIcon, CheckCircle2Icon, BookOpenIcon, CheckSquareIcon, SaveIcon, 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Modal from '../components/Modal';
 import { db } from '../services/database';
-import * as schema from '../db/schema';
+import * as schema from '../db/schema.js';
 import * as Crypto from 'expo-crypto';
 import { formatTime } from '../utils/format';
 

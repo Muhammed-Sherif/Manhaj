@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import {
   getDb,
 } from '@manhaj/db';
-import {  betterAuthUser,betterAuthAccount , betterAuthSession , betterAuthVerification} from '@manhaj/db/schema';
+import {  betterAuthUser,betterAuthAccount , betterAuthSession , betterAuthVerification} from '@manhaj/db/schema.js';
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL  || 'https://manhaj-api-five.vercel.app',

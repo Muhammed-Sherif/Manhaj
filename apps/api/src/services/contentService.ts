@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { grades, terms, modules, subjects, lectures, lectureVideos, lectureFiles, videoProgress, questions, choices } from '@manhaj/db/schema';
+import { grades, terms, modules, subjects, lectures, lectureVideos, lectureFiles, videoProgress, questions, choices } from '@manhaj/db/schema.js';
 import { eq, gt, and, isNull, inArray } from 'drizzle-orm';
 
 export class ContentService {

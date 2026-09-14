@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import * as schema from '../db/schema';
+import * as schema from '../db/schema.js';
 
 const DB_NAME = 'manhaj.db';
 
