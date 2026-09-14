@@ -10,6 +10,8 @@ import {
   Link as LinkIcon,
   ExternalLink,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   useGetAdminLectures,
@@ -17,6 +19,8 @@ import {
   usePatchAdminLecturesId,
   useDeleteAdminLecturesId,
   useGetAdminSubjects,
+  useGetAdminQuestions,
+  usePatchAdminQuestionsBulkUnassignLecture,
   postAdminLecturesIdVideos,
   postAdminLecturesIdFiles,
 } from '@manhaj/api-client';
@@ -26,20 +30,19 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
-import React, { useState } from 'react';
-
-interface MaterialLink {
-  id?: string;
-  url: string;
-  sourceName: string;
-}
-
 import { toast } from '@/components/ui/sonner';
 import {
   LectureVideoUpload,
   type PendingVideoFile,
 } from './LectureVideoUpload';
 import { uploadLectureVideo } from '@/lib/videoUploadClient';
+import React, { useState, useEffect } from 'react';
+
+interface MaterialLink {
+  id?: string;
+  url: string;
+  sourceName: string;
+}
 
 export function LecturesPage() {
   const query = useGetAdminLectures();
@@ -57,6 +60,40 @@ export function LecturesPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Questions state
+  const [expandedLectureId, setExpandedLectureId] = useState<string | null>(null);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [lectureQuestionsMap, setLectureQuestionsMap] = useState<Record<string, any[]>>({});
+
+  // Fetch questions for expanded lecture
+  const questionsQuery = useGetAdminQuestions(
+    expandedLectureId ? { lectureId: expandedLectureId } : undefined,
+    { query: { enabled: !!expandedLectureId } }
+  );
+
+  // Update lecture questions map when query data changes
+  useEffect(() => {
+    if (expandedLectureId && questionsQuery.data?.data) {
+      setLectureQuestionsMap(prev => ({
+        ...prev,
+        [expandedLectureId]: questionsQuery.data.data
+      }));
+    }
+  }, [expandedLectureId, questionsQuery.data]);
+
+  const unassignMutation = usePatchAdminQuestionsBulkUnassignLecture({
+    mutation: {
+      onSuccess: () => {
+        toast.success('Questions unassigned successfully');
+        setSelectedQuestionIds([]);
+        query.refetch();
+        if (expandedLectureId) {
+          questionsQuery.refetch();
+        }
+      },
+    },
+  });
 
   const [formData, setFormData] = useState({
     subjectId: '',
@@ -133,6 +170,24 @@ export function LecturesPage() {
     } catch (error) {
       toast.error('Failed to delete lecture');
     }
+  };
+
+  const handleToggleQuestions = (lectureId: string) => {
+    if (expandedLectureId === lectureId) {
+      setExpandedLectureId(null);
+      setSelectedQuestionIds([]);
+    } else {
+      setExpandedLectureId(lectureId);
+      setSelectedQuestionIds([]);
+    }
+  };
+
+  const handleUnassignQuestions = () => {
+    if (selectedQuestionIds.length === 0) {
+      toast.info('Please select questions to unassign');
+      return;
+    }
+    unassignMutation.mutate({ data: { questionIds: selectedQuestionIds } });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,61 +315,142 @@ export function LecturesPage() {
                 const fileCount = lectureFiles.filter((f: any) => f.fileType !== 'audio').length;
                 const videoCount = lectureVideos.length;
                 const hasMaterials = videoCount > 0 || audioCount > 0 || fileCount > 0;
+                const isExpanded = expandedLectureId === lecture.id;
+                const lectureQuestions = lectureQuestionsMap[lecture.id] || [];
 
                 return (
-                  <TableRow key={lecture.id}>
-                    <TableCell>
-                      <span className="flex items-center gap-3 font-semibold text-slate-800">
-                        <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-teal-700">
-                          <BookOpen size={17} />
+                  <React.Fragment key={lecture.id}>
+                    <TableRow>
+                      <TableCell>
+                        <span className="flex items-center gap-3 font-semibold text-slate-800">
+                          <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-teal-700">
+                            <BookOpen size={17} />
+                          </span>
+                          {lecture.name}
                         </span>
-                        {lecture.name}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-slate-500 max-w-xs truncate">
-                      {lecture.description || 'No description'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {videoCount > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 border border-purple-200">
-                            <Video size={12} />
-                            {videoCount} {videoCount === 1 ? 'Video' : 'Videos'}
-                          </span>
-                        )}
-                        {audioCount > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
-                            <Headphones size={12} />
-                            {audioCount} {audioCount === 1 ? 'Audio' : 'Audios'}
-                          </span>
-                        )}
-                        {fileCount > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
-                            <FileText size={12} />
-                            {fileCount} {fileCount === 1 ? 'File' : 'Files'}
-                          </span>
-                        )}
-                        {!hasMaterials && (
-                          <span className="text-xs text-slate-400">No resources linked</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEditClick(lecture)}>
-                          <Pencil size={15} />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDeleteClick(lecture)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 size={15} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-slate-500 max-w-xs truncate">
+                        {lecture.description || 'No description'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {videoCount > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 border border-purple-200">
+                              <Video size={12} />
+                              {videoCount} {videoCount === 1 ? 'Video' : 'Videos'}
+                            </span>
+                          )}
+                          {audioCount > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
+                              <Headphones size={12} />
+                              {audioCount} {audioCount === 1 ? 'Audio' : 'Audios'}
+                            </span>
+                          )}
+                          {fileCount > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                              <FileText size={12} />
+                              {fileCount} {fileCount === 1 ? 'File' : 'Files'}
+                            </span>
+                          )}
+                          {!hasMaterials && (
+                            <span className="text-xs text-slate-400">No resources linked</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleToggleQuestions(lecture.id)}
+                            title={isExpanded ? 'Hide questions' : 'Show questions'}
+                          >
+                            {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => handleEditClick(lecture)}>
+                            <Pencil size={15} />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteClick(lecture)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 size={15} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {isExpanded && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="p-4 bg-slate-50">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-sm text-slate-700">
+                                Assigned Questions ({lectureQuestionsMap[lecture.id]?.length || 0})
+                              </h4>
+                              <div className="flex gap-2">
+                                {selectedQuestionIds.length > 0 && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={handleUnassignQuestions}
+                                    disabled={unassignMutation.isPending}
+                                  >
+                                    <Trash2 size={14} className="mr-1" />
+                                    Unassign ({selectedQuestionIds.length})
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setExpandedLectureId(null)}
+                                >
+                                  <X size={14} className="mr-1" />
+                                  Close
+                                </Button>
+                              </div>
+                            </div>
+                            {questionsQuery.isLoading ? (
+                              <p className="text-sm text-slate-500">Loading questions...</p>
+                            ) : !lectureQuestionsMap[lecture.id] || lectureQuestionsMap[lecture.id].length === 0 ? (
+                              <p className="text-sm text-slate-500">No questions assigned to this lecture.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {lectureQuestionsMap[lecture.id].map((question: any) => (
+                                  <div
+                                    key={question.id}
+                                    className="flex items-start gap-3 p-3 bg-white rounded border border-slate-200"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedQuestionIds.includes(question.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedQuestionIds([...selectedQuestionIds, question.id]);
+                                        } else {
+                                          setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== question.id));
+                                        }
+                                      }}
+                                      className="mt-1 accent-teal-600"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-slate-800 truncate">
+                                        {question.questionText || question.text || 'No text'}
+                                      </p>
+                                      <p className="text-xs text-slate-500 mt-1">
+                                        {question.choices?.find((c: any) => c.isCorrect)?.choiceText || 'No correct answer'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>

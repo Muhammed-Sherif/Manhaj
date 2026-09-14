@@ -179,6 +179,16 @@ export class AdminController {
     }
   };
 
+  bulkUnassignLecture = async (req: Request, res: Response) => {
+    try {
+      const { questionIds } = req.body;
+      const result = await this.adminService.bulkUnassignLecture(questionIds);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
   updateQuestion = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;

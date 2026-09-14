@@ -314,6 +314,25 @@ router.get('/questions', adminController.getQuestions);
 router.patch('/questions/bulk-assign-lecture', adminController.bulkAssignLecture);
 /**
  * @swagger
+ * /admin/questions/bulk-unassign-lecture:
+ *   patch:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questionIds]
+ *             properties:
+ *               questionIds: { type: array, items: { type: string, format: uuid } }
+ *     responses:
+ *       200: { description: Questions unassigned }
+ */
+router.patch('/questions/bulk-unassign-lecture', adminController.bulkUnassignLecture);
+/**
+ * @swagger
  * /admin/questions/{id}:
  *   patch:
  *     tags: [Admin]

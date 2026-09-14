@@ -38,6 +38,7 @@ export * from './patchAdminLecturesIdBody';
 export * from './patchAdminModulesIdBody';
 export * from './patchAdminProfileBody';
 export * from './patchAdminQuestionsBulkAssignLectureBody';
+export * from './patchAdminQuestionsBulkUnassignLectureBody';
 export * from './patchAdminSubjectsIdBody';
 export * from './patchAdminTermsIdBody';
 export * from './patchAdminZekrCatalogIdBody';

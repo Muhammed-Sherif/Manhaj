@@ -309,6 +309,27 @@ export class AdminService {
     return result;
   }
 
+  async bulkUnassignLecture(questionIds: string[]) {
+    if (questionIds.length === 0) {
+      throw new Error('At least one question ID is required');
+    }
+
+    const result = await db.transaction(async (transaction) => {
+      const updatedQuestions = await transaction
+        .update(questions)
+        .set({ lectureId: null })
+        .where(inArray(questions.id, questionIds));
+
+      if (updatedQuestions.rowCount !== questionIds.length) {
+        throw new Error('One or more question IDs were not found');
+      }
+
+      return { success: true, unassignedCount: updatedQuestions.rowCount };
+    });
+
+    return result;
+  }
+
   async updateQuestion(id: string, updates: any) {
     const [question] = await db
       .update(questions)

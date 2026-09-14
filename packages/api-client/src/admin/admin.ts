@@ -39,6 +39,7 @@ import type {
   PatchAdminModulesIdBody,
   PatchAdminProfileBody,
   PatchAdminQuestionsBulkAssignLectureBody,
+  PatchAdminQuestionsBulkUnassignLectureBody,
   PatchAdminSubjectsIdBody,
   PatchAdminTermsIdBody,
   PostAdminGradesBody,
@@ -1194,6 +1195,19 @@ export const patchAdminQuestionsBulkAssignLecture = (
     },
       options);
     }
+
+export const patchAdminQuestionsBulkUnassignLecture = (
+    patchAdminQuestionsBulkUnassignLectureBody: PatchAdminQuestionsBulkUnassignLectureBody,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/admin/questions/bulk-unassign-lecture`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: patchAdminQuestionsBulkUnassignLectureBody
+    },
+      options);
+    }
   
 
 
@@ -1236,6 +1250,47 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
 
       const mutationOptions = getPatchAdminQuestionsBulkAssignLectureMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+
+export const getPatchAdminQuestionsBulkUnassignLectureMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>, TError,{data: PatchAdminQuestionsBulkUnassignLectureBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>, TError,{data: PatchAdminQuestionsBulkUnassignLectureBody}, TContext> => {
+
+const mutationKey = ['patchAdminQuestionsBulkUnassignLecture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>, {data: PatchAdminQuestionsBulkUnassignLectureBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchAdminQuestionsBulkUnassignLecture(data,requestOptions)
+        }
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchAdminQuestionsBulkUnassignLectureMutationResult = NonNullable<Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>>
+    export type PatchAdminQuestionsBulkUnassignLectureMutationBody = PatchAdminQuestionsBulkUnassignLectureBody
+    export type PatchAdminQuestionsBulkUnassignLectureMutationError = unknown
+
+    export const usePatchAdminQuestionsBulkUnassignLecture = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>, TError,{data: PatchAdminQuestionsBulkUnassignLectureBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchAdminQuestionsBulkUnassignLecture>>,
+        TError,
+        {data: PatchAdminQuestionsBulkUnassignLectureBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchAdminQuestionsBulkUnassignLectureMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
