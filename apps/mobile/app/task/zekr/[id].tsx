@@ -11,10 +11,9 @@ export default function ZekrSessionScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  
+
   const [duas, setDuas] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentCount, setCurrentCount] = useState(0);
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -26,21 +25,24 @@ export default function ZekrSessionScreen() {
     if (!id || typeof id !== 'string') return;
     try {
       setLoading(true);
-      // Fetch zekrTasks and join with zekrCatalog
-      const rows = await db.select({
-        zekrTaskId: schema.zekrTasks.id,
-        zekrId: schema.zekrTasks.zekrId,
-        zekrCount: schema.zekrTasks.zekrCount,
-        zekrAchievedCount: schema.zekrTasks.zekrAchievedCount,
-        textAr: schema.zekrCatalog.textAr,
-        textEn: schema.zekrCatalog.textEn,
-        transliteration: schema.zekrCatalog.transliteration,
-        virtue: schema.zekrCatalog.virtue,
-        source: schema.zekrCatalog.source,
-      })
-      .from(schema.zekrTasks)
-      .leftJoin(schema.zekrCatalog, eq(schema.zekrTasks.zekrId, schema.zekrCatalog.id))
-      .where(eq(schema.zekrTasks.taskId, id));
+      // Single zekr_tasks row: either one specific dua (zekrId) or a whole category (categoryId)
+      const [zekrTask] = await db.select().from(schema.zekrTasks).where(eq(schema.zekrTasks.taskId, id));
+
+      if (!zekrTask) {
+        Alert.alert('Error', 'No Zekr found for this task.');
+        router.back();
+        return;
+      }
+
+      let rows: any[] = [];
+      if (zekrTask.zekrId) {
+        // Single dua task
+        const [dua] = await db.select().from(schema.zekrCatalog).where(eq(schema.zekrCatalog.id, zekrTask.zekrId));
+        rows = dua ? [dua] : [];
+      } else if (zekrTask.categoryId) {
+        // Whole category task
+        rows = await db.select().from(schema.zekrCatalog).where(eq(schema.zekrCatalog.categoryId, zekrTask.categoryId));
+      }
 
       if (rows.length === 0) {
         Alert.alert('Error', 'No Zekr found for this task.');
@@ -49,18 +51,7 @@ export default function ZekrSessionScreen() {
       }
 
       setDuas(rows);
-      
-      // Find first uncompleted dua
-      const firstUncompletedIndex = rows.findIndex(r => (r.zekrAchievedCount || 0) < (r.zekrCount || 1));
-      
-      if (firstUncompletedIndex === -1) {
-        // Already fully complete
-        Alert.alert('Completed', 'This task is already finished!');
-        router.back();
-      } else {
-        setCurrentIndex(firstUncompletedIndex);
-        setCurrentCount(rows[firstUncompletedIndex].zekrAchievedCount || 0);
-      }
+      setCurrentIndex(0);
     } catch (err) {
       console.error('Failed to load Zekr session:', err);
       Alert.alert('Error', 'Failed to load session');
@@ -71,10 +62,10 @@ export default function ZekrSessionScreen() {
 
   const handleTap = async () => {
     if (loading || duas.length === 0) return;
-    
+
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Animate button
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -89,33 +80,12 @@ export default function ZekrSessionScreen() {
       })
     ]).start();
 
-    const currentDua = duas[currentIndex];
-    const targetCount = currentDua.zekrCount || 1;
-    const newCount = currentCount + 1;
-
-    // Save achieved count continuously for safety
-    try {
-      await db.update(schema.zekrTasks)
-        .set({ zekrAchievedCount: newCount })
-        .where(eq(schema.zekrTasks.id, currentDua.zekrTaskId));
-    } catch (err) {
-      console.error('Failed to save progress:', err);
-    }
-
-    if (newCount >= targetCount) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      if (currentIndex + 1 < duas.length) {
-        // Move to next dua
-        setCurrentIndex(currentIndex + 1);
-        setCurrentCount(duas[currentIndex + 1].zekrAchievedCount || 0);
-      } else {
-        // Finished all!
-        setCurrentCount(newCount);
-        completeTask();
-      }
+    if (currentIndex + 1 < duas.length) {
+      // Move to next dua
+      setCurrentIndex(currentIndex + 1);
     } else {
-      setCurrentCount(newCount);
+      // Finished all!
+      completeTask();
     }
   };
 
@@ -145,7 +115,7 @@ export default function ZekrSessionScreen() {
   if (duas.length === 0) return null;
 
   const currentDua = duas[currentIndex];
-  const targetCount = currentDua?.zekrCount || 1;
+  const isLastDua = currentIndex + 1 >= duas.length;
 
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -161,7 +131,7 @@ export default function ZekrSessionScreen() {
       <View className="h-1 bg-slate-200 dark:bg-slate-800 w-full">
         <View 
           className="h-full bg-teal-600" 
-          style={{ width: `${(currentIndex / duas.length) * 100}%` }} 
+          style={{ width: `${((currentIndex + 1) / duas.length) * 100}%` }} 
         />
       </View>
 
@@ -190,17 +160,15 @@ export default function ZekrSessionScreen() {
             style={{ transform: [{ scale: scaleAnim }] }}
             className="w-40 h-40 rounded-full bg-teal-50 dark:bg-teal-900/30 border-4 border-teal-500 items-center justify-center shadow-lg"
           >
-            <Text className="text-teal-700 dark:text-teal-400 text-4xl font-bold">
-              {currentCount}
-            </Text>
-            <Text className="text-teal-600/70 dark:text-teal-400/70 font-medium mt-1">
-              of {targetCount}
+            <CheckCircle2Icon size={48} color="#0d9488" />
+            <Text className="text-teal-600/70 dark:text-teal-400/70 font-medium mt-2">
+              {isLastDua ? 'Complete' : 'Next Dua'}
             </Text>
           </Animated.View>
         </TouchableOpacity>
         
         <Text className="text-slate-400 dark:text-slate-500 mt-6 text-sm">
-          Tap the circle to count
+          {isLastDua ? 'Tap to finish the session' : 'Tap the circle to continue'}
         </Text>
       </View>
     </View>

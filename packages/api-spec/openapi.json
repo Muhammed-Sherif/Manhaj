@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000",
+      "url": "https://manhaj-api-five.vercel.app",
       "description": "Development server"
     }
   ],
@@ -1452,6 +1452,48 @@
         "responses": {
           "201": {
             "description": "Task created"
+          }
+        }
+      }
+    },
+    "/student/zekr-catalog": {
+      "get": {
+        "summary": "Get the complete Zekr catalog (categories and duas) for offline sync",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zekr catalog"
+          }
+        }
+      }
+    },
+    "/student/quran-data": {
+      "get": {
+        "summary": "Get the complete Quran data (chapters and verses) for offline sync",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quran data"
           }
         }
       }
@@ -3248,161 +3290,6 @@
         "responses": {
           "200": {
             "description": "Profile updated"
-          }
-        }
-      }
-    },
-    "/admin/zekr-catalog": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "authToken": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of Zekr items"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "authToken": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "text"
-                ],
-                "properties": {
-                  "text": {
-                    "type": "string"
-                  },
-                  "transliteration": {
-                    "type": "string"
-                  },
-                  "meaning": {
-                    "type": "string"
-                  },
-                  "source": {
-                    "type": "string"
-                  },
-                  "defaultCount": {
-                    "type": "number"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Zekr item created"
-          }
-        }
-      }
-    },
-    "/admin/zekr-catalog/{id}": {
-      "patch": {
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "authToken": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string"
-                  },
-                  "transliteration": {
-                    "type": "string"
-                  },
-                  "meaning": {
-                    "type": "string"
-                  },
-                  "source": {
-                    "type": "string"
-                  },
-                  "defaultCount": {
-                    "type": "number"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Zekr item updated"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          },
-          {
-            "authToken": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Zekr item deleted"
           }
         }
       }

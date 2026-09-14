@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
@@ -6,14 +6,36 @@ import { useProgressStore } from '../../store/progressStore';
 import { BookOpenIcon, FlagIcon } from 'lucide-react-native';
 import { ContinueSolvingCard, EmptyProgressCard } from '../../components/home';
 import { scheduleTaskReminders } from '../../services/pushNotifications';
+import { db } from '../../services/database';
+import * as schema from '../../db/schema';
+import { and, eq, lte } from 'drizzle-orm';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { lastProgress, loadProgress } = useProgressStore();
+  const [dueCount, setDueCount] = useState(0);
+
+  const loadDueCount = async () => {
+    try {
+      const nowStr = new Date().toISOString();
+      const userId = useAuthStore.getState().user?.id ?? 'temp_user_id';
+      const dueItems = await db
+        .select({ id: schema.reviewableItems.id })
+        .from(schema.reviewableItems)
+        .where(and(
+          eq(schema.reviewableItems.userId, userId),
+          lte(schema.reviewableItems.nextReviewDate, nowStr)
+        ));
+      setDueCount(dueItems.length);
+    } catch (err) {
+      console.error('Failed to load due review count:', err);
+    }
+  };
 
   useEffect(() => {
     loadProgress();
+    loadDueCount();
     scheduleTaskReminders().catch(console.error);
   }, []);
 
@@ -30,7 +52,7 @@ export default function HomeScreen() {
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
   const recentProgress = lastProgress ? [
@@ -76,7 +98,7 @@ export default function HomeScreen() {
 
           <View className="flex-row gap-3">
             <TouchableOpacity
-              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center border-2 border-teal-500"
               onPress={() => router.push('/browse')}
             >
               <BookOpenIcon size={24} color="#0d9488" />
@@ -84,18 +106,23 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center border-2 border-amber-500"
               onPress={() => router.push('/review')}
             >
-              <FlagIcon size={24} color="#0d9488" />
+              <FlagIcon size={24} color="#f59e0b" />
               <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">Errors</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center"
-              onPress={() => router.push('/flashcards' as any)}
-            >
-              <BookOpenIcon size={24} color="#0d9488" />
+              className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm items-center border-2 border-violet-500"
+              onPress={() => router.push('/flashcards')}
+              >
+              {dueCount > 0 && (
+                <View className="ml-1 absolute -top-2 -left-2 bg-violet-500 rounded-full min-w-[20px] h-5 px-1.5 items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{dueCount > 99 ? '99+' : dueCount}</Text>
+                </View>
+              )}
+                <BookOpenIcon size={24} color="#8b5cf6" />
               <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">SRS</Text>
             </TouchableOpacity>
           </View>

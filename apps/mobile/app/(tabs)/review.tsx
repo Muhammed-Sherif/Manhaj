@@ -100,15 +100,6 @@ export default function ReviewScreen() {
           questions.map((question) => {
             const choices = questionChoices.get(question.id) || [];
             const selectedChoiceId = question.attempt?.choiceId;
-            const correctChoice = choices.find(c => c.isCorrect === 1);
-            const correctChoiceId = correctChoice?.id || null;
-            
-            console.log('Rendering question:', question.id);
-            console.log('Choices:', choices);
-            console.log('Selected ID:', selectedChoiceId);
-            console.log('Correct choice:', correctChoice);
-            console.log('Correct ID:', correctChoiceId);
-
             return (
               <View
                 key={question.id}
@@ -177,7 +168,7 @@ export default function ReviewScreen() {
                           return (
                             <View
                               key={choice.id}
-                              className={`p-3 rounded-lg border ${bgClass} ${borderClass}`}
+                              className={`p-3 mb-2 rounded-lg border ${bgClass} ${borderClass}`}
                             >
                               <View className="flex-row items-center">
                                 <View className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${radioBorder}`}>

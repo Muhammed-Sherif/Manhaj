@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://manhaj-api-five.vercel.app';
 
 const VIDEOS_DIR = `${FileSystem.documentDirectory}videos/`;
 

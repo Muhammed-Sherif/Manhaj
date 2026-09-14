@@ -36,18 +36,17 @@ export interface SyncableTask {
   status: 'pending' | 'in_progress' | 'done' | 'missed';
   achievedFrom?: string | null;
   createdAt: string;
-  zekrTasks?: {
-    id: string;
+  zekrTask?: {
+    categoryId?: string | null;
     zekrId?: string | null;
-    customZekrText?: string | null;
-    zekrCount?: number | null;
-    zekrAchievedCount?: number | null;
-  }[];
+  };
   wirdTask?: {
     wirdMode: string;
-    startAya?: number | null;
-    endAya?: number | null;
-    pageCount?: number | null;
+    startVerseId?: string | null;
+    endVerseId?: string | null;
+    startPage?: number | null;
+    endPage?: number | null;
+    lastAchievedPage?: number | null;
   };
 }
 
@@ -383,8 +382,9 @@ export const syncPendingChanges = async (): Promise<SyncResult> => {
   const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
   await syncContentFromServer();
   try {
-    const { syncZekrCatalog } = await import('./contentSyncService');
+    const { syncZekrCatalog, syncQuranData } = await import('./contentSyncService');
     await syncZekrCatalog();
+    await syncQuranData();
   } catch (err) {
     console.error('Failed to sync zekr catalog', err);
   }

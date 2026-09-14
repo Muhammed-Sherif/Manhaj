@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
-import { CheckIcon, ChevronRightIcon, LogOutIcon, MoonIcon, SunIcon, MonitorIcon } from 'lucide-react-native';
+import { CheckIcon, ChevronRightIcon, LogOutIcon, MoonIcon, SunIcon, MonitorIcon, RefreshCwIcon } from 'lucide-react-native';
 import { getStudentProfile, patchStudentProfile, getStudentGradesWithTerms } from '@manhaj/api-client';
 import { useAuthStore } from '../../store/authStore';
 import { getAutoDownloadEnabled, setAutoDownloadEnabled } from '../../services/contentSyncService';
+import { syncPendingChanges } from '../../services/syncService';
 import Modal from '../../components/Modal';
 import { setColorScheme, getPersistedColorScheme } from '../../components/ThemeProvider';
 
@@ -29,6 +30,8 @@ export default function SettingsScreen() {
     const [saving, setSaving] = useState(false);
     const [autoDownload, setAutoDownload] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -60,6 +63,31 @@ export default function SettingsScreen() {
     const toggleAutoDownload = async (value: boolean) => {
         setAutoDownload(value);
         await setAutoDownloadEnabled(value);
+    };
+
+    const handleManualSync = async () => {
+        if (isSyncing) return;
+
+        const network = await NetInfo.fetch();
+        if (!network.isConnected) {
+            Alert.alert('No internet', 'Connect to the internet and try again.');
+            return;
+        }
+
+        setIsSyncing(true);
+        try {
+            const result = await syncPendingChanges();
+            if (result.success) {
+                setLastSyncedAt(formatTime(new Date()));
+                Alert.alert('Sync complete', 'Your content is up to date.');
+            } else {
+                Alert.alert('Sync failed', 'Some items could not be synced. Please try again.');
+            }
+        } catch {
+            Alert.alert('Sync failed', 'An error occurred while syncing. Please try again.');
+        } finally {
+            setIsSyncing(false);
+        }
     };
 
     const handleThemeChange = (scheme: 'light' | 'dark' | 'system') => {
@@ -122,6 +150,32 @@ export default function SettingsScreen() {
                     trackColor={{ false: '#cbd5e1', true: '#0d9488' }}
                     thumbColor="#ffffff"
                 />
+            </View>
+
+            {/* Manual Sync Button */}
+            <View className="mb-6 rounded-xl bg-white dark:bg-slate-800 px-4 py-3 shadow-sm">
+                <TouchableOpacity
+                    className="flex-row items-center justify-between"
+                    activeOpacity={0.7}
+                    disabled={isSyncing}
+                    onPress={() => void handleManualSync()}
+                >
+                    <View className="flex-1 pr-4">
+                        <Text className="text-base font-semibold text-slate-800 dark:text-slate-100">Sync Content Now</Text>
+                        <Text className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                            {isSyncing
+                                ? 'Syncing...'
+                                : lastSyncedAt
+                                  ? `Last synced at ${lastSyncedAt}`
+                                  : 'Manually download the latest content from the server.'}
+                        </Text>
+                    </View>
+                    {isSyncing ? (
+                        <ActivityIndicator size="small" color="#0d9488" />
+                    ) : (
+                        <RefreshCwIcon size={20} color="#0d9488" />
+                    )}
+                </TouchableOpacity>
             </View>
 
             <Text className="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">Appearance</Text>

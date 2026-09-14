@@ -22,6 +22,27 @@
       "when": 1789068500002,
       "tag": "0002_plain_rhino",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789223993838,
+      "tag": "0003_pink_toro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789224354484,
+      "tag": "0004_fast_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789314611415,
+      "tag": "0005_workable_king_bedlam",
+      "breakpoints": true
     }
   ]
 }

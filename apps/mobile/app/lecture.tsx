@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BookOpenIcon } from 'lucide-react-native';
+import { BookOpenIcon , NotebookIcon } from 'lucide-react-native';
 import {
   LoadingView,
   ErrorView,
@@ -107,16 +107,16 @@ export default function LectureScreen() {
         <LectureQuestionsCard lecture={lecture} />
 
         {/* Private Student Notes & Cases */}
-        <View className="mt-6 mb-8 flex-row justify-between space-x-3">
+        <View className="mt-6 mb-8 gap-2 flex-row justify-between space-x-3">
           <TouchableOpacity 
-            className="flex-1 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex-row items-center justify-center"
+            className="flex-1 bg-white gap-2 dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex-row items-center justify-center"
             onPress={() => router.push(`/add-note?lectureId=${lecture.id}` as any)}
           >
-            <BookOpenIcon size={20} color="#0d9488" className="mr-2" />
+            <NotebookIcon size={20} color="#0d9488" className="mr-2" />
             <Text className="font-semibold text-slate-800 dark:text-slate-100">Add Note</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            className="flex-1 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex-row items-center justify-center"
+            className="flex-1 bg-white gap-2 dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex-row items-center justify-center"
             onPress={() => router.push(`/add-case?lectureId=${lecture.id}` as any)}
           >
             <BookOpenIcon size={20} color="#0d9488" className="mr-2" />

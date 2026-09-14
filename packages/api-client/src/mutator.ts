@@ -23,7 +23,7 @@ const getBaseURL = (): string => {
   } catch {}
 
   if (typeof window !== 'undefined') {
-    return 'http://localhost:3000';
+    return 'https://manhaj-api-five.vercel.app';
   }
 
   return 'http://10.0.2.2:3000';

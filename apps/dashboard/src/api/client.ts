@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://manhaj-api-five.vercel.app';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
@@ -13,4 +13,4 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-export { axios };
+export { axios };

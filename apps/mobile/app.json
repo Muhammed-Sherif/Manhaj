@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FCF8F3"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -48,7 +43,10 @@
       "expo-sqlite",
       "expo-status-bar",
       "@react-native-community/datetimepicker",
-      "expo-background-task"
+      "expo-background-task",
+      "expo-video",
+      "expo-web-browser",
+      "expo-font"
     ],
     "extra": {
       "router": {},

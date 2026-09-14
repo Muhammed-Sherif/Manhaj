@@ -1367,6 +1367,190 @@ export const usePostStudentTasks = <TError = unknown,
       return useMutation(mutationOptions, queryClient);
     }
     /**
+ * @summary Get the complete Zekr catalog (categories and duas) for offline sync
+ */
+export const getStudentZekrCatalog = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/zekr-catalog`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentZekrCatalogQueryKey = () => {
+    return [
+    `/student/zekr-catalog`
+    ] as const;
+    }
+
+    
+export const getGetStudentZekrCatalogQueryOptions = <TData = Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentZekrCatalogQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentZekrCatalog>>> = ({ signal }) => getStudentZekrCatalog(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentZekrCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentZekrCatalog>>>
+export type GetStudentZekrCatalogQueryError = unknown
+
+
+export function useGetStudentZekrCatalog<TData = Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentZekrCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentZekrCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentZekrCatalog<TData = Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentZekrCatalog>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentZekrCatalog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentZekrCatalog<TData = Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get the complete Zekr catalog (categories and duas) for offline sync
+ */
+
+export function useGetStudentZekrCatalog<TData = Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentZekrCatalog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentZekrCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Get the complete Quran data (chapters and verses) for offline sync
+ */
+export const getStudentQuranData = (
+    
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/quran-data`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getGetStudentQuranDataQueryKey = () => {
+    return [
+    `/student/quran-data`
+    ] as const;
+    }
+
+    
+export const getGetStudentQuranDataQueryOptions = <TData = Awaited<ReturnType<typeof getStudentQuranData>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentQuranDataQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentQuranData>>> = ({ signal }) => getStudentQuranData(requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type GetStudentQuranDataQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentQuranData>>>
+export type GetStudentQuranDataQueryError = unknown
+
+
+export function useGetStudentQuranData<TData = Awaited<ReturnType<typeof getStudentQuranData>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentQuranData>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentQuranData>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentQuranData<TData = Awaited<ReturnType<typeof getStudentQuranData>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStudentQuranData>>,
+          TError,
+          Awaited<ReturnType<typeof getStudentQuranData>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function useGetStudentQuranData<TData = Awaited<ReturnType<typeof getStudentQuranData>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Get the complete Quran data (chapters and verses) for offline sync
+ */
+
+export function useGetStudentQuranData<TData = Awaited<ReturnType<typeof getStudentQuranData>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStudentQuranData>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getGetStudentQuranDataQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
  * @summary Update a task
  */
 export const patchStudentTasksId = (

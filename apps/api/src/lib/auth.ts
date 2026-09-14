@@ -6,14 +6,11 @@ import { expo } from '@better-auth/expo';
 import bcrypt from 'bcryptjs';
 import {
   getDb,
-  betterAuthUser,
-  betterAuthSession,
-  betterAuthAccount,
-  betterAuthVerification,
 } from '@manhaj/db';
+import {  betterAuthUser,betterAuthAccount , betterAuthSession , betterAuthVerification} from '@manhaj/db/schema';
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL  || 'http://localhost:3000',
+  baseURL: process.env.BETTER_AUTH_URL  || 'https://manhaj-api-five.vercel.app',
   secret: process.env.BETTER_AUTH_SECRET || 'manhaj-better-auth-secret-key-12345',
   database: drizzleAdapter(getDb(), {
     provider: 'pg',
@@ -65,7 +62,7 @@ export const auth = betterAuth({
   ],
   trustedOrigins: [
     'http://localhost:5173',
-    'http://localhost:3000',
+    'https://manhaj-api-five.vercel.app',
     'http://10.0.2.2:3000',
     'http://127.0.0.1:5173',
     ...(process.env.DASHBOARD_URL ? [process.env.DASHBOARD_URL] : []),

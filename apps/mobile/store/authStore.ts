@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 interface AuthState {
   isAuthenticated: boolean;
+  isHydrated: boolean;
   user: {
     id: string;
     name: string;
@@ -11,7 +12,7 @@ interface AuthState {
     gradeId?: string | null;
     grade?: string | null;
     termId: string | null;
-  } | null;
+  };
   accessToken: string | null;
   refreshToken: string | null;
   setAuth: (tokens: { accessToken: string; refreshToken: string }, user: any) => Promise<void>;
@@ -23,6 +24,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
+  isHydrated: false,
   user: null,
   accessToken: null,
   refreshToken: null,
@@ -88,6 +90,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error) {
       console.error('Failed to load auth:', error);
+    } finally {
+      set({ isHydrated: true });
     }
   },
 }));

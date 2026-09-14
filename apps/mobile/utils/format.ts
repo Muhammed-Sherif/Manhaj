@@ -13,3 +13,18 @@ export const formatDuration = (seconds?: number | null): string => {
   }
   return `${totalMinutes}m`;
 };
+
+/**
+ * Formats a Date/time as "hh:mm" (24-hour) without relying on Intl.
+ * Hermes (React Native's JS engine) doesn't implement Intl by default,
+ * so Date.prototype.toLocaleTimeString throws "undefined is not a function".
+ */
+export const formatTime = (date?: Date | string | null): string => {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+
+  const hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};

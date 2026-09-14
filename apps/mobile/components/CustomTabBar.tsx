@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useColorScheme } from 'nativewind';
-import { HomeIcon, BookOpenIcon, FlagIcon, SettingsIcon } from 'lucide-react-native';
+import { HomeIcon, BookOpenIcon, FlagIcon, SettingsIcon, CheckSquareIcon } from 'lucide-react-native';
 
 interface CustomTabBarProps {
   state: any;
@@ -24,6 +24,8 @@ export default function CustomTabBar({ state, descriptors, navigation }: CustomT
         return <FlagIcon size={24} color={color} />;
       case 'settings':
         return <SettingsIcon size={24} color={color} />;
+      case 'tasks':
+        return <CheckSquareIcon size={24} color={color} />;
       default:
         return null;
     }

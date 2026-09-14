@@ -12,11 +12,11 @@ export function EmptyProgressCard({ onPress }: EmptyProgressCardProps) {
 
   return (
     <TouchableOpacity
-      className="bg-slate-200 dark:bg-slate-800 rounded-2xl p-6 items-center justify-center border border-slate-300/60 dark:border-slate-700/60 active:bg-slate-300"
+      className="bg-slate-200 dark:bg-slate-800 rounded-2xl p-6 items-center justify-center border-2 border-teal-500 active:bg-slate-300"
       onPress={onPress ?? (() => router.push('/browse'))}
       activeOpacity={0.8}
     >
-      <BookOpenIcon size={32} color="#94a3b8" />
+      <BookOpenIcon size={32} color="#0d9488" />
       <Text className="text-slate-600 dark:text-slate-300 font-semibold mt-2">
         Start Your First Lecture
       </Text>

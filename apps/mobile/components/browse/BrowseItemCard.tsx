@@ -17,7 +17,7 @@ export const BrowseItemCard: React.FC<BrowseItemCardProps> = ({
 }) => {
   return (
     <TouchableOpacity
-      className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-3 shadow-sm"
+      className="bg-white border-teal-700 border-4 dark:bg-slate-800 rounded-xl p-4 mb-3 shadow-sm"
       onPress={onPress}
       activeOpacity={0.7}
     >

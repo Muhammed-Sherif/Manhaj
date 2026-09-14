@@ -15,30 +15,90 @@ Notifications.setNotificationHandler({
     }),
 });
 
-const handleContentUpdated = async () => {
-    
-    if (await getAutoDownloadEnabled()) {
-        console.log(true)
-        await syncContentFromServer();
+const handleContentUpdated = async (source: string) => {
+    console.log(`[ContentSync] (${source}) content-updated notification received`);
+    try {
+        const autoDownload = await getAutoDownloadEnabled();
+        console.log(`[ContentSync] (${source}) auto-download enabled: ${autoDownload}`);
+        if (autoDownload) {
+            const startedAt = Date.now();
+            await syncContentFromServer();
+            console.log(`[ContentSync] (${source}) sync completed in ${Date.now() - startedAt}ms`);
+        } else {
+            console.log(`[ContentSync] (${source}) skipped sync (auto-download disabled)`);
+        }
+    } catch (error) {
+        console.error(`[ContentSync] (${source}) sync failed:`, error);
+        throw error;
     }
+};
+
+export const scheduleTaskReminders = async () => {
+    // Cancel all existing scheduled reminders first
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Schedule daily reminder at 8:00 AM
+    await Notifications.scheduleNotificationAsync({
+        content: {
+            title: "Daily Tasks",
+            body: "Don't forget to complete your daily Zekr and Wird targets!",
+        },
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: 8,
+            minute: 0,
+        },
+    });
+
+    // Schedule daily reminder at 8:00 PM for reviewables
+    await Notifications.scheduleNotificationAsync({
+        content: {
+            title: "Spaced Repetition Review",
+            body: "You have flashcards and cases due for review today.",
+        },
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: 20,
+            minute: 0,
+        },
+    });
 };
 
 const CONTENT_UPDATE_TASK = 'manhaj-content-update';
 
 TaskManager.defineTask<Notifications.NotificationTaskPayload>(CONTENT_UPDATE_TASK, async ({ data, error }) => {
-    if (error) return;
+    console.log('[ContentSync] background task triggered', { error: error?.message });
+    if (error) {
+        console.error('[ContentSync] background task error:', error);
+        return;
+    }
     const payload = data as any;
-    if (payload?.data?.body && JSON.parse(payload.data.body).type === 'content-updated') {
-        console.log("content updated", data)
-        await handleContentUpdated();
+    let body: any = null;
+    try {
+        body = payload?.data?.body ? JSON.parse(payload.data.body) : null;
+    } catch (parseError) {
+        console.warn('[ContentSync] failed to parse task payload body:', parseError, 'raw:', payload?.data?.body);
+    }
+    console.log('[ContentSync] background task payload:', JSON.stringify(payload));
+    if (body?.type === 'content-updated') {
+        console.log('[ContentSync] background task matched content-updated type');
+        try {
+            await handleContentUpdated('background-task');
+        } catch {
+            // already logged inside handleContentUpdated
+        }
+    } else {
+        console.log(`[ContentSync] background task ignored (type: ${body?.type ?? 'none'})`);
     }
 });
 
 void Notifications.registerTaskAsync(CONTENT_UPDATE_TASK);
 
 Notifications.addNotificationReceivedListener((notification) => {
-    if (notification.request.content.data?.type === 'content-updated') {
-        void handleContentUpdated().catch((error) => console.warn('Push content sync failed', error));
+    const type = notification.request.content.data?.type;
+    console.log('[ContentSync] notification received in foreground, data.type:', type);
+    if (type === 'content-updated') {
+        void handleContentUpdated('foreground-listener').catch((error) => console.warn('[ContentSync] push content sync failed', error));
     }
 });
 
@@ -67,39 +127,8 @@ export const registerForPushNotifications = async (): Promise<void> => {
         const expoPushToken = tokenData.data;
 
         await postStudentDevicesRegister({
-            deviceToken: expoPushToken,
+            pushToken: expoPushToken,
             platform: Platform.OS
         }).catch((error) => console.warn('Failed to register device token', error));
     }
-};
-
-export const scheduleTaskReminders = async () => {
-    // Cancel all existing scheduled reminders first
-    await Notifications.cancelAllScheduledNotificationsAsync();
-
-    // Schedule daily reminder at 8:00 AM
-    await Notifications.scheduleNotificationAsync({
-        content: {
-            title: "Daily Tasks",
-            body: "Don't forget to complete your daily Zekr and Wird targets!",
-        },
-        trigger: {
-            hour: 8,
-            minute: 0,
-            repeats: true,
-        } as any,
-    });
-
-    // Schedule daily reminder at 8:00 PM for reviewables
-    await Notifications.scheduleNotificationAsync({
-        content: {
-            title: "Spaced Repetition Review",
-            body: "You have flashcards and cases due for review today.",
-        },
-        trigger: {
-            hour: 20,
-            minute: 0,
-            repeats: true,
-        } as any,
-    });
 };
