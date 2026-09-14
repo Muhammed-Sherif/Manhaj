@@ -3,7 +3,7 @@ import { attempts, deviceTokens, flags, questions, choices, grades, terms, users
   zekrCatalog,
   zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs, questionReviewItems,
   quranChapters,
-  quranVerses } from '@manhaj/db/schema.js';
+  quranVerses } from '@manhaj/db/schema';
 import { eq, and, not, inArray, lt, isNull } from 'drizzle-orm';
 
 export class StudentService {

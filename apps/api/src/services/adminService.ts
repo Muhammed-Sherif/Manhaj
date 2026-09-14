@@ -15,7 +15,7 @@ import {
   users,
   betterAuthUser,
   betterAuthAccount,
-} from '@manhaj/db/schema.js';
+} from '@manhaj/db/schema';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { notifyContentUpdated } from './pushService.js';
 

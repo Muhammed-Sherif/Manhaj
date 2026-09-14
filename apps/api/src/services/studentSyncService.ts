@@ -2,7 +2,7 @@ import { db } from '../config/database.js';
 import {
   reviewItems, caseItems, noteItems, tasks,
   questionReviewItems
-} from '@manhaj/db/schema.js';
+} from '@manhaj/db/schema';
 import { eq, and, isNull, gt, or } from 'drizzle-orm';
 
 export class StudentSyncService {

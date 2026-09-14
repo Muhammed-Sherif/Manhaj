@@ -1,5 +1,5 @@
 import { db } from './config/database.js';
-import { quranChapters, quranVerses } from '@manhaj/db/schema.js';
+import { quranChapters, quranVerses } from '@manhaj/db/schema';
 
 async function check() {
   try {
