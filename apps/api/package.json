@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "tsx src/index.ts",
+    "start": "node dist/index.js",
     "generate:openapi": "node src/scripts/generate-openapi.js",
     "create:admin": "tsx src/scripts/create-admin.ts",
     "seed:demo": "tsx src/scripts/seed-demo.ts"
@@ -26,7 +26,6 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "postgres": "^3.4.4",
-    "tsx": "^4.16.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

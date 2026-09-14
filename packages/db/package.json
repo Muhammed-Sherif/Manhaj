@@ -2,19 +2,22 @@
   "name": "@manhaj/db",
   "version": "1.0.0",
   "private": true,
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.ts",
-      "default": "./index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./schema": {
-      "types": "./schema.ts",
-      "default": "./schema.ts"
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js",
+      "default": "./dist/schema.js"
     }
   },
   "scripts": {
+    "build": "tsc",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -27,7 +30,7 @@
   "devDependencies": {
     "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.10",
-    "postgres": "^3.4.4",
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.13",
+    "typescript": "^5.5.0"
   }
 }
