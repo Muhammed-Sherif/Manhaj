@@ -318,13 +318,14 @@ export class AdminService {
       const updatedQuestions = await transaction
         .update(questions)
         .set({ lectureId: null })
-        .where(inArray(questions.id, questionIds));
+        .where(inArray(questions.id, questionIds))
+        .returning();
 
-      if (updatedQuestions.rowCount !== questionIds.length) {
+      if (updatedQuestions.length !== questionIds.length) {
         throw new Error('One or more question IDs were not found');
       }
 
-      return { success: true, unassignedCount: updatedQuestions.rowCount };
+      return { success: true, unassignedCount: updatedQuestions.length };
     });
 
     return result;
