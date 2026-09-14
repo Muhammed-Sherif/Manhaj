@@ -25,14 +25,16 @@ export interface UploadMetadata {
 }
 
 export class VideoUploadService {
-  constructor() {
-    this.ensureDirectories();
-  }
+  private directoriesEnsured = false;
 
   ensureDirectories() {
+    if (this.directoriesEnsured) return;
+    
     if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     if (!fs.existsSync(VIDEOS_DIR)) fs.mkdirSync(VIDEOS_DIR, { recursive: true });
     if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
+    
+    this.directoriesEnsured = true;
   }
 
   private getSessionDir(uploadId: string): string {
@@ -65,6 +67,7 @@ export class VideoUploadService {
     chunkSize: number;
     totalChunks: number;
   }> {
+    this.ensureDirectories();
     const { sourceName, fileSize } = params;
     if (!fileSize || fileSize <= 0) {
       throw new Error('Invalid file size');
@@ -106,6 +109,7 @@ export class VideoUploadService {
   }
 
   async getUploadStatus(lectureId: string, uploadId: string) {
+    this.ensureDirectories();
     const metadata = await this.readMetadata(uploadId);
     if (metadata.lectureId !== lectureId) {
       throw new Error('Upload does not belong to this lecture');
@@ -128,6 +132,7 @@ export class VideoUploadService {
     contentLength: number | undefined,
     inputStream: NodeJS.ReadableStream
   ): Promise<{ chunkIndex: number; success: boolean }> {
+    this.ensureDirectories();
     const metadata = await this.readMetadata(uploadId);
 
     if (metadata.lectureId !== lectureId) {
@@ -190,6 +195,7 @@ export class VideoUploadService {
   }
 
   async finalizeUpload(lectureId: string, uploadId: string, duration?: number) {
+    this.ensureDirectories();
     const metadata = await this.readMetadata(uploadId);
 
     if (metadata.lectureId !== lectureId) {
