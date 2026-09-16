@@ -586,4 +586,27 @@ router.post('/reviewables/sync', studentController.syncReviewables);
  */
 router.post('/sync', studentSyncController.syncStudentItems);
 
+/**
+ * @swagger
+ * /student/account:
+ *   delete:
+ *     summary: Delete the authenticated user's account
+ *     description: Permanently deletes the authenticated user's account and all their associated data
+ *     tags: [Student]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: Account deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 message: { type: string }
+ *       400:
+ *         description: Error deleting account (e.g., admin users cannot delete via this endpoint)
+ */
+router.delete('/account', studentController.deleteAccount);
+
 export { router as studentRoutes };

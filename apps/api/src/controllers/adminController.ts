@@ -325,9 +325,20 @@ export class AdminController {
   deleteUser = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      
+      // Prevent users from deleting themselves
+      if (id === req.user?.id) {
+        res.status(400).json({ error: 'Cannot delete your own account' });
+        return;
+      }
+
       const result = await this.adminService.deleteUser(id);
       res.json(result);
     } catch (error) {
+      if (error instanceof AdminConflictError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
       res.status(400).json({ error: (error as Error).message });
     }
   };

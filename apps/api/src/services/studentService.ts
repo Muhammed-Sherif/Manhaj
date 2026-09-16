@@ -3,8 +3,12 @@ import { attempts, deviceTokens, flags, questions, choices, grades, terms, users
   zekrCatalog,
   zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs, questionReviewItems,
   quranChapters,
-  quranVerses } from '@manhaj/db/schema';
-import { eq, and, not, inArray, lt, isNull } from 'drizzle-orm';
+  quranVerses,
+  betterAuthUser,
+  betterAuthAccount,
+  betterAuthSession,
+  refreshTokens } from '@manhaj/db/schema';
+import { eq, and, not, inArray, lt, isNull, sql } from 'drizzle-orm';
 
 export class StudentService {
   async getProfile(userId: string) {
@@ -494,5 +498,62 @@ export class StudentService {
       }
     }
     return results;
+  }
+
+  async deleteAccount(userId: string) {
+    // Check if user exists
+    const [existingUser] = await db
+      .select()
+      .from(betterAuthUser)
+      .where(eq(betterAuthUser.id, userId))
+      .limit(1);
+
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+
+    // Prevent deletion of admin users (they should use admin endpoint)
+    if (existingUser.role === 'admin') {
+      throw new Error('Admin users cannot delete their own account through this endpoint');
+    }
+
+    // Delete in transaction to ensure data consistency
+    await db.transaction(async (transaction) => {
+      // Delete better-auth related data
+      await transaction
+        .delete(betterAuthSession)
+        .where(eq(betterAuthSession.userId, userId))
+        .catch(() => undefined);
+
+      await transaction
+        .delete(betterAuthAccount)
+        .where(eq(betterAuthAccount.userId, userId))
+        .catch(() => undefined);
+
+      // Delete legacy user data
+      await transaction
+        .delete(users)
+        .where(eq(users.id, userId))
+        .catch(() => undefined);
+
+      // Delete device tokens
+      await transaction
+        .delete(deviceTokens)
+        .where(eq(deviceTokens.userId, userId))
+        .catch(() => undefined);
+
+      // Delete refresh tokens
+      await transaction
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.userId, userId))
+        .catch(() => undefined);
+
+      // Finally delete the user
+      await transaction
+        .delete(betterAuthUser)
+        .where(eq(betterAuthUser.id, userId));
+    });
+
+    return { success: true, message: 'Account deleted successfully' };
   }
 }

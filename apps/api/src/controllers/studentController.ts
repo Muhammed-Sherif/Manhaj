@@ -261,4 +261,13 @@ export class StudentController {
       res.status(400).json({ error: (error as Error).message });
     }
   };
+
+  deleteAccount = async (req: Request, res: Response) => {
+    try {
+      const result = await this.studentService.deleteAccount(req.user!.id);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
 }

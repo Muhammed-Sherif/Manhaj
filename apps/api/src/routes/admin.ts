@@ -531,8 +531,96 @@ router.get('/profile', adminController.getProfile);
 router.patch('/profile', adminController.updateProfile);
 
 // User Management
+/**
+ * @swagger
+ * /admin/users:
+ *   get:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string, format: uuid }
+ *                   name: { type: string }
+ *                   email: { type: string, format: email }
+ *                   role: { type: string }
+ *                   termId: { type: string, format: uuid }
+ *                   termName: { type: string }
+ *                   gradeId: { type: string, format: uuid }
+ *                   gradeName: { type: string }
+ *                   createdAt: { type: string, format: date-time }
+ *                   updatedAt: { type: string, format: date-time }
+ *   post:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string, format: email }
+ *               password: { type: string }
+ *               role: { type: string, enum: [admin, student] }
+ *               termId: { type: string, format: uuid }
+ *     responses:
+ *       201: { description: User created }
+ *       409: { description: User with this email already exists }
+ */
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
+
+/**
+ * @swagger
+ * /admin/users/{id}:
+ *   patch:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string, format: email }
+ *               password: { type: string }
+ *               role: { type: string, enum: [admin, student] }
+ *               termId: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: User updated }
+ *       409: { description: Email already in use }
+ *   delete:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     summary: Delete a user account
+ *     description: Permanently deletes a user and all their associated data (sessions, accounts, tokens, etc.)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: User deleted successfully }
+ *       400: { description: Cannot delete your own account or last admin }
+ *       404: { description: User not found }
+ */
 router.patch('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 
