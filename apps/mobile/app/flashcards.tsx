@@ -6,8 +6,8 @@ import * as schema from '../db/schema';
 import { and, eq, lte } from 'drizzle-orm';
 import { useAuthStore } from '../store/authStore';
 import { scheduleCard, Rating } from '@manhaj/srs/src/anki';
-import { ScreenHeader } from '../components';
-import { BookOpenIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react-native';
+import { ScreenHeader, ReviewChoices } from '../components';
+import { BookOpenIcon, CheckCircleIcon } from 'lucide-react-native';
 import { resolveImageUri } from '../services/imageUploadService';
 
 export default function FlashcardsScreen() {
@@ -93,8 +93,21 @@ export default function FlashcardsScreen() {
             if (qData.questionType === 'mcq') {
               choicesData = await db.select().from(schema.choices).where(eq(schema.choices.questionId, qData.id));
             }
-            
-            return { ...item, data: qData, lecture: lectureData, choices: choicesData };
+
+            // A written question's model answer lives in its subtype row, not on the
+            // question itself — `questions` has no `answer` column, so without this the
+            // reveal fell through to `explanation`, which is a team annotation added to
+            // hard questions rather than the answer the student was asked to produce.
+            let writtenAnswer: string | null = null;
+            if (qData.questionType === 'written') {
+              const [written] = await db
+                .select()
+                .from(schema.writtenQuestions)
+                .where(eq(schema.writtenQuestions.questionId, qData.id));
+              writtenAnswer = written?.writtenAnswer ?? null;
+            }
+
+            return { ...item, data: qData, lecture: lectureData, choices: choicesData, writtenAnswer };
           }
         }
         return item;
@@ -218,37 +231,28 @@ export default function FlashcardsScreen() {
             />
           )}
 
+          {/* Options belong to the question, not to the answer: a student cannot attempt an
+              MCQ without seeing the alternatives, so they sit on the front unmarked and only
+              the correct one lights up on reveal. */}
+          {itemType === 'question' && currentItem.choices?.length > 0 && (
+            <View className="mb-2">
+              <ReviewChoices choices={currentItem.choices} showAnswer={showAnswer} />
+            </View>
+          )}
+
           {/* Answer / Back of Card */}
           {showAnswer ? (
             <View className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <Text className="text-sm font-semibold text-slate-500 mb-2 uppercase">Answer</Text>
-              {itemType === 'question' && data.questionType === 'mcq' ? (
-                <View className="space-y-2">
-                  {currentItem.choices?.map((choice: any) => (
-                    <View 
-                      key={choice.id}
-                      className={`p-3 rounded-lg border ${
-                        choice.isCorrect === 1 
-                          ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' 
-                          : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600'
-                      }`}
-                    >
-                      <Text className={`text-sm ${
-                        choice.isCorrect === 1 
-                          ? 'text-green-800 dark:text-green-300 font-medium' 
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}>
-                        {choice.choiceText}
-                        {choice.isCorrect === 1 && (
-                          <Text className="text-green-600 dark:text-green-400 ml-2">✓ Correct</Text>
-                        )}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              {itemType === 'question' && currentItem.choices?.length > 0 ? (
+                <Text className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                  The correct option is highlighted above.
+                </Text>
               ) : (
                 <Text className="text-lg text-slate-800 dark:text-slate-200 leading-relaxed">
-                  {data.answer || data.explanation || "No written answer provided."}
+                  {itemType === 'question'
+                    ? currentItem.writtenAnswer || data.explanation || 'No written answer provided.'
+                    : data.answer || data.explanation || 'No written answer provided.'}
                 </Text>
               )}
             </View>
