@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { db } from '../../../services/database';
-import * as schema from '../../../db/schema.js';
+import * as schema from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { ChevronLeftIcon, CheckCircle2Icon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';

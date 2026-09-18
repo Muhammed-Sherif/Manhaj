@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { ScreenHeader } from '../../components';
 import { BookOpenIcon } from 'lucide-react-native';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema.js';
+import * as schema from '../../db/schema';
 
 export default function MushafIndexScreen() {
   const router = useRouter();

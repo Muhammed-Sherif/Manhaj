@@ -1,6 +1,6 @@
 import { eq, asc, notInArray, isNull } from 'drizzle-orm';
 import { db } from './database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import { getContentSync } from '@manhaj/api-client';
 
 export interface ContentSyncData {

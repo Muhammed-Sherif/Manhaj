@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { colorScheme as nwColorScheme } from 'nativewind';
 import { eq } from 'drizzle-orm';
 import { db } from '../services/database';
-import { syncState } from '../db/schema.js';
+import { syncState } from '../db/schema';
 
 const THEME_KEY = 'user_theme';
 type ThemeChoice = 'light' | 'dark' | 'system';

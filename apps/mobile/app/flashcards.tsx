@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db } from '../services/database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import { and, eq, lte } from 'drizzle-orm';
 import { useAuthStore } from '../store/authStore';
 import { scheduleCard, Rating } from '@manhaj/srs/src/anki';

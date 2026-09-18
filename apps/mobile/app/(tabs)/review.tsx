@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { XCircleIcon, FlagIcon, CheckCircleIcon, BookOpenIcon } from 'lucide-react-native';
 import { getWrongOrFlaggedQuestions } from '../../services/syncService';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema.js';
+import * as schema from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 

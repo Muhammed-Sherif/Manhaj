@@ -2,7 +2,7 @@ import { getContentLecturesId, getStudentQuestionsUnsolved } from '@manhaj/api-c
 import { getUnsolvedQuestions } from './syncService';
 import { getQuestionsByLecture, saveLectureDetailsToSqlite } from './contentSyncService';
 import { db } from './database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { useAuthStore } from '../store/authStore';
 import type { Question } from '../store/solveStore';

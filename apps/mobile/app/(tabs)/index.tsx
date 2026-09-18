@@ -7,7 +7,7 @@ import { BookOpenIcon, FlagIcon } from 'lucide-react-native';
 import { ContinueSolvingCard, EmptyProgressCard } from '../../components/home';
 import { scheduleTaskReminders } from '../../services/pushNotifications';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema.js';
+import * as schema from '../../db/schema';
 import { and, eq, lte } from 'drizzle-orm';
 
 export default function HomeScreen() {

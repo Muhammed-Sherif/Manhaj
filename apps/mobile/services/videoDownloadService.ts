@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { eq } from 'drizzle-orm';
 import { db } from './database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://manhaj-api-five.vercel.app';
 

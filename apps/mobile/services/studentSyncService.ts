@@ -1,6 +1,6 @@
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from './database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import { customAxios } from '@manhaj/api-client';
 
 export interface StudentSyncData {

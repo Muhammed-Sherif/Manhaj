@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { eq } from 'drizzle-orm';
 import { db } from '../services/database';
-import { syncState } from '../db/schema.js';
+import { syncState } from '../db/schema';
 
 const PROGRESS_KEY = 'last_progress';
 

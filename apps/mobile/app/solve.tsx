@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { BrainCircuitIcon, RepeatIcon } from 'lucide-react-native';
 import { db } from '../services/database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
 import { useAuthStore } from '../store/authStore';
 import { fetchUnsolvedQuestions, fetchAllQuestions } from '../services/questionService';

@@ -27,7 +27,7 @@ export const QuestionAnswerFooter: React.FC = () => {
       try {
         if (currentQuestion?.lectureId) {
           const { db } = require('../../services/database');
-          const schema = require('../../db/schema.js');
+          const schema = require('../../db/schema');
           const { inArray, and, eq } = require('drizzle-orm');
           const { postStudentTasksCompleteStudy } = require('@manhaj/api-client');
           

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Alert } from 'react-native';
 import { BrainCircuitIcon } from 'lucide-react-native';
 import { db } from '../../services/database';
-import * as schema from '../../db/schema.js';
+import * as schema from '../../db/schema';
 import * as Crypto from 'expo-crypto';
 import { eq } from 'drizzle-orm';
 import { newCard } from '@manhaj/srs/src/anki';
