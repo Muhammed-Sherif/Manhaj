@@ -26,6 +26,15 @@ export class AdminConflictError extends Error {
   statusCode = 409;
 }
 
+/**
+ * A resource the caller named but that does not exist. It carries its own status so the
+ * controller can honour the 404 the routes document, rather than falling through to the
+ * generic 400 that a bare `Error` gets.
+ */
+export class AdminNotFoundError extends Error {
+  statusCode = 404;
+}
+
 export class AdminService {
   async getGrades() {
     return db.select().from(grades);
@@ -630,7 +639,7 @@ export class AdminService {
       .limit(1);
 
     if (!existingUser) {
-      throw new Error('User not found');
+      throw new AdminNotFoundError('User not found');
     }
 
     // Prevent deletion of the last admin

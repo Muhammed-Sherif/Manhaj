@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { AdminConflictError, AdminService } from '../services/adminService.js';
+import { AdminConflictError, AdminNotFoundError, AdminService } from '../services/adminService.js';
 import { videoUploadService } from '../services/videoUploadService.js';
 
 export class AdminController {
@@ -335,7 +335,7 @@ export class AdminController {
       const result = await this.adminService.deleteUser(id);
       res.json(result);
     } catch (error) {
-      if (error instanceof AdminConflictError) {
+      if (error instanceof AdminConflictError || error instanceof AdminNotFoundError) {
         res.status(error.statusCode).json({ error: error.message });
         return;
       }
