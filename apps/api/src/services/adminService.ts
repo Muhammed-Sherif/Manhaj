@@ -18,6 +18,8 @@ import {
   betterAuthSession,
   deviceTokens,
   refreshTokens,
+  mcqQuestions,
+  writtenQuestions,
 } from '@manhaj/db/schema';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { notifyContentUpdated } from './pushService.js';
@@ -34,6 +36,24 @@ export class AdminConflictError extends Error {
 export class AdminNotFoundError extends Error {
   statusCode = 404;
 }
+
+/**
+ * A payload the caller can fix. The controllers already fall back to 400, so this changes no
+ * behaviour — it exists so the distinction from a genuine conflict is legible at the throw site,
+ * and so `updateQuestion` can reject a bad conversion before writing anything.
+ */
+export class AdminValidationError extends Error {
+  statusCode = 400;
+}
+
+/**
+ * Columns a client may change on a question. Anything else in the request body is dropped —
+ * splatting the raw payload into `.set()` would let a caller rewrite any column on the row.
+ *
+ * `questionType` and `writtenAnswer` are deliberately absent: they live in the subclass tables
+ * and are handled separately.
+ */
+const UPDATABLE_QUESTION_FIELDS = ['lectureId', 'questionText', 'explanation', 'source'] as const;
 
 export class AdminService {
   async getGrades() {
@@ -236,28 +256,52 @@ export class AdminService {
 
   // Questions
   async createQuestion(questionData: any) {
-    const { choices: questionChoices, ...questionFields } = questionData;
+    const { choices: questionChoices, writtenAnswer, ...questionFields } = questionData;
 
-    const [question] = await db
-      .insert(questions)
-      .values({
-        ...questionFields,
-        createdBy: questionFields.createdBy || null,
-        lectureId: questionFields.lectureId || null,
-      })
-      .returning();
+    const questionType = questionFields.questionType ?? 'mcq';
 
-    // Insert choices
-    if (questionChoices && questionChoices.length > 0) {
-      await db.insert(choices).values(
-        questionChoices.map((choice: any) => ({
-          ...choice,
-          questionId: question.id,
-        }))
-      );
+    if (questionType === 'mcq' && (!questionChoices || questionChoices.length === 0)) {
+      throw new AdminValidationError('An MCQ question requires at least one choice');
     }
 
-    return question;
+    // `written_answer` is NOT NULL, so an admin-created written question must carry its model
+    // answer. Checked before the transaction opens, so a rejected question writes nothing.
+    if (questionType === 'written' && !String(writtenAnswer ?? '').trim()) {
+      throw new AdminValidationError('A written question needs a model answer');
+    }
+
+    return db.transaction(async (transaction) => {
+      const [question] = await transaction
+        .insert(questions)
+        .values({
+          ...questionFields,
+          questionType,
+          createdBy: questionFields.createdBy || null,
+          lectureId: questionFields.lectureId || null,
+        })
+        .returning();
+
+      // Subclass row — CTI invariant: exactly one subclass row per question, matching the
+      // `question_type` discriminator. Without it the row is unreachable through any
+      // subtype-aware query.
+      if (questionType === 'written') {
+        await transaction.insert(writtenQuestions).values({
+          questionId: question.id,
+          writtenAnswer: String(writtenAnswer),
+        });
+      } else {
+        await transaction.insert(mcqQuestions).values({ questionId: question.id });
+
+        await transaction.insert(choices).values(
+          questionChoices.map((choice: any) => ({
+            ...choice,
+            questionId: question.id,
+          }))
+        );
+      }
+
+      return question;
+    });
   }
 
   async getQuestions(lectureId?: string) {
@@ -344,13 +388,103 @@ export class AdminService {
   }
 
   async updateQuestion(id: string, updates: any) {
-    const [question] = await db
-      .update(questions)
-      .set(updates)
-      .where(eq(questions.id, id))
-      .returning();
+    const { choices: questionChoices, writtenAnswer, questionType, ...rest } = updates ?? {};
 
-    return question;
+    const fields: Record<string, unknown> = {};
+    for (const key of UPDATABLE_QUESTION_FIELDS) {
+      if (key in rest) fields[key] = rest[key];
+    }
+
+    return db.transaction(async (transaction) => {
+      const [existing] = await transaction
+        .select()
+        .from(questions)
+        .where(eq(questions.id, id));
+
+      if (!existing) return undefined;
+
+      const nextType = questionType ?? existing.questionType;
+
+      if (nextType !== existing.questionType) {
+        // `written_answer` is NOT NULL, so converting to written without a model answer could
+        // only fail at the database. Checked first, before any write, so a rejected conversion
+        // never reaches the point of dropping the MCQ's choices.
+        if (nextType === 'written' && !String(writtenAnswer ?? '').trim()) {
+          throw new AdminValidationError(
+            'A written question needs a model answer — pass `writtenAnswer` when converting to written'
+          );
+        }
+
+        // Changing the type discards the other subtype's data — an MCQ's choices cannot become
+        // a written answer. Refuse once students have answered, rather than cascading their
+        // attempts away.
+        const [{ count }] = await transaction
+          .select({ count: sql<number>`count(*)` })
+          .from(attempts)
+          .where(eq(attempts.questionId, id));
+
+        if (Number(count) > 0) {
+          throw new AdminConflictError(
+            'Cannot change a question type once students have attempted it'
+          );
+        }
+
+        if (nextType === 'written') {
+          await transaction.delete(mcqQuestions).where(eq(mcqQuestions.questionId, id));
+          await transaction.delete(choices).where(eq(choices.questionId, id));
+          await transaction
+            .insert(writtenQuestions)
+            .values({ questionId: id, writtenAnswer: String(writtenAnswer) })
+            .onConflictDoUpdate({
+              target: writtenQuestions.questionId,
+              set: { writtenAnswer: String(writtenAnswer) },
+            });
+        } else {
+          await transaction.delete(writtenQuestions).where(eq(writtenQuestions.questionId, id));
+          await transaction
+            .insert(mcqQuestions)
+            .values({ questionId: id })
+            .onConflictDoNothing();
+        }
+
+        fields.questionType = nextType;
+      } else if (nextType === 'written' && writtenAnswer !== undefined) {
+        // The column is NOT NULL, so clearing an existing answer has to be refused rather than
+        // written as null.
+        if (!String(writtenAnswer).trim()) {
+          throw new AdminValidationError('A written question needs a model answer');
+        }
+        await transaction
+          .update(writtenQuestions)
+          .set({ writtenAnswer: String(writtenAnswer) })
+          .where(eq(writtenQuestions.questionId, id));
+      }
+
+      // Choices are replaced wholesale when supplied, and only ever belong to an MCQ.
+      if (questionChoices !== undefined && nextType === 'mcq') {
+        await transaction.delete(choices).where(eq(choices.questionId, id));
+        if (questionChoices.length > 0) {
+          await transaction.insert(choices).values(
+            questionChoices.map((choice: any) => ({
+              ...choice,
+              questionId: id,
+            }))
+          );
+        }
+      }
+
+      // `fields` can legitimately be empty — a choices-only edit arrives with nothing to change
+      // on the superclass row — so `updatedAt` is set unconditionally rather than spreading
+      // `fields` alone. Without it the row version would not move and a syncing client would
+      // never pick the new choices up.
+      const [question] = await transaction
+        .update(questions)
+        .set({ ...fields, updatedAt: new Date() })
+        .where(eq(questions.id, id))
+        .returning();
+
+      return question;
+    });
   }
 
   async deleteQuestion(id: string) {

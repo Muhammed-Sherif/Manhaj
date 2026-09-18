@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { AdminConflictError, AdminNotFoundError, AdminService } from '../services/adminService.js';
+import {
+  AdminConflictError,
+  AdminNotFoundError,
+  AdminValidationError,
+  AdminService,
+} from '../services/adminService.js';
 import { videoUploadService } from '../services/videoUploadService.js';
 
 export class AdminController {
@@ -153,6 +158,10 @@ export class AdminController {
       const question = await this.adminService.createQuestion(questionData);
       res.json(question);
     } catch (error) {
+      if (error instanceof AdminConflictError || error instanceof AdminValidationError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
       res.status(400).json({ error: (error as Error).message });
     }
   };
@@ -196,6 +205,10 @@ export class AdminController {
       const question = await this.adminService.updateQuestion(id, updates);
       res.json(question);
     } catch (error) {
+      if (error instanceof AdminConflictError || error instanceof AdminValidationError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
       res.status(400).json({ error: (error as Error).message });
     }
   };
