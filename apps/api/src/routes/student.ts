@@ -1,4 +1,4 @@
-import { Router, type Router as ExpressRouter } from 'express';
+import { Router, raw, type Router as ExpressRouter } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { StudentController } from '../controllers/studentController.js';
 import { StudentSyncController } from '../controllers/studentSyncController.js';
@@ -608,5 +608,61 @@ router.post('/sync', studentSyncController.syncStudentItems);
  *         description: Error deleting account (e.g., admin users cannot delete via this endpoint)
  */
 router.delete('/account', studentController.deleteAccount);
+
+/**
+ * @swagger
+ * /student/images/{ownerKind}/{ownerId}:
+ *   post:
+ *     summary: Upload the image attached to a case or note
+ *     description: |
+ *       Raw binary rather than multipart: the payload is always a single file with no
+ *       accompanying form fields (the owner is in the path), so multipart would only add
+ *       framing. The `Content-Type` header selects the stored extension.
+ *     tags: [Student]
+ *     parameters:
+ *       - in: path
+ *         name: ownerKind
+ *         required: true
+ *         schema: { type: string, enum: [case, note] }
+ *       - in: path
+ *         name: ownerId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         image/jpeg: { schema: { type: string, format: binary } }
+ *         image/png: { schema: { type: string, format: binary } }
+ *         image/webp: { schema: { type: string, format: binary } }
+ *         image/heic: { schema: { type: string, format: binary } }
+ *     responses:
+ *       201:
+ *         description: Stored — returns the key and the URL derived from it
+ *       400:
+ *         description: Unsupported type, empty body, or over the 8MB limit
+ *       404:
+ *         description: No such case/note owned by the caller
+ *   delete:
+ *     summary: Remove the image attached to a case or note
+ *     tags: [Student]
+ *     parameters:
+ *       - in: path
+ *         name: ownerKind
+ *         required: true
+ *         schema: { type: string, enum: [case, note] }
+ *       - in: path
+ *         name: ownerId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Removed (best-effort — a missing object still clears the columns)
+ *       404:
+ *         description: No such case/note owned by the caller
+ */
+const imageBodyParser = raw({ type: 'image/*', limit: '8mb' });
+
+router.post('/images/:ownerKind/:ownerId', imageBodyParser, studentController.uploadImage);
+router.delete('/images/:ownerKind/:ownerId', studentController.deleteImage);
 
 export { router as studentRoutes };

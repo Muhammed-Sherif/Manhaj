@@ -1,11 +1,26 @@
 import { Request, Response } from 'express';
 import { StudentService } from '../services/studentService.js';
+import { imageService, type ImageOwnerKind } from '../services/imageService.js';
+
+/** Card types that can carry an uploaded image. */
+const IMAGE_OWNER_KINDS: readonly string[] = ['case', 'note'];
 
 export class StudentController {
   private studentService: StudentService;
 
   constructor() {
     this.studentService = new StudentService();
+  }
+
+  private parseOwnerKind(req: Request, res: Response): ImageOwnerKind | null {
+    const { ownerKind } = req.params;
+
+    if (!IMAGE_OWNER_KINDS.includes(ownerKind)) {
+      res.status(400).json({ error: 'ownerKind must be "case" or "note"' });
+      return null;
+    }
+
+    return ownerKind as ImageOwnerKind;
   }
 
   getProfile = async (req: Request, res: Response) => {
@@ -268,6 +283,42 @@ export class StudentController {
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
+  // --- Image uploads ---
+  // A dedicated binary endpoint, deliberately separate from the row-sync routes: image
+  // bytes are orders of magnitude larger than a row and shouldn't ride the sync payload.
+
+  uploadImage = async (req: Request, res: Response) => {
+    const ownerKind = this.parseOwnerKind(req, res);
+    if (!ownerKind) return;
+
+    try {
+      const stored = await imageService.uploadImage({
+        userId: req.user!.id,
+        ownerKind,
+        ownerId: req.params.ownerId,
+        contentType: String(req.headers['content-type'] || ''),
+        body: req.body as Buffer,
+      });
+      res.status(201).json(stored);
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode ?? 400;
+      res.status(status).json({ error: (error as Error).message });
+    }
+  };
+
+  deleteImage = async (req: Request, res: Response) => {
+    const ownerKind = this.parseOwnerKind(req, res);
+    if (!ownerKind) return;
+
+    try {
+      await imageService.deleteImage(req.user!.id, ownerKind, req.params.ownerId);
+      res.json({ success: true });
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode ?? 400;
+      res.status(status).json({ error: (error as Error).message });
     }
   };
 }
