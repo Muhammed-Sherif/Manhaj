@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScreenHeader } from '../components';
+import { ScreenHeader, ImagePickerField, type PickedImage } from '../components';
 import { BookOpenIcon, SaveIcon } from 'lucide-react-native';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';
+import { attachImage } from '../services/imageUploadService';
 
 export default function AddCaseScreen() {
   const { lectureId } = useLocalSearchParams<{ lectureId: string }>();
@@ -17,6 +18,7 @@ export default function AddCaseScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [answer, setAnswer] = useState('');
+  const [image, setImage] = useState<PickedImage | null>(null);
 
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
@@ -63,6 +65,17 @@ export default function AddCaseScreen() {
         reviewableId,
         caseId,
       });
+
+      // Copy the image into app storage and queue it. Done after the row exists because
+      // the upload is addressed by the card's id.
+      if (image) {
+        await attachImage({
+          ownerKind: 'case',
+          ownerId: caseId,
+          sourceUri: image.uri,
+          mimeType: image.mimeType,
+        });
+      }
 
       Alert.alert('Success', 'Case added successfully!', [
         { text: 'OK', onPress: () => router.back() }
@@ -131,6 +144,8 @@ export default function AddCaseScreen() {
             textAlignVertical="top"
             className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 mb-4 h-32"
           />
+
+          <ImagePickerField value={image} onChange={setImage} />
 
           <TouchableOpacity
             onPress={handleSave}

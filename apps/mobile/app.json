@@ -46,7 +46,13 @@
       "expo-background-task",
       "expo-video",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Manhaj attaches a photo to your own case and note cards. It is never used for anything else."
+        }
+      ]
     ],
     "extra": {
       "router": {},

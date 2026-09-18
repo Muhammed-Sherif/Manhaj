@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 import { scheduleCard, Rating } from '@manhaj/srs/src/anki';
 import { ScreenHeader } from '../components';
 import { BookOpenIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react-native';
+import { resolveImageUri } from '../services/imageUploadService';
 
 export default function FlashcardsScreen() {
   const router = useRouter();
@@ -15,10 +16,38 @@ export default function FlashcardsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     loadDueItems();
   }, []);
+
+  // Resolve the current card's image, preferring the local file and falling back to the
+  // server copy — the device that attached it has the file, another device does not.
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolve = async () => {
+      const current = items[currentIndex];
+
+      if (!current?.data) {
+        if (!cancelled) setImageUri(null);
+        return;
+      }
+
+      const uri = await resolveImageUri(
+        current.data.imageLocalPath ?? null,
+        current.data.imageUrl ?? null
+      );
+
+      if (!cancelled) setImageUri(uri);
+    };
+
+    void resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [items, currentIndex]);
 
   const loadDueItems = async () => {
     try {
@@ -179,6 +208,15 @@ export default function FlashcardsScreen() {
           <Text className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed mb-6">
             {data.content || data.questionText}
           </Text>
+
+          {/* Only case and note cards carry images; questions never do. */}
+          {imageUri && (
+            <Image
+              source={{ uri: imageUri }}
+              className="w-full h-52 rounded-xl mb-6"
+              resizeMode="contain"
+            />
+          )}
 
           {/* Answer / Back of Card */}
           {showAnswer ? (

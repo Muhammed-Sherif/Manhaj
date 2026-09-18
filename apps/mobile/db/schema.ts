@@ -155,6 +155,19 @@ export const questionReviewable = sqliteTable('question_reviewable', {
   questionId: text('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
 });
 
+/**
+ * Image attachment state for user-authorable review items.
+ *
+ * The device and the server are deliberately asymmetric about what is authoritative.
+ * Here it is `imageLocalPath`: the device that took the photo holds the only copy of the
+ * bytes until they reach the server, and `imageUrl` stays empty until they do. On the
+ * server it is `imageKey` — the provider-relative path, which survives a storage-provider
+ * swap in a way that a URL does not. `resolveImageUri` bridges the two on read, preferring
+ * whichever copy this device can actually reach.
+ */
+export const imageUploadStatuses = ['none', 'pending', 'synced', 'failed'] as const;
+export type ImageUploadStatus = (typeof imageUploadStatuses)[number];
+
 export const caseItems = sqliteTable('case_items', {
   id: text('id').primaryKey(),
   lectureId: text('lecture_id').notNull(),
@@ -162,6 +175,9 @@ export const caseItems = sqliteTable('case_items', {
   title: text('title').notNull(),
   content: text('content').notNull(),
   answer: text('answer'),
+  imageLocalPath: text('image_local_path'),
+  imageUrl: text('image_url'),
+  imageUploadStatus: text('image_upload_status').notNull().default('none'),
   createdAt: text('created_at').notNull(),
 });
 
@@ -176,6 +192,9 @@ export const noteItems = sqliteTable('note_items', {
   type: text('type').notNull(),
   content: text('content').notNull(),
   sourceQuestionId: text('source_question_id'),
+  imageLocalPath: text('image_local_path'),
+  imageUrl: text('image_url'),
+  imageUploadStatus: text('image_upload_status').notNull().default('none'),
   createdAt: text('created_at').notNull(),
 });
 

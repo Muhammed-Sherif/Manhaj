@@ -3,6 +3,7 @@ export * from './Container';
 export * from './LoadingView';
 export * from './ErrorView';
 export * from './ScreenHeader';
+export * from './ImagePickerField';
 export * from './browse';
 export * from './lecture';
 export * from './home';

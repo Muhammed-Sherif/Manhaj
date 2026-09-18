@@ -175,6 +175,9 @@ export const initializeDatabase = () => {
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       answer TEXT,
+      image_local_path TEXT,
+      image_url TEXT,
+      image_upload_status TEXT NOT NULL DEFAULT 'none',
       created_at TEXT NOT NULL
     );
 
@@ -191,6 +194,9 @@ export const initializeDatabase = () => {
       type TEXT NOT NULL,
       content TEXT NOT NULL,
       source_question_id TEXT,
+      image_local_path TEXT,
+      image_url TEXT,
+      image_upload_status TEXT NOT NULL DEFAULT 'none',
       created_at TEXT NOT NULL
     );
 
@@ -437,6 +443,16 @@ export const initializeDatabase = () => {
   ]) {
     addColumnIfMissing(table, 'updated_at', 'TEXT');
     addColumnIfMissing(table, 'deleted_at', 'TEXT');
+  }
+
+  // ── Migration: image attachment columns on user-authored cards.
+  // These tables shipped without them, so existing installs pick them up here; the CREATE
+  // TABLE blocks below carry the same columns for fresh installs. SQLite allows a NOT NULL
+  // ADD COLUMN as long as the default is constant, which it is.
+  for (const table of ['case_items', 'note_items']) {
+    addColumnIfMissing(table, 'image_local_path', 'TEXT');
+    addColumnIfMissing(table, 'image_url', 'TEXT');
+    addColumnIfMissing(table, 'image_upload_status', "TEXT NOT NULL DEFAULT 'none'");
   }
 
   // ── Migration: add updated_at and deleted_at to tasks table for sync functionality
