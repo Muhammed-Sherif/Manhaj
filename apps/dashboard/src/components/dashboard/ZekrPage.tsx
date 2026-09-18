@@ -89,17 +89,16 @@ export function ZekrPage() {
 
   return (
     <div className="space-y-6">
-      <Toolbar>
-        <div className="flex w-full items-center justify-between">
-          <Heading title="Zekr Catalog" description="Manage dhikr items and targets." />
-          <Button onClick={() => {
-            setEditingItemId('new');
-            setFormData({ text: '', defaultCount: 1, meaning: '', source: '', transliteration: '' });
-          }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Zekr
-          </Button>
-        </div>
-      </Toolbar>
+      <div className="flex w-full items-center justify-between">
+        <Heading eyebrow="Zekr Management" title="Zekr Catalog" description="Manage dhikr items and targets." />
+        <Button onClick={() => {
+          setEditingItemId('new');
+          setFormData({ text: '', defaultCount: 1, meaning: '', source: '', transliteration: '' });
+        }}>
+          <Plus className="mr-2 h-4 w-4" /> Add Zekr
+        </Button>
+      </div>
+      <Toolbar onFilter={() => {}} />
 
       <Card>
         <CardContent className="p-0">

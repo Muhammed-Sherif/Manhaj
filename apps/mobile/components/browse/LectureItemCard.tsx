@@ -24,17 +24,6 @@ export const LectureItemCard: React.FC<LectureItemCardProps> = ({ lecture, onPre
           {!!lecture.description && (
             <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{lecture.description}</Text>
           )}
-
-          <View className="flex-row items-center mt-2 space-x-3">
-            <View className="flex-row items-center">
-              <VideoIcon size={14} color="#64748b" />
-              <Text className="text-slate-500 dark:text-slate-400 text-xs ml-1">2 videos</Text>
-            </View>
-            <View className="flex-row items-center">
-              <FileTextIcon size={14} color="#64748b" />
-              <Text className="text-slate-500 dark:text-slate-400 text-xs ml-1">5 files</Text>
-            </View>
-          </View>
         </View>
         <ChevronRightIcon size={20} color="#94a3b8" />
       </View>

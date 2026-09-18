@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenHeader } from '../components';
 import { BookOpenIcon, SaveIcon } from 'lucide-react-native';
 import { db } from '../services/database';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';
@@ -134,7 +134,7 @@ export default function AddCaseScreen() {
 
           <TouchableOpacity
             onPress={handleSave}
-            className="bg-teal-600 flex-row items-center justify-center p-4 rounded-xl mt-2"
+            className="bg-teal-600 flex-row items-center gap-2 justify-center p-4 rounded-xl mt-2"
           >
             <SaveIcon size={20} color="white" className="mr-2" />
             <Text className="text-white font-bold text-lg">Save Case</Text>

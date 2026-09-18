@@ -28,7 +28,6 @@ export default function BrowseScreen() {
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <BrowseHeader />
-
       <ScrollView className="flex-1 p-4">
         <BrowseContent />
       </ScrollView>

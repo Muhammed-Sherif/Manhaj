@@ -5,6 +5,8 @@ overrides:
   '@tanstack/react-query': '^5.0.0'
   'react': '19.2.3'
   'react-dom': '19.2.3'
+  'react-native-reanimated': '4.5.1'
+  'react-native-worklets': '0.10.1'
 peerDependencyRules:
   allowedVersions:
     '@tanstack/react-query': '^5.0.0'

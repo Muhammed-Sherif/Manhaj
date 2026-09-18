@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import * as schema from '../db/schema.js';
+import * as schema from '../db/schema';
 
 const DB_NAME = 'manhaj.db';
 
@@ -49,6 +49,8 @@ export const initializeDatabase = () => {
       subject_id TEXT NOT NULL,
       name TEXT NOT NULL,
       description TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
       FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
     );
     
@@ -59,6 +61,8 @@ export const initializeDatabase = () => {
       url TEXT NOT NULL,
       duration INTEGER NOT NULL,
       local_file_path TEXT,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
       FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
     );
     
@@ -68,6 +72,8 @@ export const initializeDatabase = () => {
       source_name TEXT NOT NULL,
       file_url TEXT NOT NULL,
       file_type TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
       FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
     );
     
@@ -75,9 +81,12 @@ export const initializeDatabase = () => {
       id TEXT PRIMARY KEY,
       lecture_id TEXT,
       created_by TEXT,
+      question_type TEXT NOT NULL DEFAULT 'mcq',
       question_text TEXT NOT NULL,
       explanation TEXT NOT NULL,
       source TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
       FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE SET NULL
     );
     
@@ -125,12 +134,6 @@ export const initializeDatabase = () => {
       value TEXT NOT NULL
     );
   `);
-  
-  try {
-    expoDb.execSync(`ALTER TABLE questions ADD COLUMN question_type TEXT NOT NULL DEFAULT 'mcq';`);
-  } catch (e) {
-    // Ignore error if column already exists
-  }
 
   const secondBatch = `
     CREATE TABLE IF NOT EXISTS mcq_questions (
@@ -407,6 +410,124 @@ export const initializeDatabase = () => {
       ALTER TABLE reviewable_items ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;
       UPDATE reviewable_items SET ease_factor = 250 WHERE ease_factor < 100;
     `);
+  }
+
+  // ── Migration: add content sync metadata (updated_at, deleted_at) to tables
+  // that need it for content sync functionality
+  const addColumnIfMissing = (
+    tableName: string,
+    columnName: string,
+    columnDefinition: string
+  ) => {
+    const columns = expoDb.getAllSync(
+      `PRAGMA table_info(${tableName})`
+    ) as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === columnName)) {
+      expoDb.execSync(
+        `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`
+      );
+    }
+  };
+
+  for (const table of [
+    'lectures',
+    'lecture_videos',
+    'lecture_files',
+    'questions',
+  ]) {
+    addColumnIfMissing(table, 'updated_at', 'TEXT');
+    addColumnIfMissing(table, 'deleted_at', 'TEXT');
+  }
+
+  // ── Migration: add updated_at and deleted_at to tasks table for sync functionality
+  const tasksColumns = expoDb.getAllSync(
+    `PRAGMA table_info(tasks)`
+  ) as Array<{ name: string }>;
+  const tasksColumnNames = tasksColumns.map((c) => c.name);
+  if (tasksColumnNames.length > 0 && !tasksColumnNames.includes('updated_at')) {
+    // Disable FKs during the rebuild
+    const fkRows = expoDb.getAllSync(`PRAGMA foreign_keys`) as Array<{ foreign_keys: number }>;
+    const fkWasOn = fkRows[0]?.foreign_keys === 1;
+    expoDb.execSync(`PRAGMA foreign_keys = OFF;`);
+    try {
+      expoDb.execSync(`
+        CREATE TABLE tasks_new (
+          id TEXT PRIMARY KEY,
+          task_type TEXT NOT NULL,
+          recurrence TEXT NOT NULL DEFAULT 'once',
+          start_time TEXT,
+          end_time TEXT,
+          consumed_time INTEGER,
+          estimated_time INTEGER,
+          status TEXT NOT NULL DEFAULT 'pending',
+          achieved_from TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT,
+          UNIQUE(task_type, start_time, end_time, created_at)
+        );
+        INSERT INTO tasks_new (id, task_type, recurrence, start_time, end_time, consumed_time, estimated_time, status, achieved_from, created_at, updated_at, deleted_at)
+          SELECT id, task_type, recurrence, start_time, end_time, consumed_time, estimated_time, status, achieved_from, created_at, created_at, NULL
+          FROM tasks;
+        DROP TABLE tasks;
+        ALTER TABLE tasks_new RENAME TO tasks;
+      `);
+    } finally {
+      if (fkWasOn) expoDb.execSync(`PRAGMA foreign_keys = ON;`);
+    }
+  }
+
+  // ── Migration: add created_at, updated_at, deleted_at to reviewable_items table
+  const reviewableItemsColumns = expoDb.getAllSync(
+    `PRAGMA table_info(reviewable_items)`
+  ) as Array<{ name: string }>;
+  const reviewableItemsColumnNames = reviewableItemsColumns.map((c) => c.name);
+  if (reviewableItemsColumnNames.length > 0 && !reviewableItemsColumnNames.includes('created_at')) {
+    // Disable FKs during the rebuild
+    const fkRows = expoDb.getAllSync(`PRAGMA foreign_keys`) as Array<{ foreign_keys: number }>;
+    const fkWasOn = fkRows[0]?.foreign_keys === 1;
+    expoDb.execSync(`PRAGMA foreign_keys = OFF;`);
+    try {
+      expoDb.execSync(`
+        CREATE TABLE reviewable_items_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          item_type TEXT NOT NULL,
+          state TEXT NOT NULL DEFAULT 'new',
+          current_step_index INTEGER,
+          interval INTEGER NOT NULL DEFAULT 0,
+          ease_factor INTEGER NOT NULL DEFAULT 250,
+          repetition_count INTEGER NOT NULL DEFAULT 0,
+          lapses INTEGER NOT NULL DEFAULT 0,
+          next_review_date TEXT NOT NULL,
+          last_reviewed_at TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT
+        );
+        INSERT INTO reviewable_items_new (id, user_id, item_type, state, current_step_index, interval, ease_factor, repetition_count, lapses, next_review_date, last_reviewed_at, created_at, updated_at, deleted_at)
+          SELECT id, user_id, item_type, state, current_step_index, interval, ease_factor, repetition_count, lapses, next_review_date, last_reviewed_at, datetime('now'), datetime('now'), NULL
+          FROM reviewable_items;
+        DROP TABLE reviewable_items;
+        ALTER TABLE reviewable_items_new RENAME TO reviewable_items;
+      `);
+    } finally {
+      if (fkWasOn) expoDb.execSync(`PRAGMA foreign_keys = ON;`);
+    }
+  }
+
+  // ── Migration: make updated_at NOT NULL in lectures, lecture_videos, lecture_files, questions
+  // For existing tables, just update NULL values to current timestamp. New tables will have NOT NULL constraint
+  const updateUpdatedAtIfNull = (tableName: string) => {
+    expoDb.execSync(`UPDATE ${tableName} SET updated_at = datetime('now') WHERE updated_at IS NULL;`);
+  };
+
+  for (const table of ['lectures', 'lecture_videos', 'lecture_files', 'questions']) {
+    try {
+      updateUpdatedAtIfNull(table);
+    } catch (e) {
+      // Ignore if table doesn't exist or column doesn't exist
+    }
   }
 };
 
