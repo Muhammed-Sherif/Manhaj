@@ -1,0 +1,88 @@
+{
+  "takenAt": "2026-09-18T14:51:26.466Z",
+  "case_items": {
+    "rows": 0,
+    "columns": [
+      {
+        "column_name": "review_item_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "lecture_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "title",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "deleted_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "scenario",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "diagnosis",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "management",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "key_points",
+        "data_type": "text",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  "note_items": {
+    "rows": 0,
+    "columns": [
+      {
+        "column_name": "review_item_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "lecture_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "deleted_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "note_text",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "is_starred",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      }
+    ]
+  }
+}

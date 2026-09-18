@@ -158,16 +158,21 @@ export class StudentSyncService {
               questionId: questionReviewItem.questionId,
             },
           });
-      } else if (caseItem && caseItem.reviewItemId && caseItem.title && caseItem.scenario && caseItem.diagnosis) {
+      } else if (caseItem && caseItem.reviewItemId && caseItem.title && caseItem.content) {
+        // `title` and `content` are both NOT NULL, so they are what the guard tests. The image
+        // columns are not: a row syncs before its image finishes uploading, which is exactly why
+        // `imageUploadStatus` travels with the row instead of the client re-syncing it later.
         await tx.insert(caseItems)
           .values({
             reviewItemId: caseItem.reviewItemId,
             lectureId: caseItem.lectureId || null,
+            category: caseItem.category || 'general',
             title: caseItem.title,
-            scenario: caseItem.scenario,
-            diagnosis: caseItem.diagnosis,
-            management: caseItem.management || null,
-            keyPoints: caseItem.keyPoints || null,
+            content: caseItem.content,
+            answer: caseItem.answer || null,
+            imageKey: caseItem.imageKey || null,
+            imageUrl: caseItem.imageUrl || null,
+            imageUploadStatus: caseItem.imageUploadStatus || 'none',
             updatedAt: caseItem.updatedAt ? new Date(caseItem.updatedAt) : new Date(),
             deletedAt: caseItem.deletedAt ? new Date(caseItem.deletedAt) : null,
           })
@@ -175,22 +180,28 @@ export class StudentSyncService {
             target: [caseItems.reviewItemId],
             set: {
               lectureId: caseItem.lectureId || null,
+              category: caseItem.category || 'general',
               title: caseItem.title,
-              scenario: caseItem.scenario,
-              diagnosis: caseItem.diagnosis,
-              management: caseItem.management || null,
-              keyPoints: caseItem.keyPoints || null,
+              content: caseItem.content,
+              answer: caseItem.answer || null,
+              imageKey: caseItem.imageKey || null,
+              imageUrl: caseItem.imageUrl || null,
+              imageUploadStatus: caseItem.imageUploadStatus || 'none',
               updatedAt: caseItem.updatedAt ? new Date(caseItem.updatedAt) : new Date(),
               deletedAt: caseItem.deletedAt ? new Date(caseItem.deletedAt) : null,
             },
           });
-      } else if (noteItem && noteItem.reviewItemId && noteItem.noteText) {
+      } else if (noteItem && noteItem.reviewItemId && noteItem.content) {
         await tx.insert(noteItems)
           .values({
             reviewItemId: noteItem.reviewItemId,
             lectureId: noteItem.lectureId || null,
-            noteText: noteItem.noteText,
-            isStarred: noteItem.isStarred || false,
+            type: noteItem.type || 'general',
+            content: noteItem.content,
+            sourceQuestionId: noteItem.sourceQuestionId || null,
+            imageKey: noteItem.imageKey || null,
+            imageUrl: noteItem.imageUrl || null,
+            imageUploadStatus: noteItem.imageUploadStatus || 'none',
             updatedAt: noteItem.updatedAt ? new Date(noteItem.updatedAt) : new Date(),
             deletedAt: noteItem.deletedAt ? new Date(noteItem.deletedAt) : null,
           })
@@ -198,8 +209,12 @@ export class StudentSyncService {
             target: [noteItems.reviewItemId],
             set: {
               lectureId: noteItem.lectureId || null,
-              noteText: noteItem.noteText,
-              isStarred: noteItem.isStarred || false,
+              type: noteItem.type || 'general',
+              content: noteItem.content,
+              sourceQuestionId: noteItem.sourceQuestionId || null,
+              imageKey: noteItem.imageKey || null,
+              imageUrl: noteItem.imageUrl || null,
+              imageUploadStatus: noteItem.imageUploadStatus || 'none',
               updatedAt: noteItem.updatedAt ? new Date(noteItem.updatedAt) : new Date(),
               deletedAt: noteItem.deletedAt ? new Date(noteItem.deletedAt) : null,
             },
@@ -400,19 +415,25 @@ export interface ReviewItemChange {
   caseItem?: {
     reviewItemId: string;
     lectureId?: string | null;
+    category?: string;
     title: string;
-    scenario: string;
-    diagnosis: string;
-    management?: string;
-    keyPoints?: string;
+    content: string;
+    answer?: string | null;
+    imageKey?: string | null;
+    imageUrl?: string | null;
+    imageUploadStatus?: string;
     updatedAt?: string;
     deletedAt?: string | null;
   };
   noteItem?: {
     reviewItemId: string;
     lectureId?: string | null;
-    noteText: string;
-    isStarred?: boolean;
+    type?: string;
+    content: string;
+    sourceQuestionId?: string | null;
+    imageKey?: string | null;
+    imageUrl?: string | null;
+    imageUploadStatus?: string;
     updatedAt?: string;
     deletedAt?: string | null;
   };

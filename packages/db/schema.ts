@@ -212,24 +212,44 @@ export const questionReviewItems = pgTable('question_review_items', {
 });
 
 // Subclass: Case — medical case scenario added by student
+// Subclass: Case — authored by the student.
+//
+// Shape note: this mirrors the MOBILE schema, which is canonical. The server's original shape
+// (scenario/diagnosis/management/keyPoints) was a richer clinical model that no code ever read
+// or wrote — a case_item is a flashcard with a title, a prompt and an answer, same as a note.
+//
+// Image columns: `image_key` is authoritative — it is the provider-relative path in whichever
+// storage backend is configured (see apps/api/src/services/storage). `image_url` is a derived
+// cache of `image_key -> URL` so list screens need no storage round trip, and can always be
+// rebuilt from the key, which is what makes a provider swap possible without rewriting rows.
+// `image_upload_status` mirrors the device's view of the upload, so a row can sync before its
+// image finishes uploading without the client re-syncing the whole row afterwards.
 export const caseItems = pgTable('case_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
   lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
+  category: text('category').notNull().default('general'),
   title: text('title').notNull(),
-  scenario: text('scenario').notNull(),    // the clinical presentation story
-  diagnosis: text('diagnosis').notNull(),  // the answer / main diagnosis
-  management: text('management'),          // treatment plan (optional)
-  keyPoints: text('key_points'),           // bullet points to remember
+  content: text('content').notNull(),      // the prompt shown before reveal
+  answer: text('answer'),                  // revealed after the student taps Show Answer
+  imageKey: text('image_key'),
+  imageUrl: text('image_url'),
+  imageUploadStatus: text('image_upload_status').notNull().default('none'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
 
 // Subclass: Note — lecture note added by student
+// Subclass: Note — authored by the student, mirrors the MOBILE schema (canonical).
+// The image columns carry the same meaning as on case_items above.
 export const noteItems = pgTable('note_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
   lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
-  noteText: text('note_text').notNull(),   // the note content (markdown supported)
-  isStarred: boolean('is_starred').notNull().default(false), // for quick filtering
+  type: text('type').notNull().default('general'),
+  content: text('content').notNull(),      // the note body (markdown supported)
+  sourceQuestionId: uuid('source_question_id').references(() => questions.id, { onDelete: 'set null' }),
+  imageKey: text('image_key'),
+  imageUrl: text('image_url'),
+  imageUploadStatus: text('image_upload_status').notNull().default('none'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
