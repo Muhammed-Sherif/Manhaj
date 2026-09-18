@@ -9,6 +9,7 @@ import { getAutoDownloadEnabled, setAutoDownloadEnabled } from '../../services/c
 import { syncPendingChanges } from '../../services/syncService';
 import Modal from '../../components/Modal';
 import { setColorScheme, getPersistedColorScheme } from '../../components/ThemeProvider';
+import { formatTime } from '@/utils';
 
 interface GradeWithTerms {
     id?: string;
@@ -83,7 +84,8 @@ export default function SettingsScreen() {
             } else {
                 Alert.alert('Sync failed', 'Some items could not be synced. Please try again.');
             }
-        } catch {
+        } catch(e) {
+            console.log(e.message)
             Alert.alert('Sync failed', 'An error occurred while syncing. Please try again.');
         } finally {
             setIsSyncing(false);

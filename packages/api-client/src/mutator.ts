@@ -26,7 +26,7 @@ const getBaseURL = (): string => {
     return 'https://manhaj-api-five.vercel.app';
   }
 
-  return 'http://10.0.2.2:3000';
+  return 'https://manhaj-api-five.vercel.app';
 };
 
 // Configure axios with base URL from environment variable
