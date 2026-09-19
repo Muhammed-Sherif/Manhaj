@@ -227,6 +227,20 @@ export class AdminController {
     }
   };
 
+  deleteQuestions = async (req: Request, res: Response) => {
+    try {
+      const { questionIds } = req.body;
+      if (!Array.isArray(questionIds)) {
+        res.status(400).json({ error: 'questionIds must be an array' });
+        return;
+      }
+      const result = await this.adminService.deleteQuestions(questionIds);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  };
+
   // Lectures
   createLecture = async (req: Request, res: Response) => {
     try {

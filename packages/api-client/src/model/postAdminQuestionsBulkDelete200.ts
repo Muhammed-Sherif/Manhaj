@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type PatchAdminQuestionsBulkUnassignLectureBody = {
-  questionIds: string[];
+export type PostAdminQuestionsBulkDelete200 = {
+  success?: boolean;
+  deletedCount?: number;
 };

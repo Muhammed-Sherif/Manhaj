@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DeleteStudentAccount200,
   GetStudentGradesWithTerms200Item,
   GetStudentProfile200,
   GetStudentQuestionsUnsolvedParams,
@@ -39,6 +40,8 @@ import type {
   PostStudentFlagsBody,
   PostStudentNotesBody,
   PostStudentReviewablesSyncBody,
+  PostStudentSyncBody,
+  PostStudentSyncParams,
   PostStudentTasksBody,
   PostStudentTasksCompleteStudyBody,
   Question
@@ -1892,6 +1895,266 @@ export const usePostStudentReviewablesSync = <TError = unknown,
       > => {
 
       const mutationOptions = getPostStudentReviewablesSyncMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Bidirectional sync for student-owned items (review items, tasks)
+ */
+export const postStudentSync = (
+    postStudentSyncBody?: PostStudentSyncBody,
+    params?: PostStudentSyncParams,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/sync`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postStudentSyncBody,
+        params, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentSyncMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentSync>>, TError,{data: PostStudentSyncBody;params?: PostStudentSyncParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentSync>>, TError,{data: PostStudentSyncBody;params?: PostStudentSyncParams}, TContext> => {
+
+const mutationKey = ['postStudentSync'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentSync>>, {data: PostStudentSyncBody;params?: PostStudentSyncParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  postStudentSync(data,params,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentSyncMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentSync>>>
+    export type PostStudentSyncMutationBody = PostStudentSyncBody
+    export type PostStudentSyncMutationError = unknown
+
+    /**
+ * @summary Bidirectional sync for student-owned items (review items, tasks)
+ */
+export const usePostStudentSync = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentSync>>, TError,{data: PostStudentSyncBody;params?: PostStudentSyncParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentSync>>,
+        TError,
+        {data: PostStudentSyncBody;params?: PostStudentSyncParams},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentSyncMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Permanently deletes the authenticated user's account and all their associated data
+ * @summary Delete the authenticated user's account
+ */
+export const deleteStudentAccount = (
+    
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<DeleteStudentAccount200>(
+      {url: `/student/account`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteStudentAccountMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudentAccount>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteStudentAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudentAccount>>, void> = () => {
+          
+
+          return  deleteStudentAccount(requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudentAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudentAccount>>>
+    
+    export type DeleteStudentAccountMutationError = void
+
+    /**
+ * @summary Delete the authenticated user's account
+ */
+export const useDeleteStudentAccount = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudentAccount>>,
+        TError,
+        void,
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteStudentAccountMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Raw binary rather than multipart: the payload is always a single file with no
+accompanying form fields (the owner is in the path), so multipart would only add
+framing. The `Content-Type` header selects the stored extension.
+
+ * @summary Upload the image attached to a case or note
+ */
+export const postStudentImagesOwnerKindOwnerId = (
+    ownerKind: 'case' | 'note',
+    ownerId: string,
+    postStudentImagesOwnerKindOwnerIdBody: Blob,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/images/${ownerKind}/${ownerId}`, method: 'POST',
+      headers: {'Content-Type': 'image/jpeg', },
+      data: postStudentImagesOwnerKindOwnerIdBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostStudentImagesOwnerKindOwnerIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string;data: Blob}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string;data: Blob}, TContext> => {
+
+const mutationKey = ['postStudentImagesOwnerKindOwnerId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>, {ownerKind: 'case' | 'note';ownerId: string;data: Blob}> = (props) => {
+          const {ownerKind,ownerId,data} = props ?? {};
+
+          return  postStudentImagesOwnerKindOwnerId(ownerKind,ownerId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostStudentImagesOwnerKindOwnerIdMutationResult = NonNullable<Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>>
+    export type PostStudentImagesOwnerKindOwnerIdMutationBody = Blob
+    export type PostStudentImagesOwnerKindOwnerIdMutationError = void
+
+    /**
+ * @summary Upload the image attached to a case or note
+ */
+export const usePostStudentImagesOwnerKindOwnerId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string;data: Blob}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postStudentImagesOwnerKindOwnerId>>,
+        TError,
+        {ownerKind: 'case' | 'note';ownerId: string;data: Blob},
+        TContext
+      > => {
+
+      const mutationOptions = getPostStudentImagesOwnerKindOwnerIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Remove the image attached to a case or note
+ */
+export const deleteStudentImagesOwnerKindOwnerId = (
+    ownerKind: 'case' | 'note',
+    ownerId: string,
+ options?: SecondParameter<typeof customAxios>,) => {
+      
+      
+      return customAxios<void>(
+      {url: `/student/images/${ownerKind}/${ownerId}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getDeleteStudentImagesOwnerKindOwnerIdMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string}, TContext> => {
+
+const mutationKey = ['deleteStudentImagesOwnerKindOwnerId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>, {ownerKind: 'case' | 'note';ownerId: string}> = (props) => {
+          const {ownerKind,ownerId} = props ?? {};
+
+          return  deleteStudentImagesOwnerKindOwnerId(ownerKind,ownerId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStudentImagesOwnerKindOwnerIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>>
+    
+    export type DeleteStudentImagesOwnerKindOwnerIdMutationError = void
+
+    /**
+ * @summary Remove the image attached to a case or note
+ */
+export const useDeleteStudentImagesOwnerKindOwnerId = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>, TError,{ownerKind: 'case' | 'note';ownerId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStudentImagesOwnerKindOwnerId>>,
+        TError,
+        {ownerKind: 'case' | 'note';ownerId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteStudentImagesOwnerKindOwnerIdMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

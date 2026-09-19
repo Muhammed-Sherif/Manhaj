@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type PatchAdminQuestionsBulkUnassignLectureBody = {
-  questionIds: string[];
+export type PostStudentSyncParams = {
+/**
+ * Cursor for delta sync (optional)
+ */
+since?: string;
 };

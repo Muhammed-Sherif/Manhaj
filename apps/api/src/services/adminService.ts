@@ -491,6 +491,23 @@ export class AdminService {
     await db.update(questions).set({ deletedAt: new Date() }).where(eq(questions.id, id));
   }
 
+  // Soft-deletes every not-yet-deleted question in `ids`. Ids that are unknown or
+  // already deleted are skipped rather than failing the whole batch, so retrying a
+  // partial failure stays safe.
+  async deleteQuestions(ids: string[]) {
+    if (ids.length === 0) {
+      throw new Error('At least one question ID is required');
+    }
+
+    const deleted = await db
+      .update(questions)
+      .set({ deletedAt: new Date() })
+      .where(and(inArray(questions.id, ids), isNull(questions.deletedAt)))
+      .returning({ id: questions.id });
+
+    return { success: true, deletedCount: deleted.length };
+  }
+
   // Lectures
   async createLecture(lectureData: any) {
     const [lecture] = await db.insert(lectures).values(lectureData).returning();

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight } from 'lucide-react';
 import {
-  useDeleteAdminQuestionsId,
   useGetAdminQuestions,
   usePatchAdminQuestionsBulkAssignLecture,
+  usePostAdminQuestionsBulkDelete,
   useGetAdminGrades,
   useGetAdminTerms,
   useGetAdminModules,
@@ -14,6 +14,7 @@ import type { Choice, Question } from '@manhaj/api-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
@@ -218,6 +219,8 @@ export function QuestionsPage() {
   const all = rows.length > 0 && selected.length === rows.length;
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  // Question ids awaiting delete confirmation; null when the dialog is closed.
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
 
   // Auto-select questions that already have choices attached
   useEffect(() => {
@@ -239,16 +242,25 @@ export function QuestionsPage() {
       },
     },
   });
-  const remove = useDeleteAdminQuestionsId({
+  const bulkDelete = usePostAdminQuestionsBulkDelete({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (response, variables) => {
+        const count = response?.data?.deletedCount ?? variables.data.questionIds.length;
         refresh();
-        toast.success('Question deleted');
+        toast.success(`${count} question${count === 1 ? '' : 's'} deleted`);
+        setSelected([]);
+        setPendingDelete(null);
       },
+      onError: () => toast.error('Failed to delete questions'),
     },
   });
 
   const handleQuestionText = (question: any) => question.questionText || question.text || 'No text';
+
+  // Used to name the question when only one is pending deletion.
+  const pendingQuestion = pendingDelete && pendingDelete.length === 1
+    ? rows.find((q) => q.id === pendingDelete[0])
+    : undefined;
 
   return (
     <>
@@ -262,9 +274,20 @@ export function QuestionsPage() {
 
       <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
         <span><b className="text-slate-900">{selected.length}</b> selected</span>
-        <Button size="sm" disabled={!selected.length || assign.isPending} onClick={() => setAssignModalOpen(true)}>
-          Assign to lecture
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={!selected.length || bulkDelete.isPending}
+            onClick={() => setPendingDelete(selected)}
+          >
+            <Trash2 size={15} />
+            Delete selected
+          </Button>
+          <Button size="sm" disabled={!selected.length || assign.isPending} onClick={() => setAssignModalOpen(true)}>
+            Assign to lecture
+          </Button>
+        </div>
       </div>
       <Card>
         {query.isLoading ? (
@@ -331,7 +354,7 @@ export function QuestionsPage() {
                   <TableCell><Badge variant={question.source === 'telegram_auto' ? 'secondary' : 'outline'}>{question.source || 'unknown'}</Badge></TableCell>
                   <TableCell>
                     <Button size="icon" variant="ghost" onClick={() => toast.info('Question editor opened')}><Pencil size={15} /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => question.id && remove.mutate({ id: question.id })}><Trash2 size={15} /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => question.id && setPendingDelete([question.id])}><Trash2 size={15} /></Button>
                   </TableCell>
                 </TableRow>
 
@@ -347,6 +370,34 @@ export function QuestionsPage() {
           onClose={() => setAssignModalOpen(false)}
           onConfirm={(lectureId) => assign.mutate({ data: { questionIds: selected, lectureId } })}
           isPending={assign.isPending}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          isOpen
+          title={pendingDelete.length === 1 ? 'Delete question' : `Delete ${pendingDelete.length} questions`}
+          description={
+            pendingDelete.length === 1 ? (
+              <>
+                Delete{' '}
+                <strong className="text-slate-900">
+                  {pendingQuestion ? handleQuestionText(pendingQuestion) : 'this question'}
+                </strong>
+                ?
+              </>
+            ) : (
+              <>
+                You are about to delete{' '}
+                <strong className="text-slate-900">{pendingDelete.length}</strong> selected questions.
+              </>
+            )
+          }
+          confirmLabel="Delete"
+          pendingLabel="Deleting…"
+          isPending={bulkDelete.isPending}
+          onClose={() => setPendingDelete(null)}
+          onConfirm={() => bulkDelete.mutate({ data: { questionIds: pendingDelete } })}
         />
       )}
     </>

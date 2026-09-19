@@ -333,6 +333,33 @@ router.patch('/questions/bulk-assign-lecture', adminController.bulkAssignLecture
 router.patch('/questions/bulk-unassign-lecture', adminController.bulkUnassignLecture);
 /**
  * @swagger
+ * /admin/questions/bulk-delete:
+ *   post:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [questionIds]
+ *             properties:
+ *               questionIds: { type: array, items: { type: string, format: uuid } }
+ *     responses:
+ *       200:
+ *         description: Questions soft-deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 deletedCount: { type: integer }
+ */
+router.post('/questions/bulk-delete', adminController.deleteQuestions);
+/**
+ * @swagger
  * /admin/questions/{id}:
  *   patch:
  *     tags: [Admin]

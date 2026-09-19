@@ -1700,6 +1700,211 @@
         }
       }
     },
+    "/student/sync": {
+      "post": {
+        "summary": "Bidirectional sync for student-owned items (review items, tasks)",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor for delta sync (optional)"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviewItems": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync results with server changes and next cursor"
+          }
+        }
+      }
+    },
+    "/student/account": {
+      "delete": {
+        "summary": "Delete the authenticated user's account",
+        "description": "Permanently deletes the authenticated user's account and all their associated data",
+        "tags": [
+          "Student"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error deleting account (e.g., admin users cannot delete via this endpoint)"
+          }
+        }
+      }
+    },
+    "/student/images/{ownerKind}/{ownerId}": {
+      "post": {
+        "summary": "Upload the image attached to a case or note",
+        "description": "Raw binary rather than multipart: the payload is always a single file with no\naccompanying form fields (the owner is in the path), so multipart would only add\nframing. The `Content-Type` header selects the stored extension.\n",
+        "tags": [
+          "Student"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ownerKind",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "case",
+                "note"
+              ]
+            }
+          },
+          {
+            "in": "path",
+            "name": "ownerId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/heic": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored — returns the key and the URL derived from it"
+          },
+          "400": {
+            "description": "Unsupported type, empty body, or over the 8MB limit"
+          },
+          "404": {
+            "description": "No such case/note owned by the caller"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove the image attached to a case or note",
+        "tags": [
+          "Student"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ownerKind",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "case",
+                "note"
+              ]
+            }
+          },
+          {
+            "in": "path",
+            "name": "ownerId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed (best-effort — a missing object still clears the columns)"
+          },
+          "404": {
+            "description": "No such case/note owned by the caller"
+          }
+        }
+      }
+    },
     "/content/sync": {
       "get": {
         "summary": "Sync content for offline use",
@@ -2856,6 +3061,105 @@
         }
       }
     },
+    "/admin/questions/bulk-unassign-lecture": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "questionIds"
+                ],
+                "properties": {
+                  "questionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Questions unassigned"
+          }
+        }
+      }
+    },
+    "/admin/questions/bulk-delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "questionIds"
+                ],
+                "properties": {
+                  "questionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Questions soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "deletedCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/questions/{id}": {
       "patch": {
         "tags": [
@@ -3290,6 +3594,237 @@
         "responses": {
           "200": {
             "description": "Profile updated"
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "termId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "termName": {
+                        "type": "string"
+                      },
+                      "gradeId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "gradeName": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "student"
+                    ]
+                  },
+                  "termId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created"
+          },
+          "409": {
+            "description": "User with this email already exists"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "student"
+                    ]
+                  },
+                  "termId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated"
+          },
+          "409": {
+            "description": "Email already in use"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "summary": "Delete a user account",
+        "description": "Permanently deletes a user and all their associated data (sessions, accounts, tokens, etc.)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully"
+          },
+          "400": {
+            "description": "Cannot delete your own account or last admin"
+          },
+          "404": {
+            "description": "User not found"
           }
         }
       }
