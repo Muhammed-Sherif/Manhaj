@@ -10,6 +10,7 @@ import {
   useGetAdminSubjects,
   useGetAdminLectures,
 } from '@manhaj/api-client';
+import type { Choice, Question } from '@manhaj/api-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +21,10 @@ import { UploadQuestionsModal } from './UploadQuestionsModal';
 
 type Step = 'grade' | 'term' | 'module' | 'subject' | 'lecture';
 interface Item { id: string; name: string; description?: string }
+
+// `getQuestions` in the API fetches questions `with: { choices: true }`, but the generated
+// `Question` model predates that embed and does not declare it.
+type QuestionRow = Question & { choices?: Choice[] };
 
 const STEPS: { key: Step; label: string }[] = [
   { key: 'grade',   label: 'Grade' },
@@ -208,7 +213,7 @@ import { toast } from '@/components/ui/sonner';
 
 export function QuestionsPage() {
   const query = useGetAdminQuestions({ lectureId: 'null' });
-  const rows = query.data?.data ?? [];
+  const rows = (query.data?.data ?? []) as QuestionRow[];
   const [selected, setSelected] = useState<string[]>([]);
   const all = rows.length > 0 && selected.length === rows.length;
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -217,7 +222,7 @@ export function QuestionsPage() {
   // Auto-select questions that already have choices attached
   useEffect(() => {
     const withChoices = rows
-      .filter((q) => ((q as any).choices ?? []).length > 0)
+      .filter((q) => (q.choices ?? []).length > 0)
       .map((q) => q.id ?? '')
       .filter(Boolean);
     setSelected(withChoices);
@@ -304,7 +309,7 @@ export function QuestionsPage() {
                       <span className="text-xs italic text-slate-400">No choices</span>
                     ) : (
                       <ol className="space-y-1">
-                        {((question as any).choices ?? []).map((choice: any, i: number) => (
+                        {(question.choices ?? []).map((choice, i) => (
                           <li
                             key={choice.id ?? i}
                             className={`flex items-start gap-1.5 rounded px-2 py-1 text-xs ${
