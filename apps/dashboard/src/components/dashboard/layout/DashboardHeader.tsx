@@ -6,9 +6,10 @@ import { UserMenu } from './UserMenu';
 interface DashboardHeaderProps {
   page: Page;
   navigate: Navigate;
+  onOpenMenu: () => void;
 }
 
-export function DashboardHeader({ page, navigate }: DashboardHeaderProps) {
+export function DashboardHeader({ page, navigate, onOpenMenu }: DashboardHeaderProps) {
   const pageTitle = page[0].toUpperCase() + page.slice(1);
 
   return (
@@ -17,10 +18,9 @@ export function DashboardHeader({ page, navigate }: DashboardHeaderProps) {
       <button
         type="button"
         className="rounded-md p-2 hover:bg-slate-100 lg:hidden cursor-pointer"
-        onClick={() => toast.info('Open the desktop sidebar to navigate')}
+        onClick={onOpenMenu}
         aria-label="Open menu"
       >
-
         <Menu size={20} />
       </button>
 

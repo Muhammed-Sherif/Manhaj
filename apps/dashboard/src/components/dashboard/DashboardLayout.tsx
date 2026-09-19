@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import type { Navigate, Page } from './types';
 import { Sidebar, DashboardHeader } from './layout';
 
@@ -18,17 +18,26 @@ export function DashboardLayout({
   navigate,
   children,
 }: DashboardLayoutProps) {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  const openMobileNav = useCallback(() => setIsMobileNavOpen(true), []);
+  const closeMobileNav = useCallback(() => setIsMobileNavOpen(false), []);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Desktop Fixed Navigation Sidebar */}
-      <Sidebar page={page} navigate={navigate} />
+      {/* Navigation Sidebar (fixed on desktop, slide-over drawer on mobile) */}
+      <Sidebar
+        page={page}
+        navigate={navigate}
+        mobileOpen={isMobileNavOpen}
+        onClose={closeMobileNav}
+      />
 
       {/* Main Content Area */}
       <main className="lg:pl-64">
-        <DashboardHeader page={page} navigate={navigate} />
+        <DashboardHeader page={page} navigate={navigate} onOpenMenu={openMobileNav} />
         <div className="mx-auto max-w-[1500px] p-4 sm:p-8">{children}</div>
       </main>
     </div>
   );
 }
-
