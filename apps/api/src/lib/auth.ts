@@ -63,6 +63,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     'http://localhost:5173',
     'https://manhaj-api-five.vercel.app',
+    'https://manhaj-dashboard.vercel.app',
     'https://manhaj-api-five.vercel.app',
     'http://127.0.0.1:5173',
     ...(process.env.DASHBOARD_URL ? [process.env.DASHBOARD_URL] : []),
