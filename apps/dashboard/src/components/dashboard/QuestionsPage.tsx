@@ -234,6 +234,9 @@ function EditQuestionModal({
 }) {
   const [questionText, setQuestionText] = useState(question.questionText ?? '');
   const [explanation, setExplanation]   = useState(question.explanation ?? '');
+  const [writtenAnswer, setWrittenAnswer] = useState(
+    question.writtenQuestion?.writtenAnswer ?? ''
+  );
   const [choices, setChoices]           = useState<EditableChoice[]>(
     (question.choices ?? []).map((c) => ({
       id: c.id,
@@ -274,11 +277,13 @@ function EditQuestionModal({
 
   const handleSubmit = () => {
     if (!question.id) return;
+    const isWritten = (question as any).questionType === 'written';
     updateMutation.mutate({
       id: question.id,
       data: {
         questionText,
         explanation,
+        ...(isWritten ? { writtenAnswer } : {}),
       },
     });
   };
@@ -344,11 +349,10 @@ function EditQuestionModal({
               <textarea
                 className="w-full rounded-lg border border-slate-200 bg-violet-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
                 rows={5}
-                value={(question as any).writtenQuestion?.writtenAnswer ?? ''}
-                readOnly
-                placeholder="No model answer stored"
+                value={writtenAnswer}
+                onChange={(e) => setWrittenAnswer(e.target.value)}
+                placeholder="Enter model answer…"
               />
-              <p className="mt-1 text-xs text-slate-400">Written answer is read-only here. Edit via the API directly.</p>
             </div>
           ) : (
             <div>
