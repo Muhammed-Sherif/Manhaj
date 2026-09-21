@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { grades, terms, modules, subjects, lectures, lectureVideos, lectureFiles, videoProgress, questions, choices, questionSources } from '@manhaj/db/schema';
+import { grades, terms, modules, subjects, studyUnits, lectureVideos, lectureFiles, videoProgress, questions, choices, questionSources } from '@manhaj/db/schema';
 import { eq, gt, and, isNull, inArray } from 'drizzle-orm';
 
 export class ContentService {
@@ -15,7 +15,7 @@ export class ContentService {
       terms: await this.terms(sinceDate),
       modules: await this.modules(sinceDate),
       subjects: await this.subjects(sinceDate),
-      lectures: await this.lectures(sinceDate),
+      studyUnits: await this.studyUnits(sinceDate),
       questions: await this.questions(sinceDate),
       choices: await this.choices(sinceDate),
       questionSources: await this.questionSources(sinceDate),
@@ -36,7 +36,7 @@ export class ContentService {
               with: {
                 subjects: {
                   with: {
-                    lectures: true,
+                    studyUnits: true,
                   },
                 },
               },
@@ -47,9 +47,9 @@ export class ContentService {
     });
   }
 
-  async getLectureDetails(lectureId: string) {
-    return db.query.lectures.findFirst({
-      where: eq(lectures.id, lectureId),
+  async getStudyUnitDetails(studyUnitId: string) {
+    return db.query.studyUnits.findFirst({
+      where: eq(studyUnits.id, studyUnitId),
       with: {
         subject: true,
         lectureVideos: true,
@@ -64,9 +64,9 @@ export class ContentService {
     });
   }
 
-  async getLectureVideos(lectureId: string) {
+  async getStudyUnitVideos(studyUnitId: string) {
     return db.query.lectureVideos.findMany({
-      where: eq(lectureVideos.lectureId, lectureId),
+      where: eq(lectureVideos.studyUnitId, studyUnitId),
     });
   }
 
@@ -108,15 +108,15 @@ export class ContentService {
     return db.query.subjects.findMany();
   }
 
-  private async lectures(since?: Date) {
+  private async studyUnits(since?: Date) {
     const where = since
       ? and(
-          gt(lectures.updatedAt, since),
-          isNull(lectures.deletedAt)
+          gt(studyUnits.updatedAt, since),
+          isNull(studyUnits.deletedAt)
         )
-      : isNull(lectures.deletedAt);
+      : isNull(studyUnits.deletedAt);
 
-    return db.query.lectures.findMany({
+    return db.query.studyUnits.findMany({
       where: where || undefined,
     });
   }
@@ -133,6 +133,9 @@ export class ContentService {
       where: where || undefined,
       with: {
         choices: true,
+        writtenQuestion: true,
+        mcqQuestion: true,
+        images: true,
       },
     });
   }

@@ -8,6 +8,6 @@
 import type { PostStudentTasksCompleteStudyBodyActivityType } from './postStudentTasksCompleteStudyBodyActivityType';
 
 export type PostStudentTasksCompleteStudyBody = {
-  lectureId?: string;
+  studyUnitId?: string;
   activityType?: PostStudentTasksCompleteStudyBodyActivityType;
 };

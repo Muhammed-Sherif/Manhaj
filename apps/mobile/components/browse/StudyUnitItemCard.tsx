@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ChevronRightIcon, BookOpenIcon, FileTextIcon, VideoIcon } from 'lucide-react-native';
-import type { Lecture } from '@manhaj/api-client';
+import type { StudyUnit } from '@manhaj/api-client';
 
-export interface LectureItemCardProps {
-  lecture: Lecture;
-  onPress: (lecture: Lecture) => void;
+export interface StudyUnitItemCardProps {
+  studyUnit: StudyUnit;
+  onPress: (studyUnit: StudyUnit) => void;
 }
 
-export const LectureItemCard: React.FC<LectureItemCardProps> = ({ lecture, onPress }) => {
+export const StudyUnitItemCard: React.FC<StudyUnitItemCardProps> = ({ studyUnit, onPress }) => {
   return (
     <TouchableOpacity
       className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-3 shadow-sm"
-      onPress={() => onPress(lecture)}
+      onPress={() => onPress(studyUnit)}
       activeOpacity={0.7}
     >
       <View className="flex-row items-start">
@@ -20,9 +20,9 @@ export const LectureItemCard: React.FC<LectureItemCardProps> = ({ lecture, onPre
           <BookOpenIcon size={20} color="#0d9488" />
         </View>
         <View className="flex-1">
-          <Text className="font-semibold text-slate-800 dark:text-slate-100">{lecture.name}</Text>
-          {!!lecture.description && (
-            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{lecture.description}</Text>
+          <Text className="font-semibold text-slate-800 dark:text-slate-100">{studyUnit.name}</Text>
+          {!!studyUnit.description && (
+            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{studyUnit.description}</Text>
           )}
         </View>
         <ChevronRightIcon size={20} color="#94a3b8" />

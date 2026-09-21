@@ -7,5 +7,5 @@
  */
 
 export type GetStudentQuestionsUnsolvedParams = {
-lectureId: string;
+studyUnitId: string;
 };

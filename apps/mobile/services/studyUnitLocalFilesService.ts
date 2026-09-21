@@ -7,10 +7,10 @@ import * as schema from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { useAuthStore } from '../store/authStore';
 
-const LOCAL_FILES_DIR = FileSystem.documentDirectory + 'lecture-files/';
+const LOCAL_FILES_DIR = FileSystem.documentDirectory + 'studyUnit-files/';
 
 /**
- * Ensure the lecture-files directory exists.
+ * Ensure the studyUnit-files directory exists.
  */
 async function ensureDir() {
   const info = await FileSystem.getInfoAsync(LOCAL_FILES_DIR);
@@ -23,7 +23,7 @@ async function ensureDir() {
  * Allow the user to pick a file, copy it into the sandbox, and record it in SQLite.
  * Returns the inserted row or null if the user cancelled.
  */
-export async function attachLocalFile(lectureId: string): Promise<(typeof schema.lectureLocalFiles.$inferSelect) | null> {
+export async function attachLocalFile(studyUnitId: string): Promise<(typeof schema.studyUnitLocalFiles.$inferSelect) | null> {
   const result = await DocumentPicker.getDocumentAsync({
     copyToCacheDirectory: true,
     multiple: false,
@@ -42,9 +42,9 @@ export async function attachLocalFile(lectureId: string): Promise<(typeof schema
 
   await FileSystem.copyAsync({ from: asset.uri, to: destPath });
 
-  const row: typeof schema.lectureLocalFiles.$inferInsert = {
+  const row: typeof schema.studyUnitLocalFiles.$inferInsert = {
     id: Crypto.randomUUID(),
-    lectureId,
+    studyUnitId,
     userId: useAuthStore.getState().user?.id ?? '',
     localFilePath: destPath,
     fileName: asset.name,
@@ -52,7 +52,7 @@ export async function attachLocalFile(lectureId: string): Promise<(typeof schema
     createdAt: new Date().toISOString(),
   };
 
-  await db.insert(schema.lectureLocalFiles).values(row);
+  await db.insert(schema.studyUnitLocalFiles).values(row);
   return { ...row } as any;
 }
 
@@ -77,7 +77,7 @@ export async function openLocalFile(localFilePath: string): Promise<void> {
  * Delete a local file record and its bytes from storage.
  */
 export async function deleteLocalFile(fileId: string): Promise<void> {
-  const [row] = await db.select().from(schema.lectureLocalFiles).where(eq(schema.lectureLocalFiles.id, fileId));
+  const [row] = await db.select().from(schema.studyUnitLocalFiles).where(eq(schema.studyUnitLocalFiles.id, fileId));
   if (!row) return;
 
   try {
@@ -86,12 +86,12 @@ export async function deleteLocalFile(fileId: string): Promise<void> {
     console.error('Failed to delete file bytes:', err);
   }
 
-  await db.delete(schema.lectureLocalFiles).where(eq(schema.lectureLocalFiles.id, fileId));
+  await db.delete(schema.studyUnitLocalFiles).where(eq(schema.studyUnitLocalFiles.id, fileId));
 }
 
 /**
- * Get all local files for a lecture.
+ * Get all local files for a studyUnit.
  */
-export async function getLocalFiles(lectureId: string) {
-  return db.select().from(schema.lectureLocalFiles).where(eq(schema.lectureLocalFiles.lectureId, lectureId));
+export async function getLocalFiles(studyUnitId: string) {
+  return db.select().from(schema.studyUnitLocalFiles).where(eq(schema.studyUnitLocalFiles.studyUnitId, studyUnitId));
 }

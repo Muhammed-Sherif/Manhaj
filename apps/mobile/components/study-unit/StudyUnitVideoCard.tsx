@@ -8,24 +8,24 @@ import {
   Trash2Icon,
   HardDriveIcon,
 } from 'lucide-react-native';
-import type { LectureDetails, LectureVideo } from '@manhaj/api-client';
+import type { StudyUnitDetails, StudyUnitVideo } from '@manhaj/api-client';
 import { formatDuration } from '../../utils';
 import { useRouter } from 'expo-router';
 import {
-  downloadLectureVideo,
+  downloadStudyUnitVideo,
   deleteDownloadedVideo,
   verifyLocalVideoExists,
 } from '../../services/videoDownloadService';
 
-export interface LectureVideoCardProps {
-  video: LectureVideo & { localFilePath?: string | null };
-  lecture?: LectureDetails | null;
+export interface StudyUnitVideoCardProps {
+  video: StudyUnitVideo & { localFilePath?: string | null };
+  studyUnit?: StudyUnitDetails | null;
   onVideoUpdated?: () => void;
 }
 
-export const LectureVideoCard: React.FC<LectureVideoCardProps> = ({
+export const StudyUnitVideoCard: React.FC<StudyUnitVideoCardProps> = ({
   video,
-  lecture,
+  studyUnit,
   onVideoUpdated,
 }) => {
   const router = useRouter();
@@ -56,14 +56,14 @@ export const LectureVideoCard: React.FC<LectureVideoCardProps> = ({
     setDownloadPercent(0);
 
     try {
-      const uri = await downloadLectureVideo(video.id, video.url, (percent) => {
+      const uri = await downloadStudyUnitVideo(video.id, video.url, (percent) => {
         setDownloadPercent(percent);
       });
       setIsDownloaded(true);
       setLocalPath(uri);
       onVideoUpdated?.();
     } catch (error) {
-      console.warn('[LectureVideoCard] Download failed:', error);
+      console.warn('[StudyUnitVideoCard] Download failed:', error);
     } finally {
       setIsDownloading(false);
       setDownloadPercent(null);
@@ -78,7 +78,7 @@ export const LectureVideoCard: React.FC<LectureVideoCardProps> = ({
       setLocalPath(null);
       onVideoUpdated?.();
     } catch (error) {
-      console.warn('[LectureVideoCard] Delete local failed:', error);
+      console.warn('[StudyUnitVideoCard] Delete local failed:', error);
     }
   };
 
@@ -89,9 +89,9 @@ export const LectureVideoCard: React.FC<LectureVideoCardProps> = ({
         id: video.id ?? '',
         url: video.url ?? '',
         localFilePath: localPath ?? '',
-        title: video.sourceName ?? 'Lecture Video',
-        lectureName: lecture?.name ?? '',
-        subjectName: lecture?.subject?.name ?? '',
+        title: video.sourceName ?? 'StudyUnit Video',
+        studyUnitName: studyUnit?.name ?? '',
+        subjectName: studyUnit?.subject?.name ?? '',
       },
     });
   };

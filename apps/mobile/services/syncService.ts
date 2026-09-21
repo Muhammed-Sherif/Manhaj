@@ -52,7 +52,7 @@ export interface SyncableTask {
 
 export interface SyncableCase {
   id: string;
-  lectureId: string;
+  studyUnitId: string;
   category: string;
   title: string;
   content: string;
@@ -62,7 +62,7 @@ export interface SyncableCase {
 
 export interface SyncableNote {
   id: string;
-  lectureId: string;
+  studyUnitId: string;
   type: string;
   content: string;
   sourceQuestionId?: string | null;
@@ -302,7 +302,7 @@ export const syncFlags = async (): Promise<SyncResult> => {
 
 // Store video progress locally
 export const storeVideoProgress = async (
-  lectureVideoId: string,
+  studyUnitVideoId: string,
   positionSeconds: number
 ): Promise<void> => {
   const userId = useAuthStore.getState().user?.id;
@@ -311,20 +311,20 @@ export const storeVideoProgress = async (
     throw new Error('User not authenticated');
   }
 
-  const id = `progress-${userId}-${lectureVideoId}`;
+  const id = `progress-${userId}-${studyUnitVideoId}`;
 
   await db
     .insert(schema.videoProgress)
     .values({
       id,
       userId,
-      lectureVideoId,
+      studyUnitVideoId,
       positionSeconds,
       updatedAt: new Date().toISOString(),
       synced: 0,
     })
     .onConflictDoUpdate({
-      target: [schema.videoProgress.userId, schema.videoProgress.lectureVideoId],
+      target: [schema.videoProgress.userId, schema.videoProgress.studyUnitVideoId],
       set: {
         positionSeconds,
         updatedAt: new Date().toISOString(),
@@ -358,7 +358,7 @@ export const syncVideoProgress = async (): Promise<SyncResult> => {
   const syncedIds: string[] = [];
   for (const progress of pendingProgress) {
     await postContentVideoProgress({
-      lectureVideoId: progress.lectureVideoId,
+      studyUnitVideoId: progress.studyUnitVideoId,
       positionSeconds: progress.positionSeconds,
     });
     syncedIds.push(progress.id);
@@ -407,20 +407,20 @@ export const getWrongOrFlaggedQuestions = async () => {
     .select({
       question: schema.questions,
       attempt: schema.attempts,
-      lectureName: schema.lectures.name,
+      studyUnitName: schema.studyUnits.name,
       subjectName: schema.subjects.name,
     })
     .from(schema.questions)
     .innerJoin(schema.attempts, eq(schema.questions.id, schema.attempts.questionId))
-    .leftJoin(schema.lectures, eq(schema.questions.lectureId, schema.lectures.id))
-    .leftJoin(schema.subjects, eq(schema.lectures.subjectId, schema.subjects.id))
+    .leftJoin(schema.studyUnits, eq(schema.questions.studyUnitId, schema.studyUnits.id))
+    .leftJoin(schema.subjects, eq(schema.studyUnits.subjectId, schema.subjects.id))
     .where(and(eq(schema.attempts.userId, userId), eq(schema.attempts.isCorrect, 0)));
 
   const flaggedQuestions = await db
     .select({
       question: schema.questions,
       attempt: schema.attempts,
-      lectureName: schema.lectures.name,
+      studyUnitName: schema.studyUnits.name,
       subjectName: schema.subjects.name,
     })
     .from(schema.questions)
@@ -432,8 +432,8 @@ export const getWrongOrFlaggedQuestions = async () => {
         eq(schema.attempts.userId, userId)
       )
     )
-    .leftJoin(schema.lectures, eq(schema.questions.lectureId, schema.lectures.id))
-    .leftJoin(schema.subjects, eq(schema.lectures.subjectId, schema.subjects.id))
+    .leftJoin(schema.studyUnits, eq(schema.questions.studyUnitId, schema.studyUnits.id))
+    .leftJoin(schema.subjects, eq(schema.studyUnits.subjectId, schema.subjects.id))
     .where(and(eq(schema.flags.userId, userId), eq(schema.flags.operation, 'add')));
 
   // Combine and deduplicate
@@ -442,7 +442,7 @@ export const getWrongOrFlaggedQuestions = async () => {
   wrongQuestions.forEach((row) => {
     questionMap.set(row.question.id, {
       ...row.question,
-      lectureName: row.lectureName || 'General Practice',
+      studyUnitName: row.studyUnitName || 'General Practice',
       subjectName: row.subjectName || 'General',
       reason: 'wrong',
       attempt: row.attempt,
@@ -452,7 +452,7 @@ export const getWrongOrFlaggedQuestions = async () => {
   flaggedQuestions.forEach((row) => {
     questionMap.set(row.question.id, {
       ...row.question,
-      lectureName: row.lectureName || 'General Practice',
+      studyUnitName: row.studyUnitName || 'General Practice',
       subjectName: row.subjectName || 'General',
       reason: 'flagged',
       attempt: row.attempt,
@@ -476,13 +476,13 @@ export const getSolvedQuestionIds = async (): Promise<Set<string>> => {
   return new Set<string>(solvedQuestionIds.map((row) => row.questionId));
 };
 
-// Get unsolved questions for a lecture
-export const getUnsolvedQuestions = async (lectureId: string) => {
+// Get unsolved questions for a studyUnit
+export const getUnsolvedQuestions = async (studyUnitId: string) => {
   const allQuestions = await db.query.questions.findMany({
-    where: eq(schema.questions.lectureId, lectureId),
+    where: eq(schema.questions.studyUnitId, studyUnitId),
     with: {
       choices: true,
-      lecture: {
+      studyUnit: {
         with: {
           subject: true,
         },
@@ -495,21 +495,21 @@ export const getUnsolvedQuestions = async (lectureId: string) => {
   return allQuestions.filter((question) => !solvedIds.has(question.id));
 };
 
-// Reset all attempts for a lecture (retest/retake)
-export const resetLectureAttempts = async (lectureId: string) => {
+// Reset all attempts for a studyUnit (retest/retake)
+export const resetStudyUnitAttempts = async (studyUnitId: string) => {
   const userId = useAuthStore.getState().user?.id;
 
   if (!userId) {
     throw new Error('User not authenticated');
   }
 
-  // Get all question IDs for the lecture
-  const lectureQuestions = await db
+  // Get all question IDs for the studyUnit
+  const studyUnitQuestions = await db
     .select({ id: schema.questions.id })
     .from(schema.questions)
-    .where(eq(schema.questions.lectureId, lectureId));
+    .where(eq(schema.questions.studyUnitId, studyUnitId));
 
-  const questionIds = lectureQuestions.map((q) => q.id);
+  const questionIds = studyUnitQuestions.map((q) => q.id);
 
   // Delete all attempts for these questions by the user
   // Delete attempts for each question individually

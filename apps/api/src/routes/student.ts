@@ -143,7 +143,7 @@ router.get('/attempts/wrong-or-flagged', studentController.getWrongOrFlagged);
  *       - authToken: []
  *     parameters:
  *       - in: query
- *         name: lectureId
+ *         name: studyUnitId
  *         required: true
  *         schema:
  *           type: string
@@ -251,9 +251,9 @@ router.delete('/devices/register', studentController.unregisterDeviceToken);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [lectureId, category, title, content]
+ *             required: [studyUnitId, category, title, content]
  *             properties:
- *               lectureId: { type: string, format: uuid }
+ *               studyUnitId: { type: string, format: uuid }
  *               category: { type: string, enum: ['case', 'disease', 'drug'] }
  *               title: { type: string }
  *               content: { type: string }
@@ -327,9 +327,9 @@ router.delete('/cases/:id', studentController.deleteCase);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [lectureId, type, content]
+ *             required: [studyUnitId, type, content]
  *             properties:
- *               lectureId: { type: string, format: uuid }
+ *               studyUnitId: { type: string, format: uuid }
  *               type: { type: string, enum: ['note', 'recurring_question', 'summary'] }
  *               content: { type: string }
  *               sourceQuestionId: { type: string, format: uuid }
@@ -502,7 +502,7 @@ router.delete('/tasks/:id', studentController.deleteTask);
  *           schema:
  *             type: object
  *             properties:
- *               lectureId:
+ *               studyUnitId:
  *                 type: string
  *               activityType:
  *                 type: string

@@ -118,7 +118,7 @@ export const useBrowseStore = create<BrowseState>((set, get) => ({
   selectSubject: (subject) =>
     set({
       selectedSubject: subject,
-      currentLevel: 'lectures',
+      currentLevel: 'studyUnits',
     }),
 
   navigateBack: () =>
@@ -130,7 +130,7 @@ export const useBrowseStore = create<BrowseState>((set, get) => ({
           return { currentLevel: 'terms', selectedTerm: null };
         case 'subjects':
           return { currentLevel: 'modules', selectedModule: null };
-        case 'lectures':
+        case 'studyUnits':
           return { currentLevel: 'subjects', selectedSubject: null };
         default:
           return state;

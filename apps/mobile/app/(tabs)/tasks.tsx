@@ -93,7 +93,7 @@ function TaskRow({ task, onPress, onToggleStatus, onOpenMenu }: { task: any; onP
                 {task.taskType === 'zekr' && 'Adhkar Session'}
                 {task.taskType === 'wird' && 'Quran Wird'}
                 {task.taskType === 'work' && (task.workTask?.projectName || 'Work Task')}
-                {task.taskType === 'study' && (task.lecture?.name || 'Study Session')}
+                {task.taskType === 'study' && (task.studyUnit?.name || 'Study Session')}
               </Text>
               <TouchableOpacity onPress={onOpenMenu} className="p-1 -mt-1 -mr-1 rounded-full active:bg-slate-200 dark:active:bg-slate-700">
                 <MoreHorizontalIcon size={20} color={isDone ? '#94a3b8' : '#64748b'} />
@@ -187,12 +187,12 @@ function TaskRow({ task, onPress, onToggleStatus, onOpenMenu }: { task: any; onP
               <Text className={`text-sm font-medium ${isDone ? 'text-slate-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 Activity: {task.studyTask.activityType}
               </Text>
-              {task.lecture?.description && (
+              {task.studyUnit?.description && (
                 <Text className={`text-xs mt-1 ${isDone ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`} numberOfLines={isExpanded ? undefined : 2}>
-                  {task.lecture.description}
+                  {task.studyUnit.description}
                 </Text>
               )}
-              {!isExpanded && task.lecture?.description && task.lecture.description.length > 80 && (
+              {!isExpanded && task.studyUnit?.description && task.studyUnit.description.length > 80 && (
                 <Text className={`text-xs mt-0.5 italic ${isDone ? 'text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   Long press to expand
                 </Text>
@@ -261,10 +261,10 @@ export default function TasksScreen() {
           return { ...task, workTask: workData };
         } else if (task.taskType === 'study') {
           const [studyData] = await db.select().from(schema.studyTasks).where(eq(schema.studyTasks.taskId, task.id));
-          const [lecture] = studyData?.lectureId
-            ? await db.select().from(schema.lectures).where(eq(schema.lectures.id, studyData.lectureId))
+          const [studyUnit] = studyData?.studyUnitId
+            ? await db.select().from(schema.studyUnits).where(eq(schema.studyUnits.id, studyData.studyUnitId))
             : [undefined];
-          return { ...task, studyTask: studyData, lecture };
+          return { ...task, studyTask: studyData, studyUnit };
         }
         return task;
       }));

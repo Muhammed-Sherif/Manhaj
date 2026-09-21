@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { attempts, deviceTokens, flags, questions, choices, grades, terms, users, lectures, caseItems, noteItems, tasks,  zekrCategories,
+import { attempts, deviceTokens, flags, questions, choices, grades, terms, users, studyUnits, caseItems, noteItems, tasks,  zekrCategories,
   zekrCatalog,
   zekrTasks, wirdTasks, workTasks, studyTasks, reviewItems, reviewLogs, questionReviewItems,
   quranChapters,
@@ -129,35 +129,35 @@ export class StudentService {
     return Array.from(questionMap.values());
   }
 
-  async getUnsolvedQuestions(userId: string, lectureId: string) {
-    // Get all questions for the lecture
-    const lectureQuestions = await db.query.questions.findMany({
-      where: eq(questions.lectureId, lectureId),
+  async getUnsolvedQuestions(userId: string, studyUnitId: string) {
+    // Get all questions for the study unit
+    const studyUnitQuestions = await db.query.questions.findMany({
+      where: eq(questions.studyUnitId, studyUnitId),
       with: {
         choices: true,
       },
     });
 
-    if (lectureQuestions.length === 0) {
+    if (studyUnitQuestions.length === 0) {
       return [];
     }
 
-    // Get all question IDs for this lecture
-    const lectureQuestionIds = lectureQuestions.map((q) => q.id);
+    // Get all question IDs for this study unit
+    const studyUnitQuestionIds = studyUnitQuestions.map((q) => q.id);
 
-    // Get user's attempts for questions in this lecture
+    // Get user's attempts for questions in this study unit
     const userAttempts = await db
       .select({ questionId: attempts.questionId })
       .from(attempts)
       .where(and(
         eq(attempts.userId, userId),
-        inArray(attempts.questionId, lectureQuestionIds)
+        inArray(attempts.questionId, studyUnitQuestionIds)
       ));
 
     const attemptedQuestionIds = new Set(userAttempts.map((attempt) => attempt.questionId));
 
     // Filter out attempted questions
-    const unsolvedQuestions = lectureQuestions.filter(
+    const unsolvedQuestions = studyUnitQuestions.filter(
       (question) => !attemptedQuestionIds.has(question.id)
     );
 
@@ -406,13 +406,13 @@ export class StudentService {
     return { success: true };
   }
 
-  async completeStudyTasks(userId: string, lectureId: string, activityType: 'watch' | 'solve' | 'revision') {
+  async completeStudyTasks(userId: string, studyUnitId: string, activityType: 'watch' | 'solve' | 'revision') {
     const tasksToComplete = await db.select({ id: tasks.id })
       .from(tasks)
       .innerJoin(studyTasks, eq(tasks.id, studyTasks.taskId))
       .where(and(
         eq(tasks.userId, userId),
-        eq(studyTasks.lectureId, lectureId),
+        eq(studyTasks.studyUnitId, studyUnitId),
         eq(studyTasks.activityType, activityType),
         not(eq(tasks.status, 'done'))
       ));

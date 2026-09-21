@@ -2,8 +2,9 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
 import dotenv from 'dotenv';
-import { db, questions, choices, mcqQuestions, writtenQuestions } from '@manhaj/db';
+import { db, questions, choices, mcqQuestions, writtenQuestions, questionImages } from '@manhaj/db';
 import { max } from 'drizzle-orm';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ interface RunStats {
   messagesScanned: number;
   questionsInserted: number;
   skippedMessages: number;
+  pollsVotedOn: number;
   errors: string[];
 }
 
@@ -40,6 +42,7 @@ const stats: RunStats = {
   messagesScanned: 0,
   questionsInserted: 0,
   skippedMessages: 0,
+  pollsVotedOn: 0,
   errors: [],
 };
 
@@ -154,7 +157,9 @@ async function insertTextQuestion(
   text: string,
   channelMessageId: number,
   entities: any[] | null = null,
-  fromMedia: boolean = false
+  fromMedia: boolean = false,
+  imageUrl?: string,
+  isAnswerImage: boolean = false
 ): Promise<boolean> {
   try {
     // Extract spoiler entity (the hidden answer)
@@ -211,6 +216,14 @@ async function insertTextQuestion(
       writtenAnswer: writtenAnswer ?? '',
     });
 
+    if (imageUrl) {
+      await database.insert(questionImages).values({
+        questionId: question.id,
+        imageUrl,
+        isAnswer: isAnswerImage,
+      });
+    }
+
     stats.questionsInserted = stats.questionsInserted + 1;
     return true;
   } catch (error) {
@@ -222,6 +235,11 @@ async function insertTextQuestion(
 
 async function processMessage(message, channel): Promise<void> {
   stats.messagesScanned = stats.messagesScanned + 1;
+
+  // Temporary photo debug log
+  if (message.media?.className === 'MessageMediaPhoto') {
+    console.log(`🖼️ Photo ${message.id} | spoiler=${message.media.spoiler} | caption="${(message.message || '').slice(0, 40)}" | group=${message.groupedId}`);
+  }
 
   // Log message structure for debugging (simplified)
   if (message.media?.className === "MessageMediaPoll") {
@@ -284,20 +302,56 @@ async function processMessage(message, channel): Promise<void> {
     return;
   }
 
+  // Handle photo messages
+  if (message.media?.className === 'MessageMediaPhoto') {
+    const caption = (message.message || '').trim();
+    const spoiler = message.media.spoiler ?? false;
+    const groupedId = message.groupedId ?? null;
+    
+    console.log(`🖼️ Processing photo ${message.id} (spoiler=${spoiler}, group=${groupedId}, caption="${caption.slice(0, 40)}")`);
+
+    try {
+      const buffer = await client.downloadMedia(message);
+      if (!buffer) {
+        throw new Error('Failed to download media buffer');
+      }
+
+      const key = `telegram_images/${Date.now()}-${message.id}.jpg`;
+      const bucket = process.env.AWS_S3_BUCKET || 'manhaj';
+      const endpoint = process.env.AWS_ENDPOINT_URL_S3;
+      
+      const s3 = new S3Client({ 
+        forcePathStyle: true,
+        region: process.env.AWS_REGION || 'eu-central-1',
+        endpoint: endpoint,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        }
+      });
+
+      await s3.send(new PutObjectCommand({ 
+        Bucket: bucket, 
+        Key: key, 
+        Body: buffer,
+        ContentType: 'image/jpeg' 
+      }));
+
+      const publicUrl = `${endpoint}/${bucket}/${key}`;
+      await insertTextQuestion(caption, message.id, message.entities, true, publicUrl, spoiler);
+      return;
+    } catch (error) {
+      console.error(`Error processing photo ${message.id}:`, error);
+      stats.errors.push(`Photo ${message.id} error: ${error}`);
+      return;
+    }
+  }
+
   // Handle text messages
   if (message.message) {
     const text = message.message;
     if (text && text.trim().length > 0) {
       await insertTextQuestion(text, message.id, message.entities);
-      return;
-    }
-  }
-
-  // Handle media messages with captions
-  if (message.media && message.message) {
-    const caption = message.message;
-    if (caption && caption.trim().length > 0) {
-      await insertTextQuestion(caption, message.id, message.entities, true);
       return;
     }
   }
@@ -326,49 +380,35 @@ async function main() {
     const lastProcessedId = await getLastProcessedMessageId();
     console.log(`📍 Last processed message ID: ${lastProcessedId || 'none (first run)'}\n`);
 
-    console.log(`Starting message fetch from ID: ${lastProcessedId || 3967}\n`);
+    console.log(`Starting message fetch from ID: 3997\n`);
 
-    let offsetId = lastProcessedId || 3967;
-    const batchSize = 50;
-    let hasMore = true;
-    let emptyBatches = 0;
+    let offsetId = 3996; // 3997 - 1, to test 3997 photo specifically
 
-    while (hasMore && emptyBatches < 3) {
-      console.log(`📥 Fetching messages from ID ${offsetId}...`);
+    while (true) {
+      console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);
+      let processed = 0;
 
       try {
-        const messages = await fetchWithRetry(async () => {
+        await fetchWithRetry(async () => {
           for await (const message of client.iterMessages(channel, {
-            minId: offsetId - 1,
+            minId: offsetId,
             reverse: true,
             limit: 50,
           })) {
-            console.log(message);
             await processMessage(message, channel);
+            offsetId = message.id;
+            processed++;
           }
         });
 
-        if (!messages || !('messages' in messages) || messages.messages.length === 0) {
+        if (processed === 0) {
           console.log('📭 No more messages found');
-          emptyBatches = emptyBatches + 1;
-          hasMore = false;
           break;
-        }
-
-        emptyBatches = 0; // Reset counter if we got messages
-
-        console.log(`📨 Received ${messages.messages.length} messages\n`);
-
-        for (const message of messages.messages) {
-          if ('id' in message) {
-            // console.log(message)
-            await processMessage(message, channel);
-            offsetId = message.id;
-          }
         }
 
         // Small delay between batches to be respectful
         await sleep(1000);
+
 
       } catch (error) {
         console.error('Error fetching messages:', error);

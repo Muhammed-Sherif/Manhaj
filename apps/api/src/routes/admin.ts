@@ -278,7 +278,7 @@ router.delete('/subjects/:id', adminController.deleteSubject);
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
  *     parameters:
  *       - in: query
- *         name: lectureId
+ *         name: studyUnitId
  *         schema: { type: string, nullable: true }
  *     responses:
  *       200:
@@ -294,7 +294,7 @@ router.post('/questions', adminController.createQuestion);
 router.get('/questions', adminController.getQuestions);
 /**
  * @swagger
- * /admin/questions/bulk-assign-lecture:
+ * /admin/questions/bulk-assign-study-unit:
  *   patch:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -304,17 +304,38 @@ router.get('/questions', adminController.getQuestions);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [questionIds, lectureId]
+ *             required: [questionIds, studyUnitId]
  *             properties:
  *               questionIds: { type: array, items: { type: string, format: uuid } }
- *               lectureId: { type: string, format: uuid }
+ *               studyUnitId: { type: string, format: uuid }
  *     responses:
  *       200: { description: Questions assigned }
  */
-router.patch('/questions/bulk-assign-lecture', adminController.bulkAssignLecture);
+router.patch('/questions/bulk-assign-study-unit', adminController.bulkAssignStudyUnit);
 /**
  * @swagger
- * /admin/questions/bulk-unassign-lecture:
+ * /admin/questions/bulk-assign-telegram-range:
+ *   patch:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [startMessageId, endMessageId, studyUnitId]
+ *             properties:
+ *               startMessageId: { type: integer }
+ *               endMessageId: { type: integer }
+ *               studyUnitId: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Questions assigned }
+ */
+router.patch('/questions/bulk-assign-telegram-range', adminController.bulkAssignTelegramRange);
+/**
+ * @swagger
+ * /admin/questions/bulk-unassign-study-unit:
  *   patch:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -330,7 +351,7 @@ router.patch('/questions/bulk-assign-lecture', adminController.bulkAssignLecture
  *     responses:
  *       200: { description: Questions unassigned }
  */
-router.patch('/questions/bulk-unassign-lecture', adminController.bulkUnassignLecture);
+router.patch('/questions/bulk-unassign-study-unit', adminController.bulkUnassignStudyUnit);
 /**
  * @swagger
  * /admin/questions/bulk-delete:
@@ -389,19 +410,19 @@ router.post('/questions/bulk-delete', adminController.deleteQuestions);
 router.patch('/questions/:id', adminController.updateQuestion);
 router.delete('/questions/:id', adminController.deleteQuestion);
 
-// Lectures
+// Study Units
 /**
  * @swagger
- * /admin/lectures:
+ * /admin/study-units:
  *   post:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json: { schema: { type: object, required: [subjectId, name], properties: { subjectId: { type: string, format: uuid }, name: { type: string }, description: { type: string } } } }
+ *         application/json: { schema: { type: object, required: [subjectId, name], properties: { subjectId: { type: string, format: uuid }, name: { type: string }, description: { type: string }, type: { type: string, enum: [lecture, section] }, order: { type: integer } } } }
  *     responses:
- *       200: { description: Lecture created }
+ *       200: { description: Study unit created }
  *   get:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -409,21 +430,24 @@ router.delete('/questions/:id', adminController.deleteQuestion);
  *       - in: query
  *         name: subjectId
  *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [lecture, section] }
  *     responses:
  *       200:
- *         description: Lectures with resources
+ *         description: Study units with resources
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Lecture'
+ *                 $ref: '#/components/schemas/StudyUnit'
  */
-router.post('/lectures', adminController.createLecture);
-router.get('/lectures', adminController.getLectures);
+router.post('/study-units', adminController.createStudyUnit);
+router.get('/study-units', adminController.getStudyUnits);
 /**
  * @swagger
- * /admin/lectures/{id}:
+ * /admin/study-units/{id}:
  *   patch:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -435,14 +459,14 @@ router.get('/lectures', adminController.getLectures);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json: { schema: { type: object, properties: { subjectId: { type: string, format: uuid }, name: { type: string }, description: { type: string } } } }
+ *         application/json: { schema: { type: object, properties: { subjectId: { type: string, format: uuid }, name: { type: string }, description: { type: string }, type: { type: string, enum: [lecture, section] }, order: { type: integer } } } }
  *     responses:
- *       200: { description: Lecture updated }
+ *       200: { description: Study unit updated }
  */
-router.patch('/lectures/:id', adminController.updateLecture);
+router.patch('/study-units/:id', adminController.updateStudyUnit);
 /**
  * @swagger
- * /admin/lectures/{id}:
+ * /admin/study-units/{id}:
  *   delete:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -452,14 +476,14 @@ router.patch('/lectures/:id', adminController.updateLecture);
  *         required: true
  *         schema: { type: string, format: uuid }
  *     responses:
- *       200: { description: Lecture deleted }
- *       409: { description: Cannot delete lecture with dependencies }
+ *       200: { description: Study unit deleted }
+ *       409: { description: Cannot delete study unit with dependencies }
  */
-router.delete('/lectures/:id', adminController.deleteLecture);
+router.delete('/study-units/:id', adminController.deleteStudyUnit);
 
 /**
  * @swagger
- * /admin/lectures/{id}/videos:
+ * /admin/study-units/{id}/videos:
  *   post:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -481,17 +505,17 @@ router.delete('/lectures/:id', adminController.deleteLecture);
  *               duration: { type: integer, default: 0 }
  *     responses:
  *       200:
- *         description: Video added to lecture
+ *         description: Video added to study unit
  */
-router.post('/lectures/:id/videos', adminController.addLectureVideo);
-router.post('/lectures/:id/videos/upload/init', adminController.initVideoUpload);
-router.get('/lectures/:id/videos/upload/:uploadId/status', adminController.getVideoUploadStatus);
-router.post('/lectures/:id/videos/upload/chunk', adminController.uploadVideoChunk);
-router.post('/lectures/:id/videos/upload/complete', adminController.completeVideoUpload);
+router.post('/study-units/:id/videos', adminController.addStudyUnitVideo);
+router.post('/study-units/:id/videos/upload/init', adminController.initVideoUpload);
+router.get('/study-units/:id/videos/upload/:uploadId/status', adminController.getVideoUploadStatus);
+router.post('/study-units/:id/videos/upload/chunk', adminController.uploadVideoChunk);
+router.post('/study-units/:id/videos/upload/complete', adminController.completeVideoUpload);
 
 /**
  * @swagger
- * /admin/lectures/{id}/files:
+ * /admin/study-units/{id}/files:
  *   post:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -513,9 +537,9 @@ router.post('/lectures/:id/videos/upload/complete', adminController.completeVide
  *               fileType: { type: string }
  *     responses:
  *       200:
- *         description: File or audio added to lecture
+ *         description: File or audio added to study unit
  */
-router.post('/lectures/:id/files', adminController.addLectureFile);
+router.post('/study-units/:id/files', adminController.addStudyUnitFile);
 
 /**
  * @swagger

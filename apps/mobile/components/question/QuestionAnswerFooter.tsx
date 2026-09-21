@@ -25,7 +25,7 @@ export const QuestionAnswerFooter: React.FC = () => {
     } else {
       // Auto-complete study tasks for 'solve' activity
       try {
-        if (currentQuestion?.lectureId) {
+        if (currentQuestion?.studyUnitId) {
           const { db } = require('../../services/database');
           const schema = require('../../db/schema');
           const { inArray, and, eq } = require('drizzle-orm');
@@ -36,7 +36,7 @@ export const QuestionAnswerFooter: React.FC = () => {
             .from(schema.tasks)
             .innerJoin(schema.studyTasks, eq(schema.tasks.id, schema.studyTasks.taskId))
             .where(and(
-              eq(schema.studyTasks.lectureId, currentQuestion.lectureId),
+              eq(schema.studyTasks.studyUnitId, currentQuestion.studyUnitId),
               eq(schema.studyTasks.activityType, 'solve')
             ));
           
@@ -46,7 +46,7 @@ export const QuestionAnswerFooter: React.FC = () => {
               .where(inArray(schema.tasks.id, tasksToUpdate.map((t: any) => t.id)));
               
             // Backend sync (fire and forget)
-            postStudentTasksCompleteStudy({ lectureId: currentQuestion.lectureId, activityType: 'solve' }).catch(console.error);
+            postStudentTasksCompleteStudy({ studyUnitId: currentQuestion.studyUnitId, activityType: 'solve' }).catch(console.error);
           }
         }
       } catch (err) {
@@ -55,11 +55,11 @@ export const QuestionAnswerFooter: React.FC = () => {
 
       const message =
         mode === 'unsolved'
-          ? 'You have completed all unsolved questions for this lecture.'
-          : 'You have completed all questions for this lecture.';
+          ? 'You have completed all unsolved questions for this studyUnit.'
+          : 'You have completed all questions for this studyUnit.';
 
       Alert.alert('Well Done!', message, [
-        { text: 'Back to Lecture', onPress: () => router.back() },
+        { text: 'Back to StudyUnit', onPress: () => router.back() },
       ]);
     }
   };

@@ -13,7 +13,7 @@ import { attachImage } from '../services/imageUploadService';
 import { StudentContentService } from '../services/studentContentService';
 
 export default function AddCaseScreen() {
-  const { lectureId, caseId } = useLocalSearchParams<{ lectureId: string; caseId?: string }>();
+  const { studyUnitId, caseId } = useLocalSearchParams<{ studyUnitId: string; caseId?: string }>();
   const router = useRouter();
 
   const [category, setCategory] = useState('disease');
@@ -57,7 +57,7 @@ export default function AddCaseScreen() {
       // Insert case
       await db.insert(schema.caseItems).values({
         id: caseItemId,
-        lectureId: lectureId!,
+        studyUnitId: studyUnitId!,
         category,
         title,
         content,

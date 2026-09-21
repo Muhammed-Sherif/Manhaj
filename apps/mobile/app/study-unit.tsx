@@ -17,19 +17,19 @@ import {
   LoadingView,
   ErrorView,
   ScreenHeader,
-  LectureVideoCard,
-  LectureFileCard,
-  LectureQuestionsCard,
+  StudyUnitVideoCard,
+  StudyUnitFileCard,
+  StudyUnitQuestionsCard,
 } from '../components';
-import { useGetLecture } from '../lib/useGetLecture';
+import { useGetStudyUnit } from '../lib/useGetStudyUnit';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import { attachLocalFile, openLocalFile, deleteLocalFile, getLocalFiles } from '../services/lectureLocalFilesService';
+import { attachLocalFile, openLocalFile, deleteLocalFile, getLocalFiles } from '../services/studyUnitLocalFilesService';
 import { Alert } from 'react-native';
 
-// ── Lecture Summary Section ──────────────────────────────────────────────────
-function LectureSummarySection({ lectureId }: { lectureId: string }) {
+// ── StudyUnit Summary Section ──────────────────────────────────────────────────
+function StudyUnitSummarySection({ studyUnitId }: { studyUnitId: string }) {
   const router = useRouter();
   const [summary, setSummary] = useState<any>(null);
   const [expanded, setExpanded] = useState(false);
@@ -38,9 +38,9 @@ function LectureSummarySection({ lectureId }: { lectureId: string }) {
     const rows = await db
       .select()
       .from(schema.noteItems)
-      .where(and(eq(schema.noteItems.lectureId, lectureId), eq(schema.noteItems.type, 'summary')));
+      .where(and(eq(schema.noteItems.studyUnitId, studyUnitId), eq(schema.noteItems.type, 'summary')));
     setSummary(rows[0] ?? null);
-  }, [lectureId]);
+  }, [studyUnitId]);
 
   useEffect(() => {
     load();
@@ -70,7 +70,7 @@ function LectureSummarySection({ lectureId }: { lectureId: string }) {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={() => router.push(`/add-note?lectureId=${lectureId}&type=summary` as any)}
+            onPress={() => router.push(`/add-note?studyUnitId=${studyUnitId}&type=summary` as any)}
             className="flex-row items-center gap-1 px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-900/30"
           >
             <PlusIcon size={14} color="#0d9488" />
@@ -102,8 +102,8 @@ function LectureSummarySection({ lectureId }: { lectureId: string }) {
   );
 }
 
-// ── Lecture Notes & Cases Section ────────────────────────────────────────────
-function LectureNotesCasesSection({ lectureId }: { lectureId: string }) {
+// ── StudyUnit Notes & Cases Section ────────────────────────────────────────────
+function StudyUnitNotesCasesSection({ studyUnitId }: { studyUnitId: string }) {
   const router = useRouter();
   const [notes, setNotes] = useState<any[]>([]);
   const [cases, setCases] = useState<any[]>([]);
@@ -111,13 +111,13 @@ function LectureNotesCasesSection({ lectureId }: { lectureId: string }) {
   const load = useCallback(async () => {
     const [noteRows, caseRows] = await Promise.all([
       db.select().from(schema.noteItems).where(
-        and(eq(schema.noteItems.lectureId, lectureId), eq(schema.noteItems.type, 'note'))
+        and(eq(schema.noteItems.studyUnitId, studyUnitId), eq(schema.noteItems.type, 'note'))
       ),
-      db.select().from(schema.caseItems).where(eq(schema.caseItems.lectureId, lectureId)),
+      db.select().from(schema.caseItems).where(eq(schema.caseItems.studyUnitId, studyUnitId)),
     ]);
     setNotes(noteRows);
     setCases(caseRows);
-  }, [lectureId]);
+  }, [studyUnitId]);
 
   useEffect(() => {
     load();
@@ -138,7 +138,7 @@ function LectureNotesCasesSection({ lectureId }: { lectureId: string }) {
             )}
           </View>
           <TouchableOpacity
-            onPress={() => router.push(`/add-note?lectureId=${lectureId}` as any)}
+            onPress={() => router.push(`/add-note?studyUnitId=${studyUnitId}` as any)}
             className="flex-row items-center gap-1 px-3 py-1.5 rounded-full bg-teal-50 dark:bg-teal-900/30"
           >
             <PlusIcon size={13} color="#0d9488" />
@@ -180,7 +180,7 @@ function LectureNotesCasesSection({ lectureId }: { lectureId: string }) {
             )}
           </View>
           <TouchableOpacity
-            onPress={() => router.push(`/add-case?lectureId=${lectureId}` as any)}
+            onPress={() => router.push(`/add-case?studyUnitId=${studyUnitId}` as any)}
             className="flex-row items-center gap-1 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-900/30"
           >
             <PlusIcon size={13} color="#8b5cf6" />
@@ -220,14 +220,14 @@ function LectureNotesCasesSection({ lectureId }: { lectureId: string }) {
   );
 }
 
-// ── Lecture Local Files Section ──────────────────────────────────────────────
-function LectureLocalFilesSection({ lectureId }: { lectureId: string }) {
+// ── StudyUnit Local Files Section ──────────────────────────────────────────────
+function StudyUnitLocalFilesSection({ studyUnitId }: { studyUnitId: string }) {
   const [files, setFiles] = useState<any[]>([]);
 
   const load = useCallback(async () => {
-    const rows = await getLocalFiles(lectureId);
+    const rows = await getLocalFiles(studyUnitId);
     setFiles(rows);
-  }, [lectureId]);
+  }, [studyUnitId]);
 
   useEffect(() => {
     load();
@@ -235,7 +235,7 @@ function LectureLocalFilesSection({ lectureId }: { lectureId: string }) {
 
   const handleAttach = async () => {
     try {
-      const row = await attachLocalFile(lectureId);
+      const row = await attachLocalFile(studyUnitId);
       if (row) setFiles(prev => [...prev, row]);
     } catch (err) {
       console.error('Attach failed:', err);
@@ -324,44 +324,44 @@ function LectureLocalFilesSection({ lectureId }: { lectureId: string }) {
 }
 
 // ── Main Screen ──────────────────────────────────────────────────────────────
-export default function LectureScreen() {
+export default function StudyUnitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { lecture, isLoading, error, refetch } = useGetLecture(id);
+  const { studyUnit, isLoading, error, refetch } = useGetStudyUnit(id);
 
-  if (isLoading && !lecture) {
-    return <LoadingView message="Loading lecture..." />;
+  if (isLoading && !studyUnit) {
+    return <LoadingView message="Loading studyUnit..." />;
   }
 
-  if (error && !lecture) {
+  if (error && !studyUnit) {
     return (
       <ErrorView
-        title="Failed to load lecture"
+        title="Failed to load studyUnit"
         message={error}
         onRetry={refetch}
       />
     );
   }
 
-  if (!lecture) {
+  if (!studyUnit) {
     return (
       <ErrorView
-        title="Lecture not found"
-        message="The requested lecture could not be found."
+        title="StudyUnit not found"
+        message="The requested studyUnit could not be found."
         onRetry={refetch}
       />
     );
   }
 
-  const videos = lecture.lectureVideos ?? lecture.videos ?? [];
-  const files = lecture.lectureFiles ?? lecture.files ?? [];
+  const videos = studyUnit.studyUnitVideos ?? studyUnit.videos ?? [];
+  const files = studyUnit.studyUnitFiles ?? studyUnit.files ?? [];
 
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <ScreenHeader
-        title={lecture.subject?.name}
-        subtitle={lecture.name}
+        title={studyUnit.subject?.name}
+        subtitle={studyUnit.name}
         icon={
           <View className="bg-teal-100 dark:bg-teal-900/40 rounded-lg p-2">
             <BookOpenIcon size={18} color="#0d9488" />
@@ -370,14 +370,14 @@ export default function LectureScreen() {
       />
 
       <ScrollView className="flex-1 p-4">
-        {/* Lecture Info */}
+        {/* StudyUnit Info */}
         <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4 border border-slate-100 dark:border-slate-800">
           <Text className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
-            {lecture.name}
+            {studyUnit.name}
           </Text>
-          {!!lecture.description && (
+          {!!studyUnit.description && (
             <Text className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              {lecture.description}
+              {studyUnit.description}
             </Text>
           )}
         </View>
@@ -389,10 +389,10 @@ export default function LectureScreen() {
               Videos
             </Text>
             {videos.map((video, index) => (
-              <LectureVideoCard
+              <StudyUnitVideoCard
                 key={video.id ?? index}
                 video={video}
-                lecture={lecture}
+                studyUnit={studyUnit}
                 onVideoUpdated={refetch}
               />
             ))}
@@ -406,28 +406,28 @@ export default function LectureScreen() {
               Files & Notes
             </Text>
             {files.map((file, index) => (
-              <LectureFileCard
+              <StudyUnitFileCard
                 key={file.id ?? index}
                 file={file}
-                lecture={lecture}
+                studyUnit={studyUnit}
               />
             ))}
           </View>
         )}
 
         {/* Practice Questions */}
-        <LectureQuestionsCard lecture={lecture} />
+        <StudyUnitQuestionsCard studyUnit={studyUnit} />
 
         {/* My Summary */}
         <View className="mt-6">
-          <LectureSummarySection lectureId={lecture.id} />
+          <StudyUnitSummarySection studyUnitId={studyUnit.id} />
         </View>
 
         {/* Local File Attachments */}
-        <LectureLocalFilesSection lectureId={lecture.id} />
+        <StudyUnitLocalFilesSection studyUnitId={studyUnit.id} />
 
         {/* Notes & Cases */}
-        <LectureNotesCasesSection lectureId={lecture.id} />
+        <StudyUnitNotesCasesSection studyUnitId={studyUnit.id} />
       </ScrollView>
     </View>
   );

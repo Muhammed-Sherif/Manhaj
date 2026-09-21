@@ -163,7 +163,7 @@ export const processRecurringTasks = async (): Promise<void> => {
                 if (study) {
                   await tx.insert(schema.studyTasks).values({
                     taskId: newTaskId,
-                    lectureId: study.lectureId,
+                    studyUnitId: study.studyUnitId,
                     activityType: study.activityType,
                   });
                 }

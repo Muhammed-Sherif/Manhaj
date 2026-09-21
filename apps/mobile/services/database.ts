@@ -44,42 +44,44 @@ export const initializeDatabase = () => {
       FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
     );
     
-    CREATE TABLE IF NOT EXISTS lectures (
+    CREATE TABLE IF NOT EXISTS study_units (
       id TEXT PRIMARY KEY,
       subject_id TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'lecture',
       name TEXT NOT NULL,
       description TEXT NOT NULL,
+      "order" INTEGER,
       updated_at TEXT NOT NULL,
       deleted_at TEXT,
       FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
     );
     
-    CREATE TABLE IF NOT EXISTS lecture_videos (
+    CREATE TABLE IF NOT EXISTS study_unit_videos (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       source_name TEXT NOT NULL,
       url TEXT NOT NULL,
       duration INTEGER NOT NULL,
       local_file_path TEXT,
       updated_at TEXT NOT NULL,
       deleted_at TEXT,
-      FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
+      FOREIGN KEY (study_unit_id) REFERENCES study_units(id) ON DELETE CASCADE
     );
     
-    CREATE TABLE IF NOT EXISTS lecture_files (
+    CREATE TABLE IF NOT EXISTS study_unit_files (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       source_name TEXT NOT NULL,
       file_url TEXT NOT NULL,
       file_type TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       deleted_at TEXT,
-      FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
+      FOREIGN KEY (study_unit_id) REFERENCES study_units(id) ON DELETE CASCADE
     );
     
     CREATE TABLE IF NOT EXISTS questions (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT,
+      study_unit_id TEXT,
       created_by TEXT,
       question_type TEXT NOT NULL DEFAULT 'mcq',
       question_text TEXT NOT NULL,
@@ -87,7 +89,7 @@ export const initializeDatabase = () => {
       source TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       deleted_at TEXT,
-      FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE SET NULL
+      FOREIGN KEY (study_unit_id) REFERENCES study_units(id) ON DELETE SET NULL
     );
     
     CREATE TABLE IF NOT EXISTS choices (
@@ -122,11 +124,11 @@ export const initializeDatabase = () => {
     CREATE TABLE IF NOT EXISTS video_progress (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
-      lecture_video_id TEXT NOT NULL,
+      study_unit_video_id TEXT NOT NULL,
       position_seconds INTEGER NOT NULL,
       updated_at TEXT NOT NULL,
       synced INTEGER DEFAULT 0,
-      UNIQUE(user_id, lecture_video_id)
+      UNIQUE(user_id, study_unit_video_id)
     );
     
     CREATE TABLE IF NOT EXISTS sync_state (
@@ -170,7 +172,7 @@ export const initializeDatabase = () => {
 
     CREATE TABLE IF NOT EXISTS case_items (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       category TEXT NOT NULL,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
@@ -190,7 +192,7 @@ export const initializeDatabase = () => {
 
     CREATE TABLE IF NOT EXISTS note_items (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       type TEXT NOT NULL,
       content TEXT NOT NULL,
       source_question_id TEXT,
@@ -232,15 +234,15 @@ export const initializeDatabase = () => {
     );
 
     -- Device-local lecture attachments: never uploaded, never synced. See db/schema.ts.
-    CREATE TABLE IF NOT EXISTS lecture_local_files (
+    CREATE TABLE IF NOT EXISTS study_unit_local_files (
       id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       user_id TEXT NOT NULL,
       local_file_path TEXT NOT NULL,
       file_name TEXT NOT NULL,
       file_size INTEGER,
       created_at TEXT NOT NULL,
-      FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
+      FOREIGN KEY (study_unit_id) REFERENCES study_units(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS zekr_categories (
@@ -314,7 +316,7 @@ export const initializeDatabase = () => {
 
     CREATE TABLE IF NOT EXISTS study_tasks (
       task_id TEXT PRIMARY KEY,
-      lecture_id TEXT NOT NULL,
+      study_unit_id TEXT NOT NULL,
       activity_type TEXT NOT NULL,
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
@@ -458,9 +460,9 @@ export const initializeDatabase = () => {
   };
 
   for (const table of [
-    'lectures',
-    'lecture_videos',
-    'lecture_files',
+    'study_units',
+    'study_unit_videos',
+    'study_unit_files',
     'questions',
   ]) {
     addColumnIfMissing(table, 'updated_at', 'TEXT');
@@ -561,13 +563,13 @@ export const initializeDatabase = () => {
     }
   }
 
-  // ── Migration: make updated_at NOT NULL in lectures, lecture_videos, lecture_files, questions
+  // ── Migration: make updated_at NOT NULL in study_units, study_unit_videos, study_unit_files, questions
   // For existing tables, just update NULL values to current timestamp. New tables will have NOT NULL constraint
   const updateUpdatedAtIfNull = (tableName: string) => {
     expoDb.execSync(`UPDATE ${tableName} SET updated_at = datetime('now') WHERE updated_at IS NULL;`);
   };
 
-  for (const table of ['lectures', 'lecture_videos', 'lecture_files', 'questions']) {
+  for (const table of ['study_units', 'study_unit_videos', 'study_unit_files', 'questions']) {
     try {
       updateUpdatedAtIfNull(table);
     } catch (e) {
@@ -592,10 +594,10 @@ export const clearDatabase = async () => {
     DROP TABLE IF EXISTS terms;
     DROP TABLE IF EXISTS modules;
     DROP TABLE IF EXISTS subjects;
-    DROP TABLE IF EXISTS lectures;
-    DROP TABLE IF EXISTS lecture_videos;
-    DROP TABLE IF EXISTS lecture_files;
-    DROP TABLE IF EXISTS lecture_local_files;
+    DROP TABLE IF EXISTS study_units;
+    DROP TABLE IF EXISTS study_unit_videos;
+    DROP TABLE IF EXISTS study_unit_files;
+    DROP TABLE IF EXISTS study_unit_local_files;
     DROP TABLE IF EXISTS questions;
     DROP TABLE IF EXISTS question_sources;
     DROP TABLE IF EXISTS choices;

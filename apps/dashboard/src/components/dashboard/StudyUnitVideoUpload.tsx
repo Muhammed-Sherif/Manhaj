@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/sonner';
 import {
-  uploadLectureVideo,
+  uploadStudyUnitVideo,
   type UploadProgress,
 } from '@/lib/videoUploadClient';
 
@@ -29,8 +29,8 @@ export interface PendingVideoFile {
   sourceName: string;
 }
 
-interface LectureVideoUploadProps {
-  lectureId?: string | null;
+interface StudyUnitVideoUploadProps {
+  studyUnitId?: string | null;
   videos: MaterialLink[];
   onVideosChange: (videos: MaterialLink[]) => void;
   pendingFiles: PendingVideoFile[];
@@ -38,14 +38,14 @@ interface LectureVideoUploadProps {
   isSaving?: boolean;
 }
 
-export function LectureVideoUpload({
-  lectureId,
+export function StudyUnitVideoUpload({
+  studyUnitId,
   videos,
   onVideosChange,
   pendingFiles,
   onPendingFilesChange,
   isSaving,
-}: LectureVideoUploadProps) {
+}: StudyUnitVideoUploadProps) {
   const [activeTab, setActiveTab] = useState<'upload' | 'link'>('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
@@ -73,12 +73,12 @@ export function LectureVideoUpload({
   };
 
   const handleUploadImmediate = async () => {
-    if (!selectedFile || !lectureId) return;
+    if (!selectedFile || !studyUnitId) return;
 
     setIsUploading(true);
     try {
-      const createdVideo = await uploadLectureVideo(
-        lectureId,
+      const createdVideo = await uploadStudyUnitVideo(
+        studyUnitId,
         selectedFile,
         (progress) => setUploadProgress(progress)
       );
@@ -189,7 +189,7 @@ export function LectureVideoUpload({
                   className="text-xs h-8 bg-slate-50"
                 />
 
-                {lectureId ? (
+                {studyUnitId ? (
                   <Button
                     type="button"
                     size="sm"
@@ -251,7 +251,7 @@ export function LectureVideoUpload({
             </div>
           )}
 
-          {!lectureId && (
+          {!studyUnitId && (
             <p className="text-[11px] text-slate-500">
               💡 File will be streamed and uploaded automatically once you save this new lecture.
             </p>

@@ -51,7 +51,7 @@ const QUESTION_SOURCE_LABELS: Record<schema.QuestionSourceType, string> = {
   team_expectation: 'Team expectation',
 };
 
-type ScopeKind = 'all' | 'subject' | 'lecture';
+type ScopeKind = 'all' | 'subject' | 'studyUnit';
 
 interface ChipProps {
   label: string;
@@ -100,22 +100,22 @@ export default function CustomStudyScreen() {
   const [questionSources, setQuestionSources] = useState<schema.QuestionSourceType[]>([]);
   const [scopeKind, setScopeKind] = useState<ScopeKind>('all');
   const [subjectId, setSubjectId] = useState<string | null>(null);
-  const [lectureId, setLectureId] = useState<string | null>(null);
+  const [studyUnitId, setStudyUnitId] = useState<string | null>(null);
 
   const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
-  const [lectures, setLectures] = useState<{ id: string; name: string }[]>([]);
+  const [studyUnits, setStudyUnits] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [queueSize, setQueueSize] = useState<number | null>(null);
 
   const includesQuestions = contentTypes.includes('question');
 
   // Scope is only meaningful once it names something, so the filter falls back to
-  // "everything" until the student has actually picked a subject or a lecture.
+  // "everything" until the student has actually picked a subject or a studyUnit.
   const scope: CustomStudyFilters['scope'] = useMemo(() => {
     if (scopeKind === 'subject' && subjectId) return { kind: 'subject', subjectId };
-    if (scopeKind === 'lecture' && lectureId) return { kind: 'lecture', lectureId };
+    if (scopeKind === 'studyUnit' && studyUnitId) return { kind: 'studyUnit', studyUnitId };
     return { kind: 'all' };
-  }, [scopeKind, subjectId, lectureId]);
+  }, [scopeKind, subjectId, studyUnitId]);
 
   const filters = useMemo<CustomStudyFilters>(
     () => ({
@@ -145,20 +145,20 @@ export default function CustomStudyScreen() {
     void load();
   }, []);
 
-  // The lecture list follows whichever subject is in focus. Selecting it explicitly in
+  // The studyUnit list follows whichever subject is in focus. Selecting it explicitly in
   // subject mode would be a round trip, so the two modes share `subjectId`.
   useEffect(() => {
     if (!subjectId) {
-      setLectures([]);
+      setStudyUnits([]);
       return;
     }
     let cancelled = false;
     const load = async () => {
       const rows = await db
-        .select({ id: schema.lectures.id, name: schema.lectures.name })
-        .from(schema.lectures)
-        .where(and(eq(schema.lectures.subjectId, subjectId), isNull(schema.lectures.deletedAt)));
-      if (!cancelled) setLectures(rows.sort((a, b) => a.name.localeCompare(b.name)));
+        .select({ id: schema.studyUnits.id, name: schema.studyUnits.name })
+        .from(schema.studyUnits)
+        .where(and(eq(schema.studyUnits.subjectId, subjectId), isNull(schema.studyUnits.deletedAt)));
+      if (!cancelled) setStudyUnits(rows.sort((a, b) => a.name.localeCompare(b.name)));
     };
     void load();
     return () => {
@@ -200,7 +200,7 @@ export default function CustomStudyScreen() {
     setScopeKind(kind);
     if (kind === 'all') {
       setSubjectId(null);
-      setLectureId(null);
+      setStudyUnitId(null);
     }
   };
 
@@ -281,9 +281,9 @@ export default function CustomStudyScreen() {
             onPress={() => selectScopeKind('subject')}
           />
           <Chip
-            label="By lecture"
-            selected={scopeKind === 'lecture'}
-            onPress={() => selectScopeKind('lecture')}
+            label="By studyUnit"
+            selected={scopeKind === 'studyUnit'}
+            onPress={() => selectScopeKind('studyUnit')}
           />
 
           {scopeKind !== 'all' && (
@@ -302,7 +302,7 @@ export default function CustomStudyScreen() {
                       selected={subjectId === subject.id}
                       onPress={() => {
                         setSubjectId(subject.id);
-                        setLectureId(null);
+                        setStudyUnitId(null);
                       }}
                     />
                   ))
@@ -311,21 +311,21 @@ export default function CustomStudyScreen() {
             </View>
           )}
 
-          {scopeKind === 'lecture' && subjectId && (
+          {scopeKind === 'studyUnit' && subjectId && (
             <View className="w-full mt-4">
               <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">
-                Lecture
+                StudyUnit
               </Text>
               <View className="flex-row flex-wrap gap-2">
-                {lectures.length === 0 ? (
-                  <Text className="text-slate-400 text-sm">No lectures in this subject yet.</Text>
+                {studyUnits.length === 0 ? (
+                  <Text className="text-slate-400 text-sm">No studyUnits in this subject yet.</Text>
                 ) : (
-                  lectures.map(lecture => (
+                  studyUnits.map(studyUnit => (
                     <Chip
-                      key={lecture.id}
-                      label={lecture.name}
-                      selected={lectureId === lecture.id}
-                      onPress={() => setLectureId(lecture.id)}
+                      key={studyUnit.id}
+                      label={studyUnit.name}
+                      selected={studyUnitId === studyUnit.id}
+                      onPress={() => setStudyUnitId(studyUnit.id)}
                     />
                   ))
                 )}

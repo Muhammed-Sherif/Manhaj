@@ -5,7 +5,7 @@ import type {
   StructuredSubject as ApiStructuredSubject,
 } from '@manhaj/api-client';
 
-export type NavigationLevel = 'grades' | 'terms' | 'modules' | 'subjects' | 'lectures';
+export type NavigationLevel = 'grades' | 'terms' | 'modules' | 'subjects' | 'studyUnits';
 
 export type StructuredGrade = ApiStructuredGrade;
 export type StructuredTerm = ApiStructuredTerm;

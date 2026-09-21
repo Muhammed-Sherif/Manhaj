@@ -5,7 +5,7 @@
  * Offline-First Student Question Bank API
  * OpenAPI spec version: 1.0.0
  */
-import type { Lecture } from './lecture';
+import type { StudyUnit } from './studyUnit';
 
 export interface StructuredSubject {
   id?: string;
@@ -13,5 +13,5 @@ export interface StructuredSubject {
   name?: string;
   createdAt?: string;
   updatedAt?: string;
-  lectures?: Lecture[];
+  studyUnits?: StudyUnit[];
 }

@@ -14,15 +14,15 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import {
-  useGetAdminLectures,
-  usePostAdminLectures,
-  usePatchAdminLecturesId,
-  useDeleteAdminLecturesId,
+  useGetAdminStudyUnits,
+  usePostAdminStudyUnits,
+  usePatchAdminStudyUnitsId,
+  useDeleteAdminStudyUnitsId,
   useGetAdminSubjects,
   useGetAdminQuestions,
-  usePatchAdminQuestionsBulkUnassignLecture,
-  postAdminLecturesIdVideos,
-  postAdminLecturesIdFiles,
+  usePatchAdminQuestionsBulkUnassignStudyUnit,
+  postAdminStudyUnitsIdVideos,
+  postAdminStudyUnitsIdFiles,
 } from '@manhaj/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,10 +32,10 @@ import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
 import { toast } from '@/components/ui/sonner';
 import {
-  LectureVideoUpload,
+  StudyUnitVideoUpload,
   type PendingVideoFile,
-} from './LectureVideoUpload';
-import { uploadLectureVideo } from '@/lib/videoUploadClient';
+} from './StudyUnitVideoUpload';
+import { uploadStudyUnitVideo } from '@/lib/videoUploadClient';
 import React, { useState, useEffect } from 'react';
 
 interface MaterialLink {
@@ -44,17 +44,17 @@ interface MaterialLink {
   sourceName: string;
 }
 
-export function LecturesPage() {
-  const query = useGetAdminLectures();
+export function StudyUnitsPage() {
+  const query = useGetAdminStudyUnits();
 
   const subjectsQuery = useGetAdminSubjects();
 
   const rows = (Array.isArray(query.data?.data) ? query.data.data : []) as Array<any>;
   const subjects = (Array.isArray(subjectsQuery.data?.data) ? subjectsQuery.data.data : []) as Array<any>;
 
-  const createLectureMutation = usePostAdminLectures();
-  const updateLectureMutation = usePatchAdminLecturesId();
-  const deleteLectureMutation = useDeleteAdminLecturesId();
+  const createStudyUnitMutation = usePostAdminStudyUnits();
+  const updateStudyUnitMutation = usePatchAdminStudyUnitsId();
+  const deleteStudyUnitMutation = useDeleteAdminStudyUnitsId();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -62,33 +62,33 @@ export function LecturesPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Questions state
-  const [expandedLectureId, setExpandedLectureId] = useState<string | null>(null);
+  const [expandedStudyUnitId, setExpandedStudyUnitId] = useState<string | null>(null);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
-  const [lectureQuestionsMap, setLectureQuestionsMap] = useState<Record<string, any[]>>({});
+  const [studyUnitQuestionsMap, setStudyUnitQuestionsMap] = useState<Record<string, any[]>>({});
 
   // Fetch questions for expanded lecture
   const questionsQuery = useGetAdminQuestions(
-    expandedLectureId ? { lectureId: expandedLectureId } : undefined,
-    { query: { enabled: !!expandedLectureId } }
+    expandedStudyUnitId ? { studyUnitId: expandedStudyUnitId } : undefined,
+    { query: { enabled: !!expandedStudyUnitId } }
   );
 
   // Update lecture questions map when query data changes
   useEffect(() => {
-    if (expandedLectureId && questionsQuery.data?.data) {
-      setLectureQuestionsMap(prev => ({
+    if (expandedStudyUnitId && questionsQuery.data?.data) {
+      setStudyUnitQuestionsMap(prev => ({
         ...prev,
-        [expandedLectureId]: questionsQuery.data.data
+        [expandedStudyUnitId]: questionsQuery.data.data
       }));
     }
-  }, [expandedLectureId, questionsQuery.data]);
+  }, [expandedStudyUnitId, questionsQuery.data]);
 
-  const unassignMutation = usePatchAdminQuestionsBulkUnassignLecture({
+  const unassignMutation = usePatchAdminQuestionsBulkUnassignStudyUnit({
     mutation: {
       onSuccess: () => {
         toast.success('Questions unassigned successfully');
         setSelectedQuestionIds([]);
         query.refetch();
-        if (expandedLectureId) {
+        if (expandedStudyUnitId) {
           questionsQuery.refetch();
         }
       },
@@ -118,21 +118,21 @@ export function LecturesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (lecture: any) => {
-    if (!lecture.id) return;
+  const handleEditClick = (studyUnit: any) => {
+    if (!studyUnit.id) return;
     setFormData({
-      subjectId: lecture.subjectId || '',
-      name: lecture.name || '',
-      description: lecture.description || '',
+      subjectId: studyUnit.subjectId || '',
+      name: studyUnit.name || '',
+      description: studyUnit.description || '',
     });
 
-    const existingVideos = (lecture.lectureVideos || []).map((v: any) => ({
+    const existingVideos = (studyUnit.studyUnitVideos || []).map((v: any) => ({
       id: v.id,
       url: v.url || '',
       sourceName: v.sourceName || '',
     }));
 
-    const allFiles = lecture.lectureFiles || [];
+    const allFiles = studyUnit.studyUnitFiles || [];
     const existingAudios = allFiles
       .filter((f: any) => f.fileType === 'audio')
       .map((f: any) => ({
@@ -155,29 +155,29 @@ export function LecturesPage() {
     setFiles(existingOtherFiles);
 
     setIsEditMode(true);
-    setEditingItemId(lecture.id);
+    setEditingItemId(studyUnit.id);
     setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = async (lecture: any) => {
-    if (!lecture.id) return;
-    if (!confirm(`Are you sure you want to delete "${lecture.name || lecture.id}"?`)) return;
+  const handleDeleteClick = async (studyUnit: any) => {
+    if (!studyUnit.id) return;
+    if (!confirm(`Are you sure you want to delete "${studyUnit.name || studyUnit.id}"?`)) return;
 
     try {
-      await deleteLectureMutation.mutateAsync({ id: lecture.id });
-      toast.success('Lecture deleted successfully');
+      await deleteStudyUnitMutation.mutateAsync({ id: studyUnit.id });
+      toast.success('Study Unit deleted successfully');
       query.refetch();
     } catch (error) {
       toast.error('Failed to delete lecture');
     }
   };
 
-  const handleToggleQuestions = (lectureId: string) => {
-    if (expandedLectureId === lectureId) {
-      setExpandedLectureId(null);
+  const handleToggleQuestions = (studyUnitId: string) => {
+    if (expandedStudyUnitId === studyUnitId) {
+      setExpandedStudyUnitId(null);
       setSelectedQuestionIds([]);
     } else {
-      setExpandedLectureId(lectureId);
+      setExpandedStudyUnitId(studyUnitId);
       setSelectedQuestionIds([]);
     }
   };
@@ -195,11 +195,11 @@ export function LecturesPage() {
     setIsSaving(true);
 
     try {
-      let lectureId = editingItemId;
+      let studyUnitId = editingItemId;
 
-      if (isEditMode && lectureId) {
-        await updateLectureMutation.mutateAsync({
-          id: lectureId,
+      if (isEditMode && studyUnitId) {
+        await updateStudyUnitMutation.mutateAsync({
+          id: studyUnitId,
           data: {
             subjectId: formData.subjectId,
             name: formData.name,
@@ -207,29 +207,29 @@ export function LecturesPage() {
           },
         });
       } else {
-        const res = await createLectureMutation.mutateAsync({
+        const res = await createStudyUnitMutation.mutateAsync({
           data: {
             subjectId: formData.subjectId,
             name: formData.name,
             description: formData.description,
           },
         });
-        lectureId = (res.data as any)?.id;
+        studyUnitId = (res.data as any)?.id;
       }
 
-      if (lectureId) {
+      if (studyUnitId) {
         // Upload any queued pending video files
         if (pendingVideoFiles.length > 0) {
           for (const item of pendingVideoFiles) {
             toast.info(`Streaming video "${item.sourceName}"...`);
-            await uploadLectureVideo(lectureId, item.file);
+            await uploadStudyUnitVideo(studyUnitId, item.file);
           }
         }
 
         // Save new videos (links that do not have an existing id and are not already saved)
         for (const v of videos) {
           if (!v.id && v.url.trim() && !v.url.startsWith('/uploads/')) {
-            await postAdminLecturesIdVideos(lectureId, {
+            await postAdminStudyUnitsIdVideos(studyUnitId, {
               url: v.url.trim(),
               sourceName: v.sourceName.trim() || 'Video Resource',
               duration: 0,
@@ -240,7 +240,7 @@ export function LecturesPage() {
         // Save new audios
         for (const a of audios) {
           if (!a.id && a.url.trim()) {
-            await postAdminLecturesIdFiles(lectureId, {
+            await postAdminStudyUnitsIdFiles(studyUnitId, {
               fileUrl: a.url.trim(),
               sourceName: a.sourceName.trim() || 'Audio Resource',
               fileType: 'audio',
@@ -251,7 +251,7 @@ export function LecturesPage() {
         // Save new files
         for (const f of files) {
           if (!f.id && f.url.trim()) {
-            await postAdminLecturesIdFiles(lectureId, {
+            await postAdminStudyUnitsIdFiles(studyUnitId, {
               fileUrl: f.url.trim(),
               sourceName: f.sourceName.trim() || 'File Resource',
               fileType: 'pdf',
@@ -274,11 +274,11 @@ export function LecturesPage() {
     <>
       <Heading
         eyebrow="Content library"
-        title="Lectures"
+        title="Study Units"
         description={
           query.isError
-            ? 'Unable to load lectures from the API.'
-            : 'Live lectures from the admin API.'
+            ? 'Unable to load studyUnits from the API.'
+            : 'Live studyUnits from the admin API.'
         }
         action={
           <Button onClick={handleAddClick}>
@@ -292,7 +292,7 @@ export function LecturesPage() {
 
       <Card>
         {query.isLoading ? (
-          <CardContent className="p-8 text-sm text-slate-500">Loading lectures...</CardContent>
+          <CardContent className="p-8 text-sm text-slate-500">Loading studyUnits...</CardContent>
         ) : query.isError ? (
           <CardContent className="p-8 text-sm text-red-600">
             {(query.error as Error).message}
@@ -308,29 +308,29 @@ export function LecturesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((lecture) => {
-                const lectureVideos = lecture.lectureVideos || [];
-                const lectureFiles = lecture.lectureFiles || [];
-                const audioCount = lectureFiles.filter((f: any) => f.fileType === 'audio').length;
-                const fileCount = lectureFiles.filter((f: any) => f.fileType !== 'audio').length;
-                const videoCount = lectureVideos.length;
+              {rows.map((studyUnit) => {
+                const studyUnitVideos = studyUnit.studyUnitVideos || [];
+                const studyUnitFiles = studyUnit.studyUnitFiles || [];
+                const audioCount = studyUnitFiles.filter((f: any) => f.fileType === 'audio').length;
+                const fileCount = studyUnitFiles.filter((f: any) => f.fileType !== 'audio').length;
+                const videoCount = studyUnitVideos.length;
                 const hasMaterials = videoCount > 0 || audioCount > 0 || fileCount > 0;
-                const isExpanded = expandedLectureId === lecture.id;
-                const lectureQuestions = lectureQuestionsMap[lecture.id] || [];
+                const isExpanded = expandedStudyUnitId === studyUnit.id;
+                const lectureQuestions = studyUnitQuestionsMap[studyUnit.id] || [];
 
                 return (
-                  <React.Fragment key={lecture.id}>
+                  <React.Fragment key={studyUnit.id}>
                     <TableRow>
                       <TableCell>
                         <span className="flex items-center gap-3 font-semibold text-slate-800">
                           <span className="grid size-9 place-items-center rounded-md bg-teal-50 text-teal-700">
                             <BookOpen size={17} />
                           </span>
-                          {lecture.name}
+                          {studyUnit.name}
                         </span>
                       </TableCell>
                       <TableCell className="text-slate-500 max-w-xs truncate">
-                        {lecture.description || 'No description'}
+                        {studyUnit.description || 'No description'}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -362,18 +362,18 @@ export function LecturesPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => handleToggleQuestions(lecture.id)}
+                            onClick={() => handleToggleQuestions(studyUnit.id)}
                             title={isExpanded ? 'Hide questions' : 'Show questions'}
                           >
                             {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => handleEditClick(lecture)}>
+                          <Button size="icon" variant="ghost" onClick={() => handleEditClick(studyUnit)}>
                             <Pencil size={15} />
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => handleDeleteClick(lecture)}
+                            onClick={() => handleDeleteClick(studyUnit)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 size={15} />
@@ -387,7 +387,7 @@ export function LecturesPage() {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-semibold text-sm text-slate-700">
-                                Assigned Questions ({lectureQuestionsMap[lecture.id]?.length || 0})
+                                Assigned Questions ({studyUnitQuestionsMap[studyUnit.id]?.length || 0})
                               </h4>
                               <div className="flex gap-2">
                                 {selectedQuestionIds.length > 0 && (
@@ -404,7 +404,7 @@ export function LecturesPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => setExpandedLectureId(null)}
+                                  onClick={() => setExpandedStudyUnitId(null)}
                                 >
                                   <X size={14} className="mr-1" />
                                   Close
@@ -413,11 +413,11 @@ export function LecturesPage() {
                             </div>
                             {questionsQuery.isLoading ? (
                               <p className="text-sm text-slate-500">Loading questions...</p>
-                            ) : !lectureQuestionsMap[lecture.id] || lectureQuestionsMap[lecture.id].length === 0 ? (
-                              <p className="text-sm text-slate-500">No questions assigned to this lecture.</p>
+                            ) : !studyUnitQuestionsMap[studyUnit.id] || studyUnitQuestionsMap[studyUnit.id].length === 0 ? (
+                              <p className="text-sm text-slate-500">No questions assigned to this studyUnit.</p>
                             ) : (
                               <div className="space-y-2">
-                                {lectureQuestionsMap[lecture.id].map((question: any) => (
+                                {studyUnitQuestionsMap[studyUnit.id].map((question: any) => (
                                   <div
                                     key={question.id}
                                     className="flex items-start gap-3 p-3 bg-white rounded border border-slate-200"
@@ -525,8 +525,8 @@ export function LecturesPage() {
               </div>
 
               {/* SECTION: Video Uploads & Links */}
-              <LectureVideoUpload
-                lectureId={editingItemId}
+              <StudyUnitVideoUpload
+                studyUnitId={editingItemId}
                 videos={videos}
                 onVideosChange={setVideos}
                 pendingFiles={pendingVideoFiles}
@@ -673,7 +673,7 @@ export function LecturesPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSaving || createLectureMutation.isPending || updateLectureMutation.isPending}
+                  disabled={isSaving || createStudyUnitMutation.isPending || updateStudyUnitMutation.isPending}
                   className="bg-teal-700 hover:bg-teal-800 text-white min-w-[100px]"
                 >
                   {isSaving ? (

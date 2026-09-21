@@ -1,2 +1,2 @@
-export * from './useGetLecture';
+export * from './useGetStudyUnit';
 export * from './auth-client';

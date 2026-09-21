@@ -13,7 +13,7 @@ import { attachImage } from '../services/imageUploadService';
 import { StudentContentService } from '../services/studentContentService';
 
 export default function AddNoteScreen() {
-  const { lectureId, noteId, type: presetType } = useLocalSearchParams<{ lectureId: string; noteId?: string; type?: string }>();
+  const { studyUnitId, noteId, type: presetType } = useLocalSearchParams<{ studyUnitId: string; noteId?: string; type?: string }>();
   const router = useRouter();
 
   const [type, setType] = useState(presetType || 'note');
@@ -53,7 +53,7 @@ export default function AddNoteScreen() {
       // Insert note
       await db.insert(schema.noteItems).values({
         id: noteItemId,
-        lectureId: lectureId!,
+        studyUnitId: studyUnitId!,
         type,
         content,
         createdAt: nowStr,
@@ -124,7 +124,7 @@ export default function AddNoteScreen() {
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
         title={noteId ? (type === 'summary' ? 'Edit Summary' : 'Edit Note') : (type === 'summary' ? 'Add Summary' : 'Add Note')}
-        subtitle={type === 'summary' ? 'A personal study summary for this lecture' : 'Write a personal note or recurring question'}
+        subtitle={type === 'summary' ? 'A personal study summary for this studyUnit' : 'Write a personal note or recurring question'}
         icon={<Edit3Icon size={20} color="#0d9488" />}
       />
 
@@ -135,7 +135,7 @@ export default function AddNoteScreen() {
           <TextInput
             value={content}
             onChangeText={setContent}
-            placeholder={type === 'summary' ? 'Write your lecture summary here...' : 'Type your notes here...'}
+            placeholder={type === 'summary' ? 'Write your studyUnit summary here...' : 'Type your notes here...'}
             placeholderTextColor="#94a3b8"
             multiline
             numberOfLines={6}

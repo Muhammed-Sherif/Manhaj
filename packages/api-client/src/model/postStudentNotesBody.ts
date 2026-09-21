@@ -8,7 +8,7 @@
 import type { PostStudentNotesBodyType } from './postStudentNotesBodyType';
 
 export type PostStudentNotesBody = {
-  lectureId: string;
+  studyUnitId: string;
   type: PostStudentNotesBodyType;
   content: string;
   sourceQuestionId?: string;

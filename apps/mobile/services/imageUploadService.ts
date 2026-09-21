@@ -208,7 +208,7 @@ function toAbsoluteUrl(url: string): string {
  *
  * Local first, remote as fallback: the device that attached the image has the file, and
  * any other device (or the same one after a reinstall) fetches it from the server. Same
- * shape as the lecture-video download service.
+ * shape as the studyUnit-video download service.
  */
 export async function resolveImageUri(
   localPath: string | null,

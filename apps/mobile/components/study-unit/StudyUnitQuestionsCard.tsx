@@ -2,15 +2,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { CheckCircleIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { type Lecture } from '@manhaj/api-client';
+import { type StudyUnit } from '@manhaj/api-client';
 
-export interface LectureQuestionsCardProps {
-  lecture;
+export interface StudyUnitQuestionsCardProps {
+  studyUnit;
   onStartSolving?: () => void;
 }
 
-export const LectureQuestionsCard: React.FC<LectureQuestionsCardProps> = ({
-  lecture,
+export const StudyUnitQuestionsCard: React.FC<StudyUnitQuestionsCardProps> = ({
+  studyUnit,
   onStartSolving,
 }) => {
   const router = useRouter();
@@ -20,13 +20,13 @@ export const LectureQuestionsCard: React.FC<LectureQuestionsCardProps> = ({
       onStartSolving();
       return;
     }
-    if (!lecture.id) return;
-    router.push(`/solve?mode=solve&lectureId=${lecture.id}`);
+    if (!studyUnit.id) return;
+    router.push(`/solve?mode=solve&studyUnitId=${studyUnit.id}`);
   };
 
   const handleSolveUnsolved = () => {
-    if (!lecture.id) return;
-    router.push(`/solve?mode=unsolved&lectureId=${lecture.id}`);
+    if (!studyUnit.id) return;
+    router.push(`/solve?mode=unsolved&studyUnitId=${studyUnit.id}`);
   };
 
   return (
@@ -38,20 +38,20 @@ export const LectureQuestionsCard: React.FC<LectureQuestionsCardProps> = ({
         <TouchableOpacity
           className="flex-1 bg-teal-600 rounded-xl p-4 items-center justify-center shadow-sm active:bg-teal-700"
           onPress={handleSolveAll}
-          disabled={lecture.questions?.length === 0}
-          style={{ opacity: lecture.questions?.length === 0 ? 0.6 : 1 }}
+          disabled={studyUnit.questions?.length === 0}
+          style={{ opacity: studyUnit.questions?.length === 0 ? 0.6 : 1 }}
         >
           <Text className="text-white font-semibold text-base text-center">
-            {lecture.questions?.length > 0
-              ? `Solve All (${lecture.questions?.length} questions)`
+            {studyUnit.questions?.length > 0
+              ? `Solve All (${studyUnit.questions?.length} questions)`
               : 'No questions available yet'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           className="bg-slate-600 dark:bg-slate-700 rounded-xl px-4 py-4 items-center justify-center shadow-sm active:bg-slate-700 dark:active:bg-slate-600"
           onPress={handleSolveUnsolved}
-          disabled={lecture.questions?.length === 0}
-          style={{ opacity: lecture.questions?.length === 0 ? 0.6 : 1 }}
+          disabled={studyUnit.questions?.length === 0}
+          style={{ opacity: studyUnit.questions?.length === 0 ? 0.6 : 1 }}
         >
           <Text className="text-white font-semibold text-sm text-center">
             Solve Unsolved

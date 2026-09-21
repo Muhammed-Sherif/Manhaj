@@ -5,7 +5,7 @@ import {
   choices,
   attempts,
   flags,
-  lectures,
+  studyUnits,
   lectureVideos,
   lectureFiles,
   subjects,
@@ -21,7 +21,7 @@ import {
   mcqQuestions,
   writtenQuestions,
 } from '@manhaj/db/schema';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql, gte, lte } from 'drizzle-orm';
 import { notifyContentUpdated } from './pushService.js';
 
 export class AdminConflictError extends Error {
@@ -53,7 +53,7 @@ export class AdminValidationError extends Error {
  * `questionType` and `writtenAnswer` are deliberately absent: they live in the subclass tables
  * and are handled separately.
  */
-const UPDATABLE_QUESTION_FIELDS = ['lectureId', 'questionText', 'explanation', 'source'] as const;
+const UPDATABLE_QUESTION_FIELDS = ['studyUnitId', 'questionText', 'explanation', 'source'] as const;
 
 export class AdminService {
   async getGrades() {
@@ -210,11 +210,11 @@ export class AdminService {
     const [subject] = await db.select({ moduleId: subjects.moduleId }).from(subjects).where(eq(subjects.id, id));
     const [lectureDependencies] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(lectures)
-      .where(eq(lectures.subjectId, id));
+      .from(studyUnits)
+      .where(eq(studyUnits.subjectId, id));
 
     if (Number(lectureDependencies?.count ?? 0) > 0) {
-      throw new AdminConflictError('Cannot delete a subject with dependent lectures');
+      throw new AdminConflictError('Cannot delete a subject with dependent study units');
     }
 
     await db.delete(subjects).where(eq(subjects.id, id));
@@ -226,28 +226,28 @@ export class AdminService {
     }
   }
 
-  async deleteLecture(id: string) {
+  async deleteStudyUnit(id: string) {
     // Get the termId for notification before deleting
     const [target] = await db
       .select({ termId: terms.id })
-      .from(lectures)
-      .innerJoin(subjects, eq(lectures.subjectId, subjects.id))
+      .from(studyUnits)
+      .innerJoin(subjects, eq(studyUnits.subjectId, subjects.id))
       .innerJoin(modules, eq(subjects.moduleId, modules.id))
       .innerJoin(terms, eq(modules.termId, terms.id))
-      .where(eq(lectures.id, id));
+      .where(eq(studyUnits.id, id));
 
     const [questionDependencies] = await db
       .select({ count: sql<number>`count(*)` })
       .from(questions)
-      .where(eq(questions.lectureId, id));
+      .where(eq(questions.studyUnitId, id));
 
     if (Number(questionDependencies?.count ?? 0) > 0) {
-      throw new AdminConflictError('Cannot delete a lecture with dependent questions');
+      throw new AdminConflictError('Cannot delete a study unit with dependent questions');
     }
 
-    await db.delete(lectureVideos).where(eq(lectureVideos.lectureId, id));
-    await db.delete(lectureFiles).where(eq(lectureFiles.lectureId, id));
-    await db.delete(lectures).where(eq(lectures.id, id));
+    await db.delete(lectureVideos).where(eq(lectureVideos.studyUnitId, id));
+    await db.delete(lectureFiles).where(eq(lectureFiles.studyUnitId, id));
+    await db.delete(studyUnits).where(eq(studyUnits.id, id));
 
     if (target) {
       void notifyContentUpdated(target.termId).catch(() => undefined);
@@ -277,7 +277,7 @@ export class AdminService {
           ...questionFields,
           questionType,
           createdBy: questionFields.createdBy || null,
-          lectureId: questionFields.lectureId || null,
+          studyUnitId: questionFields.studyUnitId || null,
         })
         .returning();
 
@@ -297,55 +297,55 @@ export class AdminService {
             ...choice,
             questionId: question.id,
           }))
-        );
+          );
+        }
+
+        return question;
+      });
+    }
+
+    async getQuestions(studyUnitId?: string) {
+      let query = db.query.questions.findMany({
+        where: isNull(questions.deletedAt),
+        with: {
+          choices: true,
+          writtenQuestion: true,
+        },
+      });
+
+      if (studyUnitId === 'null') {
+        // Get unclassified questions
+        query = db.query.questions.findMany({
+          where: and(isNull(questions.studyUnitId), isNull(questions.deletedAt)),
+          with: {
+            choices: true,
+            writtenQuestion: true,
+          },
+        });
+      } else if (studyUnitId) {
+        query = db.query.questions.findMany({
+          where: and(eq(questions.studyUnitId, studyUnitId), isNull(questions.deletedAt)),
+          with: {
+            choices: true,
+            writtenQuestion: true,
+          },
+        });
       }
 
-      return question;
-    });
-  }
-
-  async getQuestions(lectureId?: string) {
-    let query = db.query.questions.findMany({
-      where: isNull(questions.deletedAt),
-      with: {
-        choices: true,
-        writtenQuestion: true,
-      },
-    });
-
-    if (lectureId === 'null') {
-      // Get unclassified questions
-      query = db.query.questions.findMany({
-        where: and(isNull(questions.lectureId), isNull(questions.deletedAt)),
-        with: {
-          choices: true,
-          writtenQuestion: true,
-        },
-      });
-    } else if (lectureId) {
-      query = db.query.questions.findMany({
-        where: and(eq(questions.lectureId, lectureId), isNull(questions.deletedAt)),
-        with: {
-          choices: true,
-          writtenQuestion: true,
-        },
-      });
+      return query;
     }
 
-    return query;
-  }
+    async bulkAssignStudyUnit(questionIds: string[], studyUnitId: string) {
+      if (questionIds.length === 0) {
+        throw new Error('At least one question ID is required');
+      }
 
-  async bulkAssignLecture(questionIds: string[], lectureId: string) {
-    if (questionIds.length === 0) {
-      throw new Error('At least one question ID is required');
-    }
-
-    const result = await db.transaction(async (transaction) => {
-      const updatedQuestions = await transaction
-        .update(questions)
-        .set({ lectureId })
-        .where(inArray(questions.id, questionIds))
-        .returning({ id: questions.id });
+      const result = await db.transaction(async (transaction) => {
+        const updatedQuestions = await transaction
+          .update(questions)
+          .set({ studyUnitId })
+          .where(inArray(questions.id, questionIds))
+          .returning({ id: questions.id });
 
       if (updatedQuestions.length !== questionIds.length) {
         throw new Error('One or more question IDs were not found');
@@ -356,11 +356,47 @@ export class AdminService {
 
     const [target] = await db
       .select({ termId: terms.id })
-      .from(lectures)
-      .innerJoin(subjects, eq(lectures.subjectId, subjects.id))
+      .from(studyUnits)
+      .innerJoin(subjects, eq(studyUnits.subjectId, subjects.id))
       .innerJoin(modules, eq(subjects.moduleId, modules.id))
       .innerJoin(terms, eq(modules.termId, terms.id))
-      .where(eq(lectures.id, lectureId));
+      .where(eq(studyUnits.id, studyUnitId))
+      .limit(1);
+
+    if (target?.termId) {
+      void notifyContentUpdated(target.termId).catch(() => undefined);
+    }
+
+    return result;
+  }
+
+  async bulkAssignTelegramRange(startMessageId: number, endMessageId: number, studyUnitId: string) {
+    if (startMessageId > endMessageId) {
+      throw new Error('startMessageId cannot be greater than endMessageId');
+    }
+
+    const result = await db.transaction(async (transaction) => {
+      const updatedQuestions = await transaction
+        .update(questions)
+        .set({ studyUnitId })
+        .where(
+          and(
+            gte(questions.telegramMessageId, startMessageId),
+            lte(questions.telegramMessageId, endMessageId)
+          )
+        )
+        .returning({ id: questions.id });
+
+      return { success: true, assignedCount: updatedQuestions.length };
+    });
+
+    const [target] = await db
+      .select({ termId: terms.id })
+      .from(studyUnits)
+      .innerJoin(subjects, eq(studyUnits.subjectId, subjects.id))
+      .innerJoin(modules, eq(subjects.moduleId, modules.id))
+      .innerJoin(terms, eq(modules.termId, terms.id))
+      .where(eq(studyUnits.id, studyUnitId));
 
     if (target) {
       void notifyContentUpdated(target.termId).catch(() => undefined);
@@ -368,7 +404,7 @@ export class AdminService {
     return result;
   }
 
-  async bulkUnassignLecture(questionIds: string[]) {
+  async bulkUnassignStudyUnit(questionIds: string[]) {
     if (questionIds.length === 0) {
       throw new Error('At least one question ID is required');
     }
@@ -376,7 +412,7 @@ export class AdminService {
     const result = await db.transaction(async (transaction) => {
       const updatedQuestions = await transaction
         .update(questions)
-        .set({ lectureId: null })
+        .set({ studyUnitId: null })
         .where(inArray(questions.id, questionIds))
         .returning();
 
@@ -511,56 +547,66 @@ export class AdminService {
     return { success: true, deletedCount: deleted.length };
   }
 
-  // Lectures
-  async createLecture(lectureData: any) {
-    const [lecture] = await db.insert(lectures).values(lectureData).returning();
+  // Study Units
+  async createStudyUnit(studyUnitData: any) {
+    const [studyUnit] = await db.insert(studyUnits).values(studyUnitData).returning();
     // Get the termId for notification
     const [target] = await db
       .select({ termId: terms.id })
-      .from(lectures)
-      .innerJoin(subjects, eq(lectures.subjectId, subjects.id))
+      .from(studyUnits)
+      .innerJoin(subjects, eq(studyUnits.subjectId, subjects.id))
       .innerJoin(modules, eq(subjects.moduleId, modules.id))
       .innerJoin(terms, eq(modules.termId, terms.id))
-      .where(eq(lectures.id, lecture.id));
+      .where(eq(studyUnits.id, studyUnit.id));
 
     if (target) {
       void notifyContentUpdated(target.termId).catch(() => undefined);
     }
-    return lecture;
+    return studyUnit;
   }
 
-  async updateLecture(id: string, updates: { subjectId?: string; name?: string; description?: string }) {
-    const [lecture] = await db
-      .update(lectures)
+  async updateStudyUnit(id: string, updates: { subjectId?: string; type?: 'lecture' | 'section'; order?: number; name?: string; description?: string }) {
+    const [studyUnit] = await db
+      .update(studyUnits)
       .set(updates)
-      .where(eq(lectures.id, id))
+      .where(eq(studyUnits.id, id))
       .returning();
     // Get the termId for notification
     const [target] = await db
       .select({ termId: terms.id })
-      .from(lectures)
-      .innerJoin(subjects, eq(lectures.subjectId, subjects.id))
+      .from(studyUnits)
+      .innerJoin(subjects, eq(studyUnits.subjectId, subjects.id))
       .innerJoin(modules, eq(subjects.moduleId, modules.id))
       .innerJoin(terms, eq(modules.termId, terms.id))
-      .where(eq(lectures.id, id));
+      .where(eq(studyUnits.id, id));
 
     if (target) {
       void notifyContentUpdated(target.termId).catch(() => undefined);
     }
-    return lecture;
+    return studyUnit;
   }
 
-  async getLectures(subjectId?: string) {
-    if (subjectId) {
-      return db.query.lectures.findMany({
-        where: eq(lectures.subjectId, subjectId),
+  async getStudyUnits(subjectId?: string, type?: 'lecture' | 'section') {
+    let whereCondition: any;
+    if (subjectId && type) {
+      whereCondition = and(eq(studyUnits.subjectId, subjectId), eq(studyUnits.type, type));
+    } else if (subjectId) {
+      whereCondition = eq(studyUnits.subjectId, subjectId);
+    } else if (type) {
+      whereCondition = eq(studyUnits.type, type);
+    }
+
+    if (whereCondition) {
+      return db.query.studyUnits.findMany({
+        where: whereCondition,
         with: {
           lectureVideos: true,
           lectureFiles: true,
         },
       });
     }
-    return db.query.lectures.findMany({
+    
+    return db.query.studyUnits.findMany({
       with: {
         lectureVideos: true,
         lectureFiles: true,
@@ -568,18 +614,18 @@ export class AdminService {
     });
   }
 
-  async addLectureVideo(lectureId: string, videoData: any) {
+  async addStudyUnitVideo(studyUnitId: string, videoData: any) {
     const [video] = await db
       .insert(lectureVideos)
-      .values({ ...videoData, lectureId })
+      .values({ ...videoData, studyUnitId })
       .returning();
     return video;
   }
 
-  async addLectureFile(lectureId: string, fileData: any) {
+  async addStudyUnitFile(studyUnitId: string, fileData: any) {
     const [file] = await db
       .insert(lectureFiles)
-      .values({ ...fileData, lectureId })
+      .values({ ...fileData, studyUnitId })
       .returning();
     return file;
   }

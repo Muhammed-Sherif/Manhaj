@@ -10,5 +10,5 @@ export type GetAdminQuestionsParams = {
 /**
  * @nullable
  */
-lectureId?: string | null;
+studyUnitId?: string | null;
 };

@@ -147,11 +147,11 @@ export default function FlashcardsScreen() {
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
         <View className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 min-h-[300px]">
-          {/* Lecture Name for Questions */}
-          {itemType === 'question' && currentItem.lecture && (
+          {/* StudyUnit Name for Questions */}
+          {itemType === 'question' && currentItem.studyUnit && (
             <View className="mb-3">
               <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
-                {currentItem.lecture.name}
+                {currentItem.studyUnit.name}
               </Text>
             </View>
           )}

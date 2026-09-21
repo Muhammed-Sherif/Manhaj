@@ -4,6 +4,7 @@ import { relations } from 'drizzle-orm';
 // Enums
 export const authProviderEnum = pgEnum('auth_provider', ['google', 'credentials']);
 export const roleEnum = pgEnum('role', ['student', 'admin']);
+export const studyUnitTypeEnum = pgEnum('study_unit_type', ['lecture', 'section']);
 // How a question entered the system (ingestion provenance).
 export const questionSourceEnum = pgEnum('question_source', ['telegram_auto', 'admin_manual']);
 export const questionTypeEnum = pgEnum('question_type', ['mcq', 'written']);
@@ -43,18 +44,22 @@ export const subjects = pgTable('subjects', {
   name: text('name').notNull(),
 });
 
-export const lectures = pgTable('lectures', {
+export const studyUnits = pgTable('study_units', {
   id: uuid('id').defaultRandom().primaryKey(),
   subjectId: uuid('subject_id').notNull().references(() => subjects.id, { onDelete: 'cascade' }),
+  type: studyUnitTypeEnum('type').notNull().default('lecture'),
+  order: integer('order'),
   name: text('name').notNull(),
   description: text('description').notNull(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
 
+export const lectures = studyUnits; // Alias for backward compatibility during transition
+
 export const lectureFiles = pgTable('lecture_files', {
   id: uuid('id').defaultRandom().primaryKey(),
-  lectureId: uuid('lecture_id').notNull().references(() => lectures.id, { onDelete: 'cascade' }),
+  studyUnitId: uuid('study_unit_id').notNull().references(() => studyUnits.id, { onDelete: 'cascade' }),
   sourceName: text('source_name').notNull(),
   fileUrl: text('file_url').notNull(),
   fileType: text('file_type').notNull(),
@@ -64,7 +69,7 @@ export const lectureFiles = pgTable('lecture_files', {
 
 export const lectureVideos = pgTable('lecture_videos', {
   id: uuid('id').defaultRandom().primaryKey(),
-  lectureId: uuid('lecture_id').notNull().references(() => lectures.id, { onDelete: 'cascade' }),
+  studyUnitId: uuid('study_unit_id').notNull().references(() => studyUnits.id, { onDelete: 'cascade' }),
   sourceName: text('source_name').notNull(),
   url: text('url').notNull(),
   duration: integer('duration').notNull(),
@@ -110,7 +115,7 @@ export const refreshTokens = pgTable('refresh_tokens', {
 
 export const questions = pgTable('questions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }),
+  studyUnitId: uuid('study_unit_id').references(() => studyUnits.id, { onDelete: 'set null' }),
   createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
   // Discriminator: determines which subclass table holds type-specific data
   questionType: questionTypeEnum('question_type').notNull().default('mcq'),
@@ -181,6 +186,7 @@ export const questionImages = pgTable('question_images', {
   imageUrl: text('image_url').notNull(),           // permanent URL (object storage / CDN)
   displayOrder: integer('display_order').notNull().default(0),
   telegramFileId: text('telegram_file_id'),        // original Telegram file_id for reference
+  isAnswer: boolean('is_answer').notNull().default(false), // true if this image represents the model answer
 });
 
 // ── Spaced Repetition System (SRS) ────────────────────────────────────────────
@@ -246,7 +252,7 @@ export const questionReviewItems = pgTable('question_review_items', {
 // image finishes uploading without the client re-syncing the whole row afterwards.
 export const caseItems = pgTable('case_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
-  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
+  studyUnitId: uuid('study_unit_id').references(() => studyUnits.id, { onDelete: 'set null' }), // nullable: optional link
   category: text('category').notNull().default('general'),
   title: text('title').notNull(),
   content: text('content').notNull(),      // the prompt shown before reveal
@@ -263,7 +269,7 @@ export const caseItems = pgTable('case_items', {
 // The image columns carry the same meaning as on case_items above.
 export const noteItems = pgTable('note_items', {
   reviewItemId: uuid('review_item_id').primaryKey().references(() => reviewItems.id, { onDelete: 'cascade' }),
-  lectureId: uuid('lecture_id').references(() => lectures.id, { onDelete: 'set null' }), // nullable: optional link
+  studyUnitId: uuid('study_unit_id').references(() => studyUnits.id, { onDelete: 'set null' }), // nullable: optional link
   type: text('type').notNull().default('general'),
   content: text('content').notNull(),      // the note body (markdown supported)
   sourceQuestionId: uuid('source_question_id').references(() => questions.id, { onDelete: 'set null' }),
@@ -416,7 +422,7 @@ export const workTasks = pgTable('work_tasks', {
 
 export const studyTasks = pgTable('study_tasks', {
   taskId: uuid('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
-  lectureId: uuid('lecture_id').notNull().references(() => lectures.id, { onDelete: 'cascade' }),
+  studyUnitId: uuid('study_unit_id').notNull().references(() => studyUnits.id, { onDelete: 'cascade' }),
   activityType: studyTaskActivityEnum('activity_type').notNull(),
 });
 
@@ -446,12 +452,12 @@ export const subjectsRelations = relations(subjects, ({ one, many }) => ({
     fields: [subjects.moduleId],
     references: [modules.id],
   }),
-  lectures: many(lectures),
+  studyUnits: many(studyUnits),
 }));
 
-export const lecturesRelations = relations(lectures, ({ one, many }) => ({
+export const studyUnitsRelations = relations(studyUnits, ({ one, many }) => ({
   subject: one(subjects, {
-    fields: [lectures.subjectId],
+    fields: [studyUnits.subjectId],
     references: [subjects.id],
   }),
   lectureFiles: many(lectureFiles),
@@ -462,16 +468,16 @@ export const lecturesRelations = relations(lectures, ({ one, many }) => ({
 }));
 
 export const lectureFilesRelations = relations(lectureFiles, ({ one }) => ({
-  lecture: one(lectures, {
-    fields: [lectureFiles.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [lectureFiles.studyUnitId],
+    references: [studyUnits.id],
   }),
 }));
 
 export const lectureVideosRelations = relations(lectureVideos, ({ one, many }) => ({
-  lecture: one(lectures, {
-    fields: [lectureVideos.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [lectureVideos.studyUnitId],
+    references: [studyUnits.id],
   }),
   videoProgress: many(videoProgress),
 }));
@@ -518,9 +524,9 @@ export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
 }));
 
 export const questionsRelations = relations(questions, ({ one, many }) => ({
-  lecture: one(lectures, {
-    fields: [questions.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [questions.studyUnitId],
+    references: [studyUnits.id],
   }),
   creator: one(users, {
     fields: [questions.createdBy],
@@ -650,9 +656,9 @@ export const caseItemsRelations = relations(caseItems, ({ one }) => ({
     fields: [caseItems.reviewItemId],
     references: [reviewItems.id],
   }),
-  lecture: one(lectures, {
-    fields: [caseItems.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [caseItems.studyUnitId],
+    references: [studyUnits.id],
   }),
 }));
 
@@ -661,9 +667,9 @@ export const noteItemsRelations = relations(noteItems, ({ one }) => ({
     fields: [noteItems.reviewItemId],
     references: [reviewItems.id],
   }),
-  lecture: one(lectures, {
-    fields: [noteItems.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [noteItems.studyUnitId],
+    references: [studyUnits.id],
   }),
 }));
 
@@ -767,6 +773,9 @@ export type NewModule = typeof modules.$inferInsert;
 
 export type Subject = typeof subjects.$inferSelect;
 export type NewSubject = typeof subjects.$inferInsert;
+
+export type StudyUnit = typeof studyUnits.$inferSelect;
+export type NewStudyUnit = typeof studyUnits.$inferInsert;
 
 export type Lecture = typeof lectures.$inferSelect;
 export type NewLecture = typeof lectures.$inferInsert;

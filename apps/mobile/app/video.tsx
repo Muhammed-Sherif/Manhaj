@@ -23,7 +23,7 @@ export default function VideoScreen() {
     url?: string;
     localFilePath?: string;
     title?: string;
-    lectureName?: string;
+    studyUnitName?: string;
     subjectName?: string;
   }>();
 
@@ -83,8 +83,8 @@ export default function VideoScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <ScreenHeader
-        title={params.subjectName || params.lectureName || 'Video Player'}
-        subtitle={params.title || 'Lecture Video'}
+        title={params.subjectName || params.studyUnitName || 'Video Player'}
+        subtitle={params.title || 'StudyUnit Video'}
         className="bg-white border-b border-slate-200"
         onBack={() => router.back()}
       />
@@ -130,10 +130,10 @@ export default function VideoScreen() {
       <ScrollView className="flex-1 bg-slate-50 p-4">
         <View className="bg-white rounded-xl p-5 shadow-sm mb-4 border border-slate-100">
           <Text className="text-xl font-bold text-slate-800 mb-1">
-            {params.title || 'Lecture Video'}
+            {params.title || 'StudyUnit Video'}
           </Text>
-          {!!params.lectureName && (
-            <Text className="text-slate-500 text-sm mb-3">Lecture: {params.lectureName}</Text>
+          {!!params.studyUnitName && (
+            <Text className="text-slate-500 text-sm mb-3">StudyUnit: {params.studyUnitName}</Text>
           )}
 
           <View className="flex-row items-center gap-2 flex-wrap">

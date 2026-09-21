@@ -92,13 +92,13 @@ export const BrowseHeader: React.FC = () => {
     });
   }
 
-  // Level 5: Subject -> Lectures
+  // Level 5: Subject -> StudyUnits
   if (selectedSubject?.name) {
     items.push({
-      id: 'lectures',
+      id: 'studyUnits',
       label: selectedSubject.name,
-      level: 'lectures',
-      isCurrent: currentLevel === 'lectures',
+      level: 'studyUnits',
+      isCurrent: currentLevel === 'studyUnits',
       onPress: () => {},
     });
   }

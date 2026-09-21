@@ -3,6 +3,7 @@ import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight, Plus, Check } from '
 import {
   useGetAdminQuestions,
   usePatchAdminQuestionsBulkAssignLecture,
+  usePatchAdminQuestionsBulkAssignTelegramRange,
   usePatchAdminQuestionsId,
   usePostAdminQuestionsBulkDelete,
   useGetAdminGrades,
@@ -20,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
 import { UploadQuestionsModal } from './UploadQuestionsModal';
+import { AssignByRangeModal } from './AssignByRangeModal';
 
 type Step = 'grade' | 'term' | 'module' | 'subject' | 'lecture';
 interface Item { id: string; name: string; description?: string }
@@ -426,15 +428,19 @@ function EditQuestionModal({
 
 export function QuestionsPage() {
   const query = useGetAdminQuestions({ lectureId: 'null' });
-  const rows = (query.data?.data ?? []) as QuestionRow[];
+  const refresh = () => query.refetch();
+
   const [selected, setSelected] = useState<string[]>([]);
-  const all = rows.length > 0 && selected.length === rows.length;
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  // Question ids awaiting delete confirmation; null when the dialog is closed.
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignRangeModalOpen, setAssignRangeModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
   // Question currently being edited; null when the dialog is closed.
   const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
+
+  const rows = (query.data?.data ?? []) as QuestionRow[];
+  const all = rows.length > 0 && selected.length === rows.length;
 
   // Auto-select questions that already have choices attached
   useEffect(() => {
@@ -456,6 +462,20 @@ export function QuestionsPage() {
       },
     },
   });
+  
+  const assignRange = usePatchAdminQuestionsBulkAssignTelegramRange({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+        toast.success('Questions assigned successfully');
+        setAssignRangeModalOpen(false);
+      },
+      onError: (err: any) => {
+        toast.error(err.response?.data?.error || 'Failed to assign questions by range');
+      }
+    },
+  });
+
   const bulkDelete = usePostAdminQuestionsBulkDelete({
     mutation: {
       onSuccess: (response, variables) => {
@@ -489,6 +509,9 @@ export function QuestionsPage() {
       <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
         <span><b className="text-slate-900">{selected.length}</b> selected</span>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAssignRangeModalOpen(true)}>
+            Assign by Telegram Range
+          </Button>
           <Button
             size="sm"
             variant="destructive"
@@ -642,6 +665,22 @@ export function QuestionsPage() {
           isPending={bulkDelete.isPending}
           onClose={() => setPendingDelete(null)}
           onConfirm={() => bulkDelete.mutate({ data: { questionIds: pendingDelete } })}
+        />
+      )}
+      
+      {assignRangeModalOpen && (
+        <AssignByRangeModal
+          isPending={assignRange.isPending}
+          onClose={() => setAssignRangeModalOpen(false)}
+          onConfirm={(startMessageId, endMessageId, lectureId) => {
+            assignRange.mutate({
+              data: {
+                startMessageId,
+                endMessageId,
+                lectureId,
+              },
+            });
+          }}
         />
       )}
     </>

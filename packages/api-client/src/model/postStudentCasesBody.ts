@@ -8,7 +8,7 @@
 import type { PostStudentCasesBodyCategory } from './postStudentCasesBodyCategory';
 
 export type PostStudentCasesBody = {
-  lectureId: string;
+  studyUnitId: string;
   category: PostStudentCasesBodyCategory;
   title: string;
   content: string;

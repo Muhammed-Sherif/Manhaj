@@ -34,22 +34,24 @@ export const subjects = sqliteTable('subjects', {
   name: text('name').notNull(),
 });
 
-export const lectures = sqliteTable('lectures', {
+export const studyUnits = sqliteTable('study_units', {
   id: text('id').primaryKey(),
   subjectId: text('subject_id')
     .notNull()
     .references(() => subjects.id, { onDelete: 'cascade' }),
+  type: text('type', { enum: ['lecture', 'section'] }).notNull().default('lecture'),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  order: integer('order'),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
 });
 
-export const lectureVideos = sqliteTable('lecture_videos', {
+export const studyUnitVideos = sqliteTable('study_unit_videos', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id')
+  studyUnitId: text('study_unit_id')
     .notNull()
-    .references(() => lectures.id, { onDelete: 'cascade' }),
+    .references(() => studyUnits.id, { onDelete: 'cascade' }),
   sourceName: text('source_name').notNull(),
   url: text('url').notNull(),
   duration: integer('duration').notNull(),
@@ -58,11 +60,11 @@ export const lectureVideos = sqliteTable('lecture_videos', {
   deletedAt: text('deleted_at'),
 });
 
-export const lectureFiles = sqliteTable('lecture_files', {
+export const studyUnitFiles = sqliteTable('study_unit_files', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id')
+  studyUnitId: text('study_unit_id')
     .notNull()
-    .references(() => lectures.id, { onDelete: 'cascade' }),
+    .references(() => studyUnits.id, { onDelete: 'cascade' }),
   sourceName: text('source_name').notNull(),
   fileUrl: text('file_url').notNull(),
   fileType: text('file_type').notNull(),
@@ -82,11 +84,11 @@ export const lectureFiles = sqliteTable('lecture_files', {
  * copy of the bytes was placed at attach time. Referencing the original URI instead would
  * break as soon as the OS, or another app, moved or reclaimed it.
  */
-export const lectureLocalFiles = sqliteTable('lecture_local_files', {
+export const studyUnitLocalFiles = sqliteTable('study_unit_local_files', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id')
+  studyUnitId: text('study_unit_id')
     .notNull()
-    .references(() => lectures.id, { onDelete: 'cascade' }),
+    .references(() => studyUnits.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull(),
   localFilePath: text('local_file_path').notNull(),
   fileName: text('file_name').notNull(),
@@ -96,7 +98,7 @@ export const lectureLocalFiles = sqliteTable('lecture_local_files', {
 
 export const questions = sqliteTable('questions', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id').references(() => lectures.id, { onDelete: 'set null' }),
+  studyUnitId: text('study_unit_id').references(() => studyUnits.id, { onDelete: 'set null' }),
   createdBy: text('created_by'),
   questionType: text('question_type').notNull().default('mcq'),
   questionText: text('question_text').notNull(),
@@ -172,7 +174,7 @@ export const flags = sqliteTable('flags', {
 export const videoProgress = sqliteTable('video_progress', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
-  lectureVideoId: text('lecture_video_id').notNull(),
+  studyUnitVideoId: text('study_unit_video_id').notNull(),
   positionSeconds: integer('position_seconds').notNull(),
   updatedAt: text('updated_at').notNull(),
   synced: integer('synced').notNull().default(0),
@@ -220,7 +222,7 @@ export type ImageUploadStatus = (typeof imageUploadStatuses)[number];
 
 export const caseItems = sqliteTable('case_items', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id').notNull(),
+  studyUnitId: text('study_unit_id').notNull(),
   category: text('category').notNull(),
   title: text('title').notNull(),
   content: text('content').notNull(),
@@ -238,7 +240,7 @@ export const caseReviewable = sqliteTable('case_reviewable', {
 
 export const noteItems = sqliteTable('note_items', {
   id: text('id').primaryKey(),
-  lectureId: text('lecture_id').notNull(),
+  studyUnitId: text('study_unit_id').notNull(),
   type: text('type').notNull(),
   content: text('content').notNull(),
   sourceQuestionId: text('source_question_id'),
@@ -347,7 +349,7 @@ export const workTasks = sqliteTable('work_tasks', {
 
 export const studyTasks = sqliteTable('study_tasks', {
   taskId: text('task_id').primaryKey().references(() => tasks.id, { onDelete: 'cascade' }),
-  lectureId: text('lecture_id').notNull(),
+  studyUnitId: text('study_unit_id').notNull(),
   activityType: text('activity_type').notNull(),
 });
 
@@ -377,41 +379,67 @@ export const subjectsRelations = relations(subjects, ({ one, many }) => ({
     fields: [subjects.moduleId],
     references: [modules.id],
   }),
-  lectures: many(lectures),
+  studyUnits: many(studyUnits),
 }));
 
-export const lecturesRelations = relations(lectures, ({ one, many }) => ({
+export const studyUnitsRelations = relations(studyUnits, ({ one, many }) => ({
   subject: one(subjects, {
-    fields: [lectures.subjectId],
+    fields: [studyUnits.subjectId],
     references: [subjects.id],
   }),
-  lectureVideos: many(lectureVideos),
-  lectureFiles: many(lectureFiles),
-  lectureLocalFiles: many(lectureLocalFiles),
+  studyUnitVideos: many(studyUnitVideos),
+  studyUnitFiles: many(studyUnitFiles),
+  studyUnitLocalFiles: many(studyUnitLocalFiles),
   questions: many(questions),
 }));
 
-export const lectureVideosRelations = relations(lectureVideos, ({ one }) => ({
-  lecture: one(lectures, {
-    fields: [lectureVideos.lectureId],
-    references: [lectures.id],
+export const studyUnitVideosRelations = relations(studyUnitVideos, ({ one }) => ({
+  studyUnit: one(studyUnits, {
+    fields: [studyUnitVideos.studyUnitId],
+    references: [studyUnits.id],
   }),
 }));
 
-export const lectureFilesRelations = relations(lectureFiles, ({ one }) => ({
-  lecture: one(lectures, {
-    fields: [lectureFiles.lectureId],
-    references: [lectures.id],
+export const studyUnitFilesRelations = relations(studyUnitFiles, ({ one }) => ({
+  studyUnit: one(studyUnits, {
+    fields: [studyUnitFiles.studyUnitId],
+    references: [studyUnits.id],
   }),
 }));
+
+export const questionImages = sqliteTable('question_images', {
+  id: text('id').primaryKey(),
+  questionId: text('question_id')
+    .notNull()
+    .references(() => questions.id, { onDelete: 'cascade' }),
+  imageUrl: text('image_url').notNull(),
+  displayOrder: integer('display_order').notNull().default(0),
+  isAnswer: integer('is_answer').notNull().default(0),
+});
 
 export const questionsRelations = relations(questions, ({ one, many }) => ({
-  lecture: one(lectures, {
-    fields: [questions.lectureId],
-    references: [lectures.id],
+  studyUnit: one(studyUnits, {
+    fields: [questions.studyUnitId],
+    references: [studyUnits.id],
   }),
   choices: many(choices),
   questionSources: many(questionSources),
+  questionImages: many(questionImages),
+  writtenQuestion: one(writtenQuestions, {
+    fields: [questions.id],
+    references: [writtenQuestions.questionId],
+  }),
+  mcqQuestion: one(mcqQuestions, {
+    fields: [questions.id],
+    references: [mcqQuestions.questionId],
+  }),
+}));
+
+export const questionImagesRelations = relations(questionImages, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionImages.questionId],
+    references: [questions.id],
+  }),
 }));
 
 export const questionSourcesRelations = relations(questionSources, ({ one }) => ({

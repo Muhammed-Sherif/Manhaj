@@ -12,7 +12,7 @@ export default function PdfScreen() {
     id?: string;
     url?: string;
     title?: string;
-    lectureName?: string;
+    studyUnitName?: string;
     subjectName?: string;
   }>();
 
@@ -49,7 +49,7 @@ export default function PdfScreen() {
   return (
     <View className="flex-1 bg-slate-900">
       <ScreenHeader
-        title={params.subjectName || params.lectureName || 'PDF Viewer'}
+        title={params.subjectName || params.studyUnitName || 'PDF Viewer'}
         subtitle={params.title || 'Document'}
         className="bg-white border-b border-slate-200"
         onBack={() => router.back()}

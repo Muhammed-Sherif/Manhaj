@@ -5,7 +5,7 @@ export * from './ErrorView';
 export * from './ScreenHeader';
 export * from './ImagePickerField';
 export * from './browse';
-export * from './lecture';
+export * from './study-unit';
 export * from './home';
 export * from './question';
 export { ThemeProvider, setColorScheme } from './ThemeProvider';

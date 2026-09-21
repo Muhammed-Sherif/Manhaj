@@ -93,7 +93,7 @@ function AppLayout() {
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="solve" />
-        <Stack.Screen name="lecture" />
+        <Stack.Screen name="studyUnit" />
         <Stack.Screen name="video" />
         <Stack.Screen name="pdf" />
         <Stack.Screen name="custom-study" />

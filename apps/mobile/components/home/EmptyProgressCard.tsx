@@ -18,7 +18,7 @@ export function EmptyProgressCard({ onPress }: EmptyProgressCardProps) {
     >
       <BookOpenIcon size={32} color="#0d9488" />
       <Text className="text-slate-600 dark:text-slate-300 font-semibold mt-2">
-        Start Your First Lecture
+        Start Your First StudyUnit
       </Text>
     </TouchableOpacity>
   );

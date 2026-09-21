@@ -47,10 +47,10 @@
             "type": "string",
             "format": "date-time"
           },
-          "lectures": {
+          "studyUnits": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Lecture"
+              "$ref": "#/components/schemas/StudyUnit"
             }
           }
         }
@@ -251,7 +251,7 @@
           }
         }
       },
-      "Lecture": {
+      "StudyUnit": {
         "type": "object",
         "properties": {
           "id": {
@@ -267,6 +267,16 @@
           },
           "description": {
             "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "lecture",
+              "section"
+            ]
+          },
+          "order": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -278,7 +288,7 @@
           }
         }
       },
-      "LectureDetails": {
+      "StudyUnitDetails": {
         "type": "object",
         "properties": {
           "id": {
@@ -294,6 +304,16 @@
           },
           "description": {
             "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "lecture",
+              "section"
+            ]
+          },
+          "order": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -342,7 +362,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
             "format": "uuid",
             "nullable": true
@@ -440,7 +460,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
             "format": "uuid"
           },
@@ -470,7 +490,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
             "format": "uuid"
           },
@@ -907,7 +927,7 @@
         "parameters": [
           {
             "in": "query",
-            "name": "lectureId",
+            "name": "studyUnitId",
             "required": true,
             "schema": {
               "type": "string",
@@ -1091,13 +1111,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "lectureId",
+                  "studyUnitId",
                   "category",
                   "title",
                   "content"
                 ],
                 "properties": {
-                  "lectureId": {
+                  "studyUnitId": {
                     "type": "string",
                     "format": "uuid"
                   },
@@ -1261,12 +1281,12 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "lectureId",
+                  "studyUnitId",
                   "type",
                   "content"
                 ],
                 "properties": {
-                  "lectureId": {
+                  "studyUnitId": {
                     "type": "string",
                     "format": "uuid"
                   },
@@ -1650,7 +1670,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "lectureId": {
+                  "studyUnitId": {
                     "type": "string"
                   },
                   "activityType": {
@@ -1995,10 +2015,10 @@
                         "$ref": "#/components/schemas/Subject"
                       }
                     },
-                    "lectures": {
+                    "studyUnits": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Lecture"
+                        "$ref": "#/components/schemas/StudyUnit"
                       }
                     },
                     "questions": {
@@ -2074,9 +2094,9 @@
         }
       }
     },
-    "/content/lectures/{id}": {
+    "/content/study-units/{id}": {
       "get": {
-        "summary": "Get lecture details with videos, files, and questions",
+        "summary": "Get study unit details with videos, files, and questions",
         "tags": [
           "Content"
         ],
@@ -2101,24 +2121,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Lecture details retrieved",
+            "description": "Study unit details retrieved",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LectureDetails"
+                  "$ref": "#/components/schemas/StudyUnitDetails"
                 }
               }
             }
           },
           "404": {
-            "description": "Lecture not found"
+            "description": "Study unit not found"
           }
         }
       }
     },
-    "/content/lectures/{id}/videos": {
+    "/content/study-units/{id}/videos": {
       "get": {
-        "summary": "Get videos for a lecture",
+        "summary": "Get videos for a study unit",
         "tags": [
           "Content"
         ],
@@ -2143,7 +2163,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lecture videos retrieved",
+            "description": "Study unit videos retrieved",
             "content": {
               "application/json": {
                 "schema": {
@@ -3029,7 +3049,7 @@
         "parameters": [
           {
             "in": "query",
-            "name": "lectureId",
+            "name": "studyUnitId",
             "schema": {
               "type": "string",
               "nullable": true
@@ -3053,7 +3073,7 @@
         }
       }
     },
-    "/admin/questions/bulk-assign-lecture": {
+    "/admin/questions/bulk-assign-study-unit": {
       "patch": {
         "tags": [
           "Admin"
@@ -3074,7 +3094,7 @@
                 "type": "object",
                 "required": [
                   "questionIds",
-                  "lectureId"
+                  "studyUnitId"
                 ],
                 "properties": {
                   "questionIds": {
@@ -3084,7 +3104,7 @@
                       "format": "uuid"
                     }
                   },
-                  "lectureId": {
+                  "studyUnitId": {
                     "type": "string",
                     "format": "uuid"
                   }
@@ -3100,7 +3120,54 @@
         }
       }
     },
-    "/admin/questions/bulk-unassign-lecture": {
+    "/admin/questions/bulk-assign-telegram-range": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "authToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "startMessageId",
+                  "endMessageId",
+                  "studyUnitId"
+                ],
+                "properties": {
+                  "startMessageId": {
+                    "type": "integer"
+                  },
+                  "endMessageId": {
+                    "type": "integer"
+                  },
+                  "studyUnitId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Questions assigned"
+          }
+        }
+      }
+    },
+    "/admin/questions/bulk-unassign-study-unit": {
       "patch": {
         "tags": [
           "Admin"
@@ -3269,7 +3336,7 @@
         }
       }
     },
-    "/admin/lectures": {
+    "/admin/study-units": {
       "post": {
         "tags": [
           "Admin"
@@ -3302,6 +3369,16 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "lecture",
+                      "section"
+                    ]
+                  },
+                  "order": {
+                    "type": "integer"
                   }
                 }
               }
@@ -3310,7 +3387,7 @@
         },
         "responses": {
           "200": {
-            "description": "Lecture created"
+            "description": "Study unit created"
           }
         }
       },
@@ -3334,17 +3411,28 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "lecture",
+                "section"
+              ]
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Lectures with resources",
+            "description": "Study units with resources",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Lecture"
+                    "$ref": "#/components/schemas/StudyUnit"
                   }
                 }
               }
@@ -3353,7 +3441,7 @@
         }
       }
     },
-    "/admin/lectures/{id}": {
+    "/admin/study-units/{id}": {
       "patch": {
         "tags": [
           "Admin"
@@ -3393,6 +3481,16 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "lecture",
+                      "section"
+                    ]
+                  },
+                  "order": {
+                    "type": "integer"
                   }
                 }
               }
@@ -3401,7 +3499,7 @@
         },
         "responses": {
           "200": {
-            "description": "Lecture updated"
+            "description": "Study unit updated"
           }
         }
       },
@@ -3430,15 +3528,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Lecture deleted"
+            "description": "Study unit deleted"
           },
           "409": {
-            "description": "Cannot delete lecture with dependencies"
+            "description": "Cannot delete study unit with dependencies"
           }
         }
       }
     },
-    "/admin/lectures/{id}/videos": {
+    "/admin/study-units/{id}/videos": {
       "post": {
         "tags": [
           "Admin"
@@ -3490,12 +3588,12 @@
         },
         "responses": {
           "200": {
-            "description": "Video added to lecture"
+            "description": "Video added to study unit"
           }
         }
       }
     },
-    "/admin/lectures/{id}/files": {
+    "/admin/study-units/{id}/files": {
       "post": {
         "tags": [
           "Admin"
@@ -3547,7 +3645,7 @@
         },
         "responses": {
           "200": {
-            "description": "File or audio added to lecture"
+            "description": "File or audio added to study unit"
           }
         }
       }

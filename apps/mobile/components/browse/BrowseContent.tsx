@@ -3,7 +3,7 @@ import { GradeListView } from './GradeListView';
 import { TermListView } from './TermListView';
 import { ModuleListView } from './ModuleListView';
 import { SubjectListView } from './SubjectListView';
-import { LectureListView } from './LectureListView';
+import { StudyUnitListView } from './StudyUnitListView';
 import { useBrowseStore } from '../../store/browseStore';
 
 export const BrowseContent: React.FC = () => {
@@ -18,8 +18,8 @@ export const BrowseContent: React.FC = () => {
       return <ModuleListView />;
     case 'subjects':
       return <SubjectListView />;
-    case 'lectures':
-      return <LectureListView />;
+    case 'studyUnits':
+      return <StudyUnitListView />;
     default:
       return null;
   }

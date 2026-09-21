@@ -60,17 +60,17 @@ export default function AddTaskScreen() {
   const [workCost, setWorkCost] = useState('');
 
   // Study fields
-  const [studyLectures, setStudyLectures] = useState<any[]>([]);
-  const [studyLectureId, setStudyLectureId] = useState('');
+  const [studyStudyUnits, setStudyStudyUnits] = useState<any[]>([]);
+  const [studyStudyUnitId, setStudyStudyUnitId] = useState('');
   const [studyActivityType, setStudyActivityType] = useState<'watch' | 'solve' | 'revision'>('watch');
-  const [showLectureModal, setShowLectureModal] = useState(false);
+  const [showStudyUnitModal, setShowStudyUnitModal] = useState(false);
 
   useEffect(() => {
     if (taskType === 'zekr') {
       loadZekrCategories();
     }
     if (taskType === 'study') {
-      db.select().from(schema.lectures).then(setStudyLectures);
+      db.select().from(schema.studyUnits).then(setStudyStudyUnits);
     }
     if (taskType === 'wird') {
       db.select().from(schema.quranChapters).then(setQuranChapters);
@@ -123,7 +123,7 @@ export default function AddTaskScreen() {
       } else if (task.taskType === 'study') {
         const [studyData] = await db.select().from(schema.studyTasks).where(require('drizzle-orm').eq(schema.studyTasks.taskId, taskId));
         if (studyData) {
-          setStudyLectureId(studyData.lectureId || '');
+          setStudyStudyUnitId(studyData.studyUnitId || '');
           setStudyActivityType(studyData.activityType as any);
         }
       }
@@ -277,13 +277,13 @@ export default function AddTaskScreen() {
           cost: parseInt(workCost, 10),
         });
       } else if (taskType === 'study') {
-        if (!studyLectureId) {
-          Alert.alert('Error', 'Please select a lecture for the study task');
+        if (!studyStudyUnitId) {
+          Alert.alert('Error', 'Please select a studyUnit for the study task');
           return;
         }
         await db.insert(schema.studyTasks).values({
           taskId,
-          lectureId: studyLectureId,
+          studyUnitId: studyStudyUnitId,
           activityType: studyActivityType,
         });
       }
@@ -594,19 +594,19 @@ export default function AddTaskScreen() {
 
           {taskType === 'study' && (
             <View>
-              <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Select Lecture</Text>
-              {studyLectures.length === 0 ? (
-                <Text className="text-slate-500 mb-4">No lectures found.</Text>
+              <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Select StudyUnit</Text>
+              {studyStudyUnits.length === 0 ? (
+                <Text className="text-slate-500 mb-4">No studyUnits found.</Text>
               ) : (
                 <TouchableOpacity
-                  onPress={() => setShowLectureModal(true)}
+                  onPress={() => setShowStudyUnitModal(true)}
                   className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex-row items-center justify-between mb-4"
                 >
                   <Text
-                    className={`font-medium flex-1 ${studyLectureId ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}
+                    className={`font-medium flex-1 ${studyStudyUnitId ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'}`}
                     numberOfLines={1}
                   >
-                    {studyLectures.find((l) => l.id === studyLectureId)?.name || 'Select a lecture'}
+                    {studyStudyUnits.find((l) => l.id === studyStudyUnitId)?.name || 'Select a studyUnit'}
                   </Text>
                   <ChevronRightIcon size={20} color="#94a3b8" />
                 </TouchableOpacity>
@@ -724,26 +724,26 @@ export default function AddTaskScreen() {
         }
       </Modal >
 
-      {/* ── Lecture Modal ───────────────────────────────────────────────── */}
+      {/* ── StudyUnit Modal ───────────────────────────────────────────────── */}
       < Modal
-        visible={showLectureModal}
-        onClose={() => setShowLectureModal(false)}
-        title="Select Lecture"
+        visible={showStudyUnitModal}
+        onClose={() => setShowStudyUnitModal(false)}
+        title="Select StudyUnit"
       >
         {
-          studyLectures.map((item) => (
+          studyStudyUnits.map((item) => (
             <TouchableOpacity
               key={item.id}
               onPress={() => {
-                setStudyLectureId(item.id);
-                setShowLectureModal(false);
+                setStudyStudyUnitId(item.id);
+                setShowStudyUnitModal(false);
               }}
-              className={`p-3 mb-2 rounded-lg border flex-row items-center justify-between ${studyLectureId === item.id ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'}`}
+              className={`p-3 mb-2 rounded-lg border flex-row items-center justify-between ${studyStudyUnitId === item.id ? 'border-teal-600 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'}`}
             >
-              <Text className={`font-medium flex-1 ${studyLectureId === item.id ? 'text-teal-700 dark:text-teal-400' : 'text-slate-800 dark:text-slate-100'}`}>
+              <Text className={`font-medium flex-1 ${studyStudyUnitId === item.id ? 'text-teal-700 dark:text-teal-400' : 'text-slate-800 dark:text-slate-100'}`}>
                 {item.name}
               </Text>
-              {studyLectureId === item.id && <CheckIcon size={18} color="#0d9488" className="ml-2" />}
+              {studyStudyUnitId === item.id && <CheckIcon size={18} color="#0d9488" className="ml-2" />}
             </TouchableOpacity>
           ))
         }

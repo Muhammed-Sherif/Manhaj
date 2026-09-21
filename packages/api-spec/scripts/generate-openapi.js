@@ -38,9 +38,9 @@ const options = {
             name: { type: 'string' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
-            lectures: {
+            studyUnits: {
               type: 'array',
-              items: { $ref: '#/components/schemas/Lecture' },
+              items: { $ref: '#/components/schemas/StudyUnit' },
             },
           },
         },
@@ -130,24 +130,28 @@ const options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
-        Lecture: {
+        StudyUnit: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
             subjectId: { type: 'string', format: 'uuid' },
             name: { type: 'string' },
             description: { type: 'string' },
+            type: { type: 'string', enum: ['lecture', 'section'] },
+            order: { type: 'integer' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
-        LectureDetails: {
+        StudyUnitDetails: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
             subjectId: { type: 'string', format: 'uuid' },
             name: { type: 'string' },
             description: { type: 'string' },
+            type: { type: 'string', enum: ['lecture', 'section'] },
+            order: { type: 'integer' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
             subject: {
@@ -175,7 +179,7 @@ const options = {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            lectureId: { type: 'string', format: 'uuid', nullable: true },
+            studyUnitId: { type: 'string', format: 'uuid', nullable: true },
             createdBy: { type: 'string', format: 'uuid', nullable: true },
             questionText: { type: 'string' },
             explanation: { type: 'string' },
@@ -220,7 +224,7 @@ const options = {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            lectureId: { type: 'string', format: 'uuid' },
+            studyUnitId: { type: 'string', format: 'uuid' },
             sourceName: { type: 'string' },
             url: { type: 'string' },
             duration: { type: 'integer' },
@@ -232,7 +236,7 @@ const options = {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            lectureId: { type: 'string', format: 'uuid' },
+            studyUnitId: { type: 'string', format: 'uuid' },
             sourceName: { type: 'string' },
             fileUrl: { type: 'string' },
             fileType: { type: 'string' },

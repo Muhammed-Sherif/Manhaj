@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { CheckCircleIcon, XCircleIcon } from 'lucide-react-native';
 import { useSolveStore } from '../../store/solveStore';
 
@@ -8,10 +8,54 @@ export interface QuestionChoicesProps {
 }
 
 export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = true }) => {
-  const { questions, currentIndex, selectedChoice, showAnswer, selectChoice } = useSolveStore();
+  const { questions, currentIndex, selectedChoice, showAnswer, selectChoice, revealAnswer } = useSolveStore();
   const currentQuestion = questions[currentIndex];
+  const [writtenText, setWrittenText] = useState('');
+
+  // Reset local state when question changes
+  React.useEffect(() => {
+    setWrittenText('');
+  }, [currentQuestion?.id]);
 
   if (!currentQuestion) return null;
+
+  if (currentQuestion.writtenQuestion) {
+    return (
+      <View className="space-y-4">
+        <View className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <TextInput
+            multiline
+            numberOfLines={4}
+            className="text-base text-slate-800 dark:text-slate-100 min-h-[100px]"
+            placeholder="Type your answer here..."
+            placeholderTextColor="#94a3b8"
+            value={writtenText}
+            onChangeText={setWrittenText}
+            editable={!showAnswer}
+            style={{ textAlignVertical: 'top' }}
+          />
+        </View>
+
+        {!showAnswer ? (
+          <TouchableOpacity
+            className="bg-teal-600 rounded-xl p-4 items-center justify-center flex-row shadow-sm"
+            onPress={() => revealAnswer()}
+          >
+            <Text className="text-white text-base font-semibold">Show Answer</Text>
+          </TouchableOpacity>
+        ) : (
+          <View className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-xl p-4 mt-2">
+            <Text className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">
+              Model Answer:
+            </Text>
+            <Text className="text-base text-green-900 dark:text-green-100">
+              {currentQuestion.writtenQuestion.writtenAnswer}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   const choices = currentQuestion.choices ?? [];
 

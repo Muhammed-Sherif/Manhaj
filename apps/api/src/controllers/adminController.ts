@@ -188,6 +188,13 @@ export class AdminController {
     }
   };
 
+  bulkAssignTelegramRange = async (req: Request, res: Response) => {
+    try {
+      const { startMessageId, endMessageId, lectureId } = req.body;
+      res.json(await this.adminService.bulkAssignTelegramRange(startMessageId, endMessageId, lectureId));
+    } catch (error) { res.status(400).json({ error: (error as Error).message }); }
+  };
+
   bulkUnassignLecture = async (req: Request, res: Response) => {
     try {
       const { questionIds } = req.body;

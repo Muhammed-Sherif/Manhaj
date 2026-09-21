@@ -8,12 +8,12 @@ export interface ContentSyncData {
   terms: any[];
   modules: any[];
   subjects: any[];
-  lectures: any[];
+  studyUnits: any[];
   questions: any[];
   choices: any[];
   questionSources: any[];
-  lectureVideos: any[];
-  lectureFiles: any[];
+  studyUnitVideos: any[];
+  studyUnitFiles: any[];
   nextCursor?: string;
 }
 
@@ -96,33 +96,33 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
         });
     }
 
-    // Sync lectures (handle tombstones)
-    for (const lecture of contentData.lectures) {
-      if (lecture.deletedAt) {
+    // Sync studyUnits (handle tombstones)
+    for (const studyUnit of contentData.studyUnits) {
+      if (studyUnit.deletedAt) {
         // Soft delete locally
         await tx
-          .update(schema.lectures)
-          .set({ deletedAt: lecture.deletedAt })
-          .where(eq(schema.lectures.id, lecture.id));
+          .update(schema.studyUnits)
+          .set({ deletedAt: studyUnit.deletedAt })
+          .where(eq(schema.studyUnits.id, studyUnit.id));
       } else {
         await tx
-          .insert(schema.lectures)
+          .insert(schema.studyUnits)
           .values({
-            id: lecture.id,
-            subjectId: lecture.subjectId,
-            name: lecture.name,
-            description: lecture.description ?? '',
-            updatedAt: lecture.updatedAt ?? new Date().toISOString(),
-            deletedAt: lecture.deletedAt,
+            id: studyUnit.id,
+            subjectId: studyUnit.subjectId,
+            name: studyUnit.name,
+            description: studyUnit.description ?? '',
+            updatedAt: studyUnit.updatedAt ?? new Date().toISOString(),
+            deletedAt: studyUnit.deletedAt,
           })
           .onConflictDoUpdate({
-            target: schema.lectures.id,
+            target: schema.studyUnits.id,
             set: {
-              subjectId: lecture.subjectId,
-              name: lecture.name,
-              description: lecture.description ?? '',
-              updatedAt: lecture.updatedAt ?? new Date().toISOString(),
-              deletedAt: lecture.deletedAt,
+              subjectId: studyUnit.subjectId,
+              name: studyUnit.name,
+              description: studyUnit.description ?? '',
+              updatedAt: studyUnit.updatedAt ?? new Date().toISOString(),
+              deletedAt: studyUnit.deletedAt,
             },
           });
       }
@@ -141,7 +141,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
           .insert(schema.questions)
           .values({
             id: question.id,
-            lectureId: question.lectureId || null,
+            studyUnitId: question.studyUnitId || null,
             createdBy: question.createdBy || null,
             questionText: question.questionText,
             explanation: question.explanation ?? '',
@@ -152,7 +152,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
           .onConflictDoUpdate({
             target: schema.questions.id,
             set: {
-              lectureId: question.lectureId || null,
+              studyUnitId: question.studyUnitId || null,
               createdBy: question.createdBy || null,
               questionText: question.questionText,
               explanation: question.explanation ?? '',
@@ -161,6 +161,37 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
               deletedAt: question.deletedAt,
             },
           });
+
+        // Sync question images
+        await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
+        if (question.images && question.images.length > 0) {
+          for (const img of question.images) {
+            await tx.insert(schema.questionImages).values({
+              id: img.id,
+              questionId: question.id,
+              imageUrl: img.imageUrl,
+              displayOrder: img.displayOrder || 0,
+              isAnswer: img.isAnswer ? 1 : 0,
+            });
+          }
+        }
+
+        // Sync written question
+        await tx.delete(schema.writtenQuestions).where(eq(schema.writtenQuestions.questionId, question.id));
+        if (question.writtenQuestion) {
+          await tx.insert(schema.writtenQuestions).values({
+            questionId: question.id,
+            writtenAnswer: question.writtenQuestion.writtenAnswer || '',
+          });
+        }
+
+        // Sync mcq question
+        await tx.delete(schema.mcqQuestions).where(eq(schema.mcqQuestions.questionId, question.id));
+        if (question.mcqQuestion) {
+          await tx.insert(schema.mcqQuestions).values({
+            questionId: question.id,
+          });
+        }
       }
     }
 
@@ -217,20 +248,20 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
-    // Sync lecture videos (handle tombstones)
-    for (const video of contentData.lectureVideos) {
+    // Sync studyUnit videos (handle tombstones)
+    for (const video of contentData.studyUnitVideos) {
       if (video.deletedAt) {
         // Soft delete locally
         await tx
-          .update(schema.lectureVideos)
+          .update(schema.studyUnitVideos)
           .set({ deletedAt: video.deletedAt })
-          .where(eq(schema.lectureVideos.id, video.id));
+          .where(eq(schema.studyUnitVideos.id, video.id));
       } else {
         await tx
-          .insert(schema.lectureVideos)
+          .insert(schema.studyUnitVideos)
           .values({
             id: video.id,
-            lectureId: video.lectureId,
+            studyUnitId: video.studyUnitId,
             sourceName: video.sourceName,
             url: video.url,
             duration: video.duration ?? 0,
@@ -239,9 +270,9 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
             deletedAt: video.deletedAt,
           })
           .onConflictDoUpdate({
-            target: schema.lectureVideos.id,
+            target: schema.studyUnitVideos.id,
             set: {
-              lectureId: video.lectureId,
+              studyUnitId: video.studyUnitId,
               sourceName: video.sourceName,
               url: video.url,
               duration: video.duration ?? 0,
@@ -253,20 +284,20 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
-    // Sync lecture files (handle tombstones)
-    for (const file of contentData.lectureFiles) {
+    // Sync studyUnit files (handle tombstones)
+    for (const file of contentData.studyUnitFiles) {
       if (file.deletedAt) {
         // Soft delete locally
         await tx
-          .update(schema.lectureFiles)
+          .update(schema.studyUnitFiles)
           .set({ deletedAt: file.deletedAt })
-          .where(eq(schema.lectureFiles.id, file.id));
+          .where(eq(schema.studyUnitFiles.id, file.id));
       } else {
         await tx
-          .insert(schema.lectureFiles)
+          .insert(schema.studyUnitFiles)
           .values({
             id: file.id,
-            lectureId: file.lectureId,
+            studyUnitId: file.studyUnitId,
             sourceName: file.sourceName,
             fileUrl: file.fileUrl,
             fileType: file.fileType ?? 'pdf',
@@ -274,9 +305,9 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
             deletedAt: file.deletedAt,
           })
           .onConflictDoUpdate({
-            target: schema.lectureFiles.id,
+            target: schema.studyUnitFiles.id,
             set: {
-              lectureId: file.lectureId,
+              studyUnitId: file.studyUnitId,
               sourceName: file.sourceName,
               fileUrl: file.fileUrl,
               fileType: file.fileType ?? 'pdf',
@@ -313,16 +344,16 @@ export const syncContentFromServer = async (): Promise<void> => {
     terms: response.data.terms || [],
     modules: response.data.modules || [],
     subjects: response.data.subjects || [],
-    lectures: response.data.lectures || [],
+    studyUnits: response.data.studyUnits || [],
     questions: response.data.questions || [],
     choices: response.data.choices || [],
     questionSources: response.data.questionSources || [],
-    lectureVideos: response.data.lectureVideos || [],
-    lectureFiles: response.data.lectureFiles || [],
+    studyUnitVideos: response.data.studyUnitVideos || [],
+    studyUnitFiles: response.data.studyUnitFiles || [],
     nextCursor: response.data.nextCursor,
   };
   console.log(
-    `[ContentSync] fetched from server: ${contentData.grades.length} grades, ${contentData.terms.length} terms, ${contentData.modules.length} modules, ${contentData.subjects.length} subjects, ${contentData.lectures.length} lectures, ${contentData.questions.length} questions, ${contentData.choices.length} choices, ${contentData.lectureVideos.length} videos, ${contentData.lectureFiles.length} files, nextCursor: ${contentData.nextCursor ?? 'none'}`
+    `[ContentSync] fetched from server: ${contentData.grades.length} grades, ${contentData.terms.length} terms, ${contentData.modules.length} modules, ${contentData.subjects.length} subjects, ${contentData.studyUnits.length} studyUnits, ${contentData.questions.length} questions, ${contentData.choices.length} choices, ${contentData.studyUnitVideos.length} videos, ${contentData.studyUnitFiles.length} files, nextCursor: ${contentData.nextCursor ?? 'none'}`
   );
   await syncContent(contentData);
   console.log('[ContentSync] syncContentFromServer: finished successfully');
@@ -576,20 +607,20 @@ export const getSubjectsByModule = async (moduleId: string) => {
     .orderBy(asc(schema.subjects.name));
 };
 
-export const getLecturesBySubject = async (subjectId: string) => {
+export const getStudyUnitsBySubject = async (subjectId: string) => {
   return db
     .select()
-    .from(schema.lectures)
-    .where(eq(schema.lectures.subjectId, subjectId))
-    .orderBy(asc(schema.lectures.name));
+    .from(schema.studyUnits)
+    .where(eq(schema.studyUnits.subjectId, subjectId))
+    .orderBy(asc(schema.studyUnits.name));
 };
 
-export const getLectureDetails = async (lectureId: string) => {
-  const lecture = await db.query.lectures.findFirst({
-    where: eq(schema.lectures.id, lectureId),
+export const getStudyUnitDetails = async (studyUnitId: string) => {
+  const studyUnit = await db.query.studyUnits.findFirst({
+    where: eq(schema.studyUnits.id, studyUnitId),
     with: {
-      lectureVideos: true,
-      lectureFiles: true,
+      studyUnitVideos: true,
+      studyUnitFiles: true,
       questions: {
         with: {
           choices: true,
@@ -603,13 +634,13 @@ export const getLectureDetails = async (lectureId: string) => {
     },
   });
 
-  if (!lecture) return null;
+  if (!studyUnit) return null;
 
   return {
-    ...lecture,
-    videos: lecture.lectureVideos,
-    files: lecture.lectureFiles,
-    questions: lecture.questions,
+    ...studyUnit,
+    videos: studyUnit.studyUnitVideos,
+    files: studyUnit.studyUnitFiles,
+    questions: studyUnit.questions,
   };
 };
 
@@ -618,7 +649,10 @@ export const getQuestionWithChoices = async (questionId: string) => {
     where: eq(schema.questions.id, questionId),
     with: {
       choices: true,
-      lecture: {
+      questionImages: true,
+      mcqQuestion: true,
+      writtenQuestion: true,
+      studyUnit: {
         with: {
           subject: true,
         },
@@ -631,12 +665,15 @@ export const getQuestionWithChoices = async (questionId: string) => {
   return question;
 };
 
-export const getQuestionsByLecture = async (lectureId: string) => {
+export const getQuestionsByStudyUnit = async (studyUnitId: string) => {
   return db.query.questions.findMany({
-    where: eq(schema.questions.lectureId, lectureId),
+    where: eq(schema.questions.studyUnitId, studyUnitId),
     with: {
       choices: true,
-      lecture: {
+      questionImages: true,
+      mcqQuestion: true,
+      writtenQuestion: true,
+      studyUnit: {
         with: {
           subject: true,
         },
@@ -656,7 +693,7 @@ export const getHierarchyFromSqlite = async (): Promise<any[]> => {
               with: {
                 subjects: {
                   with: {
-                    lectures: true,
+                    studyUnits: true,
                   },
                 },
               },
@@ -751,11 +788,11 @@ export const saveHierarchyToSqlite = async (hierarchy: any[]): Promise<void> => 
                       },
                     });
 
-                  if (Array.isArray(subj.lectures)) {
-                    for (const lec of subj.lectures) {
+                  if (Array.isArray(subj.studyUnits)) {
+                    for (const lec of subj.studyUnits) {
                       if (!lec.id) continue;
                       await tx
-                        .insert(schema.lectures)
+                        .insert(schema.studyUnits)
                         .values({
                           id: lec.id,
                           subjectId: subj.id,
@@ -765,7 +802,7 @@ export const saveHierarchyToSqlite = async (hierarchy: any[]): Promise<void> => 
                           deletedAt: null,
                         })
                         .onConflictDoUpdate({
-                          target: schema.lectures.id,
+                          target: schema.studyUnits.id,
                           set: {
                             subjectId: subj.id,
                             name: lec.name ?? '',
@@ -786,39 +823,39 @@ export const saveHierarchyToSqlite = async (hierarchy: any[]): Promise<void> => 
   });
 };
 
-// Save a single lecture and its media / questions to local SQLite
-export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> => {
-  if (!lecture?.id) return;
+// Save a single studyUnit and its media / questions to local SQLite
+export const saveStudyUnitDetailsToSqlite = async (studyUnit: any): Promise<void> => {
+  if (!studyUnit?.id) return;
   await db.transaction(async (tx) => {
     await tx
-      .insert(schema.lectures)
+      .insert(schema.studyUnits)
       .values({
-        id: lecture.id,
-        subjectId: lecture.subjectId ?? lecture.subject?.id ?? '',
-        name: lecture.name ?? '',
-        description: lecture.description ?? '',
+        id: studyUnit.id,
+        subjectId: studyUnit.subjectId ?? studyUnit.subject?.id ?? '',
+        name: studyUnit.name ?? '',
+        description: studyUnit.description ?? '',
         updatedAt: new Date().toISOString(),
         deletedAt: null,
       })
       .onConflictDoUpdate({
-        target: schema.lectures.id,
+        target: schema.studyUnits.id,
         set: {
-          subjectId: lecture.subjectId ?? lecture.subject?.id ?? '',
-          name: lecture.name ?? '',
-          description: lecture.description ?? '',
+          subjectId: studyUnit.subjectId ?? studyUnit.subject?.id ?? '',
+          name: studyUnit.name ?? '',
+          description: studyUnit.description ?? '',
           updatedAt: new Date().toISOString(),
           deletedAt: null,
         },
       });
 
-    if (Array.isArray(lecture.lectureVideos)) {
-      for (const v of lecture.lectureVideos) {
+    if (Array.isArray(studyUnit.studyUnitVideos)) {
+      for (const v of studyUnit.studyUnitVideos) {
         if (!v.id) continue;
         await tx
-          .insert(schema.lectureVideos)
+          .insert(schema.studyUnitVideos)
           .values({
             id: v.id,
-            lectureId: lecture.id,
+            studyUnitId: studyUnit.id,
             sourceName: v.sourceName ?? '',
             url: v.url ?? '',
             duration: v.duration ?? 0,
@@ -827,7 +864,7 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
             deletedAt: null,
           })
           .onConflictDoUpdate({
-            target: schema.lectureVideos.id,
+            target: schema.studyUnitVideos.id,
             set: {
               sourceName: v.sourceName ?? '',
               url: v.url ?? '',
@@ -840,14 +877,14 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
       }
     }
 
-    if (Array.isArray(lecture.lectureFiles)) {
-      for (const f of lecture.lectureFiles) {
+    if (Array.isArray(studyUnit.studyUnitFiles)) {
+      for (const f of studyUnit.studyUnitFiles) {
         if (!f.id) continue;
         await tx
-          .insert(schema.lectureFiles)
+          .insert(schema.studyUnitFiles)
           .values({
             id: f.id,
-            lectureId: lecture.id,
+            studyUnitId: studyUnit.id,
             sourceName: f.sourceName ?? '',
             fileUrl: f.fileUrl ?? '',
             fileType: f.fileType ?? 'pdf',
@@ -855,7 +892,7 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
             deletedAt: null,
           })
           .onConflictDoUpdate({
-            target: schema.lectureFiles.id,
+            target: schema.studyUnitFiles.id,
             set: {
               sourceName: f.sourceName ?? '',
               fileUrl: f.fileUrl ?? '',
@@ -867,14 +904,14 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
       }
     }
 
-    if (Array.isArray(lecture.questions)) {
-      for (const q of lecture.questions) {
+    if (Array.isArray(studyUnit.questions)) {
+      for (const q of studyUnit.questions) {
         if (!q.id) continue;
         await tx
           .insert(schema.questions)
           .values({
             id: q.id,
-            lectureId: lecture.id,
+            studyUnitId: studyUnit.id,
             createdBy: q.createdBy ?? null,
             questionText: q.questionText ?? q.question_text ?? '',
             explanation: q.explanation ?? '',
@@ -885,7 +922,7 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
           .onConflictDoUpdate({
             target: schema.questions.id,
             set: {
-              lectureId: lecture.id,
+              studyUnitId: studyUnit.id,
               createdBy: q.createdBy ?? null,
               questionText: q.questionText ?? q.question_text ?? '',
               explanation: q.explanation ?? '',

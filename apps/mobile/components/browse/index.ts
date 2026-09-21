@@ -1,12 +1,12 @@
 export * from './types';
 export * from './utils';
 export * from './BrowseItemCard';
-export * from './LectureItemCard';
+export * from './StudyUnitItemCard';
 export * from './GradeListView';
 export * from './TermListView';
 export * from './ModuleListView';
 export * from './SubjectListView';
-export * from './LectureListView';
+export * from './StudyUnitListView';
 export * from './BrowseHeader';
 export * from './BrowseContent';
 export { useBrowseStore } from '../../store/browseStore';

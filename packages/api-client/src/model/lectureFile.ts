@@ -8,7 +8,7 @@
 
 export interface LectureFile {
   id?: string;
-  lectureId?: string;
+  studyUnitId?: string;
   sourceName?: string;
   fileUrl?: string;
   fileType?: string;

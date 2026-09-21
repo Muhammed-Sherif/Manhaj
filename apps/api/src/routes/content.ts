@@ -45,10 +45,10 @@ const contentController = new ContentController();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Subject'
- *                 lectures:
+ *                 studyUnits:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Lecture'
+ *                     $ref: '#/components/schemas/StudyUnit'
  *                 questions:
  *                   type: array
  *                   items:
@@ -98,9 +98,9 @@ router.get('/hierarchy', optionalAuth , contentController.getContentHierarchy);
 
 /**
  * @swagger
- * /content/lectures/{id}:
+ * /content/study-units/{id}:
  *   get:
- *     summary: Get lecture details with videos, files, and questions
+ *     summary: Get study unit details with videos, files, and questions
  *     tags: [Content]
  *     security:
  *       - bearerAuth: []
@@ -114,21 +114,21 @@ router.get('/hierarchy', optionalAuth , contentController.getContentHierarchy);
  *           format: uuid
  *     responses:
  *       200:
- *         description: Lecture details retrieved
+ *         description: Study unit details retrieved
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LectureDetails'
+ *               $ref: '#/components/schemas/StudyUnitDetails'
  *       404:
- *         description: Lecture not found
+ *         description: Study unit not found
  */
-router.get('/lectures/:id', requireAuth, contentController.getLectureDetails);
+router.get('/study-units/:id', requireAuth, contentController.getStudyUnitDetails);
 
 /**
  * @swagger
- * /content/lectures/{id}/videos:
+ * /content/study-units/{id}/videos:
  *   get:
- *     summary: Get videos for a lecture
+ *     summary: Get videos for a study unit
  *     tags: [Content]
  *     security:
  *       - bearerAuth: []
@@ -142,7 +142,7 @@ router.get('/lectures/:id', requireAuth, contentController.getLectureDetails);
  *           format: uuid
  *     responses:
  *       200:
- *         description: Lecture videos retrieved
+ *         description: Study unit videos retrieved
  *         content:
  *           application/json:
  *             schema:
@@ -150,7 +150,7 @@ router.get('/lectures/:id', requireAuth, contentController.getLectureDetails);
  *               items:
  *                 $ref: '#/components/schemas/LectureVideo'
  */
-router.get('/lectures/:id/videos', requireAuth, contentController.getLectureVideos);
+router.get('/study-units/:id/videos', requireAuth, contentController.getStudyUnitVideos);
 
 /**
  * @swagger

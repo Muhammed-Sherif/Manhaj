@@ -116,11 +116,11 @@ export default function ReviewScreen() {
                       <Text className="font-semibold text-teal-800 dark:text-teal-300 text-sm">
                         {question.subjectName || 'General'}
                       </Text>
-                      {question.lectureName && (
+                      {question.studyUnitName && (
                         <>
                           <Text className="text-slate-400 dark:text-slate-500 mx-2">•</Text>
                           <Text className="text-slate-500 dark:text-slate-400 text-xs" numberOfLines={1}>
-                            {question.lectureName}
+                            {question.studyUnitName}
                           </Text>
                         </>
                       )}

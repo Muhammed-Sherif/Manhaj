@@ -6,7 +6,7 @@ import { BookOpenIcon, ClockIcon } from 'lucide-react-native';
 export interface ProgressItem {
   id?: string;
   subject: string;
-  lecture: string;
+  studyUnit: string;
   progress: number;
   total: number;
   lastStudied: string;
@@ -14,14 +14,14 @@ export interface ProgressItem {
 
 interface ContinueSolvingCardProps {
   item: ProgressItem;
-  lectureId?: string | null;
+  studyUnitId?: string | null;
   questionIndex?: number;
   onPress?: () => void;
 }
 
 export function ContinueSolvingCard({
   item,
-  lectureId,
+  studyUnitId,
   questionIndex = 0,
   onPress,
 }: ContinueSolvingCardProps) {
@@ -35,7 +35,7 @@ export function ContinueSolvingCard({
     router.push({
       pathname: '/solve',
       params: {
-        lectureId: lectureId ?? item.id,
+        studyUnitId: studyUnitId ?? item.id,
         questionIndex: questionIndex.toString(),
       },
     });
@@ -61,7 +61,7 @@ export function ContinueSolvingCard({
             {item.subject}
           </Text>
           <Text className="text-teal-100 text-sm mt-0.5" numberOfLines={1}>
-            {item.lecture}
+            {item.studyUnit}
           </Text>
         </View>
       </View>

@@ -165,7 +165,7 @@ export class StudentSyncService {
         await tx.insert(caseItems)
           .values({
             reviewItemId: caseItem.reviewItemId,
-            lectureId: caseItem.lectureId || null,
+            studyUnitId: caseItem.studyUnitId || null,
             category: caseItem.category || 'general',
             title: caseItem.title,
             content: caseItem.content,
@@ -179,7 +179,7 @@ export class StudentSyncService {
           .onConflictDoUpdate({
             target: [caseItems.reviewItemId],
             set: {
-              lectureId: caseItem.lectureId || null,
+              studyUnitId: caseItem.studyUnitId || null,
               category: caseItem.category || 'general',
               title: caseItem.title,
               content: caseItem.content,
@@ -195,7 +195,7 @@ export class StudentSyncService {
         await tx.insert(noteItems)
           .values({
             reviewItemId: noteItem.reviewItemId,
-            lectureId: noteItem.lectureId || null,
+            studyUnitId: noteItem.studyUnitId || null,
             type: noteItem.type || 'general',
             content: noteItem.content,
             sourceQuestionId: noteItem.sourceQuestionId || null,
@@ -208,7 +208,7 @@ export class StudentSyncService {
           .onConflictDoUpdate({
             target: [noteItems.reviewItemId],
             set: {
-              lectureId: noteItem.lectureId || null,
+              studyUnitId: noteItem.studyUnitId || null,
               type: noteItem.type || 'general',
               content: noteItem.content,
               sourceQuestionId: noteItem.sourceQuestionId || null,
@@ -415,7 +415,7 @@ export interface ReviewItemChange {
   };
   caseItem?: {
     reviewItemId: string;
-    lectureId?: string | null;
+    studyUnitId?: string | null;
     category?: string;
     title: string;
     content: string;
@@ -428,7 +428,7 @@ export interface ReviewItemChange {
   };
   noteItem?: {
     reviewItemId: string;
-    lectureId?: string | null;
+    studyUnitId?: string | null;
     type?: string;
     content: string;
     sourceQuestionId?: string | null;

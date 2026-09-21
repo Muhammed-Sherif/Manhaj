@@ -3,21 +3,21 @@ import { View } from 'react-native';
 import { BookOpenIcon } from 'lucide-react-native';
 import { ScreenHeader } from '../ScreenHeader';
 
-export interface LectureHeaderProps {
+export interface StudyUnitHeaderProps {
   subjectName?: string | null;
-  lectureName?: string | null;
+  studyUnitName?: string | null;
   onBack?: () => void;
 }
 
-export const LectureHeader: React.FC<LectureHeaderProps> = ({
+export const StudyUnitHeader: React.FC<StudyUnitHeaderProps> = ({
   subjectName,
-  lectureName,
+  studyUnitName,
   onBack,
 }) => {
   return (
     <ScreenHeader
       title={subjectName}
-      subtitle={lectureName}
+      subtitle={studyUnitName}
       icon={
         <View className="bg-teal-100 rounded-lg p-2">
           <BookOpenIcon size={18} color="#0d9488" />

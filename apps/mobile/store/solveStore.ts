@@ -13,10 +13,13 @@ export interface Question {
   questionText: string;
   explanation?: string | null;
   choices?: Choice[];
-  lectureId?: string | null;
+  mcqQuestion?: { questionId: string } | null;
+  writtenQuestion?: { questionId: string; writtenAnswer: string } | null;
+  questionImages?: { id: string; imageUrl: string; displayOrder: number; isAnswer: number }[];
+  studyUnitId?: string | null;
   createdBy?: string | null;
   source?: string | null;
-  lecture?: {
+  studyUnit?: {
     id?: string;
     subjectId?: string;
     name?: string;
@@ -47,6 +50,7 @@ interface SolveState {
   setQuestions: (questions: Question[]) => void;
   setError: () => void;
   selectChoice: (choiceId: string, isOnline: boolean) => Promise<void>;
+  revealAnswer: () => void;
   nextQuestion: () => void;
   resetSession: () => void;
 }
@@ -113,6 +117,16 @@ export const useSolveStore = create<SolveState>((set, get) => ({
         explanation: finalExplanation,
       });
     }
+  },
+
+  revealAnswer: () => {
+    const { showAnswer, questions, currentIndex } = get();
+    if (showAnswer) return;
+    const currentQuestion = questions[currentIndex];
+    set({
+      showAnswer: true,
+      explanation: currentQuestion?.explanation || '',
+    });
   },
 
   nextQuestion: () => {

@@ -27,10 +27,10 @@ import type {
 import type {
   GetContentSync200,
   GetContentSyncParams,
-  LectureDetails,
   LectureVideo,
   PostContentVideoProgressBody,
   StructuredGrade,
+  StudyUnitDetails,
   VideoProgress
 } from '.././model';
 
@@ -231,16 +231,16 @@ export function useGetContentHierarchy<TData = Awaited<ReturnType<typeof getCont
 
 
 /**
- * @summary Get lecture details with videos, files, and questions
+ * @summary Get study unit details with videos, files, and questions
  */
-export const getContentLecturesId = (
+export const getContentStudyUnitsId = (
     id: string,
  options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
 ) => {
       
       
-      return customAxios<LectureDetails>(
-      {url: `/content/lectures/${id}`, method: 'GET', signal
+      return customAxios<StudyUnitDetails>(
+      {url: `/content/study-units/${id}`, method: 'GET', signal
     },
       options);
     }
@@ -248,69 +248,69 @@ export const getContentLecturesId = (
 
 
 
-export const getGetContentLecturesIdQueryKey = (id?: string,) => {
+export const getGetContentStudyUnitsIdQueryKey = (id?: string,) => {
     return [
-    `/content/lectures/${id}`
+    `/content/study-units/${id}`
     ] as const;
     }
 
     
-export const getGetContentLecturesIdQueryOptions = <TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export const getGetContentStudyUnitsIdQueryOptions = <TData = Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetContentLecturesIdQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetContentStudyUnitsIdQueryKey(id);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentLecturesId>>> = ({ signal }) => getContentLecturesId(id, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentStudyUnitsId>>> = ({ signal }) => getContentStudyUnitsId(id, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
 }
 
-export type GetContentLecturesIdQueryResult = NonNullable<Awaited<ReturnType<typeof getContentLecturesId>>>
-export type GetContentLecturesIdQueryError = void
+export type GetContentStudyUnitsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getContentStudyUnitsId>>>
+export type GetContentStudyUnitsIdQueryError = void
 
 
-export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>> & Pick<
+export function useGetContentStudyUnitsId<TData = Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError = void>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContentLecturesId>>,
+          Awaited<ReturnType<typeof getContentStudyUnitsId>>,
           TError,
-          Awaited<ReturnType<typeof getContentLecturesId>>
+          Awaited<ReturnType<typeof getContentStudyUnitsId>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>> & Pick<
+export function useGetContentStudyUnitsId<TData = Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContentLecturesId>>,
+          Awaited<ReturnType<typeof getContentStudyUnitsId>>,
           TError,
-          Awaited<ReturnType<typeof getContentLecturesId>>
+          Awaited<ReturnType<typeof getContentStudyUnitsId>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export function useGetContentStudyUnitsId<TData = Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary Get lecture details with videos, files, and questions
+ * @summary Get study unit details with videos, files, and questions
  */
 
-export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getContentLecturesId>>, TError = void>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export function useGetContentStudyUnitsId<TData = Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
-  const queryOptions = getGetContentLecturesIdQueryOptions(id,options)
+  const queryOptions = getGetContentStudyUnitsIdQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 
@@ -323,16 +323,16 @@ export function useGetContentLecturesId<TData = Awaited<ReturnType<typeof getCon
 
 
 /**
- * @summary Get videos for a lecture
+ * @summary Get videos for a study unit
  */
-export const getContentLecturesIdVideos = (
+export const getContentStudyUnitsIdVideos = (
     id: string,
  options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
 ) => {
       
       
       return customAxios<LectureVideo[]>(
-      {url: `/content/lectures/${id}/videos`, method: 'GET', signal
+      {url: `/content/study-units/${id}/videos`, method: 'GET', signal
     },
       options);
     }
@@ -340,69 +340,69 @@ export const getContentLecturesIdVideos = (
 
 
 
-export const getGetContentLecturesIdVideosQueryKey = (id?: string,) => {
+export const getGetContentStudyUnitsIdVideosQueryKey = (id?: string,) => {
     return [
-    `/content/lectures/${id}/videos`
+    `/content/study-units/${id}/videos`
     ] as const;
     }
 
     
-export const getGetContentLecturesIdVideosQueryOptions = <TData = Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export const getGetContentStudyUnitsIdVideosQueryOptions = <TData = Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetContentLecturesIdVideosQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetContentStudyUnitsIdVideosQueryKey(id);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentLecturesIdVideos>>> = ({ signal }) => getContentLecturesIdVideos(id, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>> = ({ signal }) => getContentStudyUnitsIdVideos(id, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
 }
 
-export type GetContentLecturesIdVideosQueryResult = NonNullable<Awaited<ReturnType<typeof getContentLecturesIdVideos>>>
-export type GetContentLecturesIdVideosQueryError = unknown
+export type GetContentStudyUnitsIdVideosQueryResult = NonNullable<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>>
+export type GetContentStudyUnitsIdVideosQueryError = unknown
 
 
-export function useGetContentLecturesIdVideos<TData = Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError = unknown>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData>> & Pick<
+export function useGetContentStudyUnitsIdVideos<TData = Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContentLecturesIdVideos>>,
+          Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>,
           TError,
-          Awaited<ReturnType<typeof getContentLecturesIdVideos>>
+          Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function useGetContentLecturesIdVideos<TData = Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData>> & Pick<
+export function useGetContentStudyUnitsIdVideos<TData = Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContentLecturesIdVideos>>,
+          Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>,
           TError,
-          Awaited<ReturnType<typeof getContentLecturesIdVideos>>
+          Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>
         > , 'initialData'
       >, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function useGetContentLecturesIdVideos<TData = Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export function useGetContentStudyUnitsIdVideos<TData = Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary Get videos for a lecture
+ * @summary Get videos for a study unit
  */
 
-export function useGetContentLecturesIdVideos<TData = Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentLecturesIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+export function useGetContentStudyUnitsIdVideos<TData = Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContentStudyUnitsIdVideos>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
-  const queryOptions = getGetContentLecturesIdVideosQueryOptions(id,options)
+  const queryOptions = getGetContentStudyUnitsIdVideosQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 

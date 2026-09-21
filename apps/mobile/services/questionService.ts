@@ -1,6 +1,6 @@
-import { getContentLecturesId, getStudentQuestionsUnsolved } from '@manhaj/api-client';
+import { getContentStudyUnitsId, getStudentQuestionsUnsolved } from '@manhaj/api-client';
 import { getUnsolvedQuestions } from './syncService';
-import { getQuestionsByLecture, saveLectureDetailsToSqlite } from './contentSyncService';
+import { getQuestionsByStudyUnit, saveStudyUnitDetailsToSqlite } from './contentSyncService';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -8,27 +8,27 @@ import { useAuthStore } from '../store/authStore';
 import type { Question } from '../store/solveStore';
 
 /**
- * Fetch unsolved questions for a lecture with offline-first approach
- * @param lectureId - The lecture ID to fetch questions for
+ * Fetch unsolved questions for a studyUnit with offline-first approach
+ * @param studyUnitId - The studyUnit ID to fetch questions for
  * @returns Array of unsolved questions
  */
-export const fetchUnsolvedQuestions = async (lectureId: string): Promise<Question[]> => {
+export const fetchUnsolvedQuestions = async (studyUnitId: string): Promise<Question[]> => {
   try {
     // 1. Try local SQLite first (offline first)
-    let list: Question[] = await getUnsolvedQuestions(lectureId) || [];
+    let list: Question[] = await getUnsolvedQuestions(studyUnitId) || [];
     
     if (list.length > 0) {
       return list;
     }
 
     // 2. If SQLite is empty, fetch from API and cache
-    const apiRes = await getStudentQuestionsUnsolved({ lectureId });
+    const apiRes = await getStudentQuestionsUnsolved({ studyUnitId });
     if (apiRes?.data) {
       // Save questions to SQLite for offline use
       for (const question of apiRes.data) {
-        await saveLectureDetailsToSqlite({
+        await saveStudyUnitDetailsToSqlite({
           questions: [question],
-          lectures: [],
+          studyUnits: [],
           subjects: [],
           modules: [],
           terms: [],
@@ -46,24 +46,24 @@ export const fetchUnsolvedQuestions = async (lectureId: string): Promise<Questio
 };
 
 /**
- * Fetch all questions for a lecture with offline-first approach
- * @param lectureId - The lecture ID to fetch questions for
- * @returns Array of all questions for the lecture
+ * Fetch all questions for a studyUnit with offline-first approach
+ * @param studyUnitId - The studyUnit ID to fetch questions for
+ * @returns Array of all questions for the studyUnit
  */
-export const fetchAllQuestions = async (lectureId: string): Promise<Question[]> => {
+export const fetchAllQuestions = async (studyUnitId: string): Promise<Question[]> => {
   try {
     // 1. Try local SQLite first (offline first)
-    let list: Question[] = await getQuestionsByLecture(lectureId) || [];
+    let list: Question[] = await getQuestionsByStudyUnit(studyUnitId) || [];
     
     if (list.length > 0) {
       return list;
     }
 
     // 2. If SQLite is empty, fetch from API and cache
-    const apiRes = await getContentLecturesId(lectureId);
+    const apiRes = await getContentStudyUnitsId(studyUnitId);
     if (apiRes?.data) {
-      await saveLectureDetailsToSqlite(apiRes.data);
-      list = await getQuestionsByLecture(lectureId) || [];
+      await saveStudyUnitDetailsToSqlite(apiRes.data);
+      list = await getQuestionsByStudyUnit(studyUnitId) || [];
       return list;
     }
 

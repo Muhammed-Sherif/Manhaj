@@ -9,7 +9,7 @@ import type { Grade } from './grade';
 import type { Term } from './term';
 import type { Module } from './module';
 import type { Subject } from './subject';
-import type { Lecture } from './lecture';
+import type { StudyUnit } from './studyUnit';
 import type { Question } from './question';
 import type { Choice } from './choice';
 import type { QuestionSourceTag } from './questionSourceTag';
@@ -21,7 +21,7 @@ export type GetContentSync200 = {
   terms?: Term[];
   modules?: Module[];
   subjects?: Subject[];
-  lectures?: Lecture[];
+  studyUnits?: StudyUnit[];
   questions?: Question[];
   choices?: Choice[];
   questionSources?: QuestionSourceTag[];

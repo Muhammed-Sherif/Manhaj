@@ -8,7 +8,7 @@ import * as schema from '../db/schema';
  * Custom Study — the student-facing launcher for an ad-hoc SRS session.
  *
  * Every filter composes with AND: the queue is the union of one query per selected
- * content type, each already narrowed by due-date, source tag, and subject/lecture
+ * content type, each already narrowed by due-date, source tag, and subject/study-unit
  * scope. Nothing here writes to the DB except `gradeStudyCard`; the setup screen can
  * therefore be reopened and re-filtered freely without side effects.
  */
@@ -39,7 +39,7 @@ export type StudyDueScope = (typeof studyDueScopes)[number];
 export type StudyScope =
   | { kind: 'all' }
   | { kind: 'subject'; subjectId: string }
-  | { kind: 'lecture'; lectureId: string };
+  | { kind: 'studyUnit'; studyUnitId: string };
 
 export interface CustomStudyFilters {
   contentTypes: StudyContentType[];
@@ -64,7 +64,7 @@ export interface StudyCard {
   itemType: 'question' | 'case' | 'note';
   /** The underlying content row (question / case_item / note_item). */
   data: any;
-  lecture?: any;
+  studyUnit?: any;
   choices?: any[];
   writtenAnswer?: string | null;
   /** Scheduling state to hand to `scheduleCard`. */
@@ -107,18 +107,18 @@ const isAdmitted = (
   return dueScope !== 'due' || reviewable.nextReviewDate <= nowStr;
 };
 
-/** `null` means "every lecture"; an empty array means the scope matched nothing. */
-async function resolveLectureIds(scope: StudyScope): Promise<string[] | null> {
-  if (scope.kind === 'lecture') return [scope.lectureId];
+/** `null` means "every studyUnit"; an empty array means the scope matched nothing. */
+async function resolveStudyUnitIds(scope: StudyScope): Promise<string[] | null> {
+  if (scope.kind === 'studyUnit') return [scope.studyUnitId];
 
   if (scope.kind === 'subject') {
     const rows = await db
-      .select({ id: schema.lectures.id })
-      .from(schema.lectures)
+      .select({ id: schema.studyUnits.id })
+      .from(schema.studyUnits)
       .where(
         and(
-          eq(schema.lectures.subjectId, scope.subjectId),
-          isNull(schema.lectures.deletedAt),
+          eq(schema.studyUnits.subjectId, scope.subjectId),
+          isNull(schema.studyUnits.deletedAt),
         ),
       );
     return rows.map(row => row.id);
@@ -175,12 +175,12 @@ async function loadReviewablesByContent(
 async function questionCards(
   filters: CustomStudyFilters,
   userId: string,
-  lectureIds: string[] | null,
+  studyUnitIds: string[] | null,
   nowStr: string,
 ): Promise<StudyCard[]> {
   const conditions = [isNull(schema.questions.deletedAt)];
 
-  if (lectureIds) conditions.push(inArray(schema.questions.lectureId, lectureIds));
+  if (studyUnitIds) conditions.push(inArray(schema.questions.studyUnitId, studyUnitIds));
 
   if (filters.questionSources.length > 0) {
     // A question matches when any chosen tag is still live on it. Tombstoned tags are
@@ -230,17 +230,17 @@ async function questionCards(
   if (admitted.length === 0) return [];
 
   // Hydrate the three things a question card needs to render, one batch per kind rather
-  // than one query per card — a lecture-wide queue can hold a few hundred questions.
-  const lectureById = new Map<string, any>();
-  const lectureIdsToLoad = Array.from(
-    new Set(admitted.map(row => row.lectureId).filter((id): id is string => !!id)),
+  // than one query per card — a studyUnit-wide queue can hold a few hundred questions.
+  const studyUnitById = new Map<string, any>();
+  const studyUnitIdsToLoad = Array.from(
+    new Set(admitted.map(row => row.studyUnitId).filter((id): id is string => !!id)),
   );
-  if (lectureIdsToLoad.length > 0) {
-    const lectureRows = await db
+  if (studyUnitIdsToLoad.length > 0) {
+    const studyUnitRows = await db
       .select()
-      .from(schema.lectures)
-      .where(inArray(schema.lectures.id, lectureIdsToLoad));
-    for (const lecture of lectureRows) lectureById.set(lecture.id, lecture);
+      .from(schema.studyUnits)
+      .where(inArray(schema.studyUnits.id, studyUnitIdsToLoad));
+    for (const studyUnit of studyUnitRows) studyUnitById.set(studyUnit.id, studyUnit);
   }
 
   const mcqIds = admitted.filter(row => row.questionType === 'mcq').map(row => row.id);
@@ -277,7 +277,7 @@ async function questionCards(
       reviewableId: reviewable?.id ?? null,
       itemType: 'question' as const,
       data: row,
-      lecture: row.lectureId ? lectureById.get(row.lectureId) ?? null : null,
+      studyUnit: row.studyUnitId ? studyUnitById.get(row.studyUnitId) ?? null : null,
       choices: choicesByQuestion.get(row.id) ?? [],
       writtenAnswer: writtenAnswerByQuestion.get(row.id) ?? null,
       card: reviewable ? toCardState(reviewable) : newCard(),
@@ -289,11 +289,11 @@ async function questionCards(
 async function caseCards(
   dueScope: StudyDueScope,
   userId: string,
-  lectureIds: string[] | null,
+  studyUnitIds: string[] | null,
   nowStr: string,
 ): Promise<StudyCard[]> {
   const conditions = [];
-  if (lectureIds) conditions.push(inArray(schema.caseItems.lectureId, lectureIds));
+  if (studyUnitIds) conditions.push(inArray(schema.caseItems.studyUnitId, studyUnitIds));
 
   const rows = await db
     .select()
@@ -332,7 +332,7 @@ async function caseCards(
 async function noteCards(
   dueScope: StudyDueScope,
   userId: string,
-  lectureIds: string[] | null,
+  studyUnitIds: string[] | null,
   nowStr: string,
   noteTypes: StudyContentType[],
 ): Promise<StudyCard[]> {
@@ -347,7 +347,7 @@ async function noteCards(
     conditions.push(eq(schema.noteItems.type, 'summary'));
   }
 
-  if (lectureIds) conditions.push(inArray(schema.noteItems.lectureId, lectureIds));
+  if (studyUnitIds) conditions.push(inArray(schema.noteItems.studyUnitId, studyUnitIds));
 
   const rows = await db
     .select()
@@ -401,26 +401,26 @@ export async function buildCustomStudyQueue(
   userId: string,
 ): Promise<StudyCard[]> {
   const nowStr = new Date().toISOString();
-  const lectureIds = await resolveLectureIds(filters.scope);
+  const studyUnitIds = await resolveStudyUnitIds(filters.scope);
 
-  // A scope that names a lecture with no siblings, or a subject with no lectures, can
+  // A scope that names a studyUnit with no siblings, or a subject with no studyUnits, can
   // only ever produce an empty queue — and `inArray` with `[]` is a dialect trap.
-  if (lectureIds && lectureIds.length === 0) return [];
+  if (studyUnitIds && studyUnitIds.length === 0) return [];
 
   const cards: StudyCard[] = [];
 
   if (filters.contentTypes.includes('question')) {
-    cards.push(...(await questionCards(filters, userId, lectureIds, nowStr)));
+    cards.push(...(await questionCards(filters, userId, studyUnitIds, nowStr)));
   }
   if (filters.contentTypes.includes('case')) {
-    cards.push(...(await caseCards(filters.dueScope, userId, lectureIds, nowStr)));
+    cards.push(...(await caseCards(filters.dueScope, userId, studyUnitIds, nowStr)));
   }
 
   const noteTypes = filters.contentTypes.filter(
     (type): type is 'note' | 'summary' => type === 'note' || type === 'summary',
   );
   if (noteTypes.length > 0) {
-    cards.push(...(await noteCards(filters.dueScope, userId, lectureIds, nowStr, noteTypes)));
+    cards.push(...(await noteCards(filters.dueScope, userId, studyUnitIds, nowStr, noteTypes)));
   }
 
   return cards.sort((a, b) =>

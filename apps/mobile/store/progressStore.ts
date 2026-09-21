@@ -10,8 +10,8 @@ interface LastProgress {
   moduleName: string | null;
   subjectId: string | null;
   subjectName: string | null;
-  lectureId: string | null;
-  lectureName: string | null;
+  studyUnitId: string | null;
+  studyUnitName: string | null;
   questionId: string | null;
   questionIndex: number;
   totalQuestions: number;
@@ -41,8 +41,8 @@ function readFromSQLite(): LastProgress | null {
       moduleName: p.moduleName ?? null,
       subjectId: p.subjectId ?? null,
       subjectName: p.subjectName ?? null,
-      lectureId: p.lectureId ?? null,
-      lectureName: p.lectureName ?? null,
+      studyUnitId: p.studyUnitId ?? null,
+      studyUnitName: p.studyUnitName ?? null,
       questionId: p.questionId ?? null,
       questionIndex: p.questionIndex ?? 0,
       totalQuestions: p.totalQuestions ?? 0,

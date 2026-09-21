@@ -38,7 +38,7 @@ export async function verifyLocalVideoExists(localFilePath?: string | null): Pro
   }
 }
 
-export async function downloadLectureVideo(
+export async function downloadStudyUnitVideo(
   videoId: string,
   remoteUrl: string,
   onProgress?: (percent: number) => void
@@ -90,9 +90,9 @@ export async function downloadLectureVideo(
 
     // Update SQLite record with localFilePath
     await db
-      .update(schema.lectureVideos)
+      .update(schema.studyUnitVideos)
       .set({ localFilePath: result.uri })
-      .where(eq(schema.lectureVideos.id, videoId));
+      .where(eq(schema.studyUnitVideos.id, videoId));
 
     onProgress?.(100);
     return result.uri;
@@ -129,7 +129,7 @@ export async function deleteDownloadedVideo(videoId: string, localFilePath?: str
 
   // Clear localFilePath in SQLite
   await db
-    .update(schema.lectureVideos)
+    .update(schema.studyUnitVideos)
     .set({ localFilePath: null })
-    .where(eq(schema.lectureVideos.id, videoId));
+    .where(eq(schema.studyUnitVideos.id, videoId));
 }

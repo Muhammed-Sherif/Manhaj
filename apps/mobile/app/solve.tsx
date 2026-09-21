@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { BrainCircuitIcon, RepeatIcon } from 'lucide-react-native';
@@ -27,7 +27,7 @@ export default function SolveScreen() {
   const params = useLocalSearchParams();
   const mode = ((params.mode as SolveMode) || 'solve');
   const questionId = params.questionId as string | undefined;
-  const lectureId = params.lectureId as string | undefined;
+  const studyUnitId = params.studyUnitId as string | undefined;
 
   const {
     questions,
@@ -51,7 +51,7 @@ export default function SolveScreen() {
       setIsOnline(netState.isConnected ?? false);
     });
     return unsubscribe;
-  }, [questionId, lectureId, mode]);
+  }, [questionId, studyUnitId, mode]);
 
   const loadQuestions = async () => {
     try {
@@ -66,14 +66,14 @@ export default function SolveScreen() {
         }
       }
 
-      // Scenario 2: lectureId passed (from LectureQuestionsCard)
-      if (lectureId) {
+      // Scenario 2: studyUnitId passed (from StudyUnitQuestionsCard)
+      if (studyUnitId) {
         let list: Question[] = [];
 
         if (mode === 'unsolved') {
-          list = await fetchUnsolvedQuestions(lectureId);
+          list = await fetchUnsolvedQuestions(studyUnitId);
         } else {
-          list = await fetchAllQuestions(lectureId);
+          list = await fetchAllQuestions(studyUnitId);
         }
         if (list.length > 0) {
           setQuestions(list);
@@ -102,8 +102,8 @@ export default function SolveScreen() {
         </Text>
         <Text className="text-slate-500 dark:text-slate-500 text-center text-sm">
           {mode === 'unsolved' 
-            ? "You've answered all questions for this lecture. Great job!" 
-            : "No practice questions are available for this lecture yet."}
+            ? "You've answered all questions for this studyUnit. Great job!" 
+            : "No practice questions are available for this studyUnit yet."}
         </Text>
       </View>
     );
@@ -113,8 +113,8 @@ export default function SolveScreen() {
   const headerTitle =
     mode === 'solve' || mode === 'unsolved'
       ? `Question ${currentIndex + 1} of ${questions.length}`
-      : currentQuestion.lecture?.name || 'Review Question';
-  const headerSubtitle = mode === 'review' ? currentQuestion.lecture?.subject?.name : undefined;
+      : currentQuestion.studyUnit?.name || 'Review Question';
+  const headerSubtitle = mode === 'review' ? currentQuestion.studyUnit?.subject?.name : undefined;
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
@@ -124,8 +124,24 @@ export default function SolveScreen() {
       />
 
       <ScrollView className="flex-1 p-4">
-        {/* Question Text with Flag Button */}
+        {/* Question Text with Flag Button and Images */}
         <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
+          
+          {currentQuestion.questionImages && currentQuestion.questionImages.length > 0 && (
+            <View className="mb-4">
+              {currentQuestion.questionImages
+                .sort((a, b) => a.displayOrder - b.displayOrder)
+                .map((img) => (
+                  <Image
+                    key={img.id}
+                    source={{ uri: img.imageUrl }}
+                    className="w-full h-48 rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
+                    resizeMode="contain"
+                  />
+                ))}
+            </View>
+          )}
+
           <View className="flex-row items-start justify-between">
             <Text className="flex-1 text-lg text-slate-800 dark:text-slate-100 leading-relaxed mr-3">
               {questionText}

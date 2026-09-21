@@ -57,9 +57,9 @@ export default function HomeScreen() {
 
   const recentProgress = lastProgress ? [
     {
-      id: lastProgress.lectureId || '1',
+      id: lastProgress.studyUnitId || '1',
       subject: lastProgress.subjectName || 'Unknown Subject',
-      lecture: lastProgress.lectureName || 'Unknown Lecture',
+      studyUnit: lastProgress.studyUnitName || 'Unknown StudyUnit',
       progress: lastProgress.questionIndex + 1,
       total: lastProgress.totalQuestions,
       lastStudied: formatLastStudied(lastProgress.lastStudied),
@@ -84,7 +84,7 @@ export default function HomeScreen() {
           {recentProgress.length > 0 ? (
             <ContinueSolvingCard
               item={recentProgress[0]}
-              lectureId={lastProgress?.lectureId}
+              studyUnitId={lastProgress?.studyUnitId}
               questionIndex={lastProgress?.questionIndex}
             />
           ) : (
