@@ -65,7 +65,7 @@ app.use('/uploads', express.static(uploadsDir, {
 // Better Auth route handler - handles /api/auth/*
 app.all('/api/auth/*', toNodeHandler(auth));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Domain Routes
 app.use('/admin', adminRoutes);
