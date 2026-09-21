@@ -1,10 +1,9 @@
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
-import { ChannelHistoryInputPeer } from 'telegram/tl/custom/channel';
 import dotenv from 'dotenv';
-import { db, questions, choices } from '@manhaj/db';
-import { eq, max } from 'drizzle-orm';
+import { db, questions, choices, mcqQuestions, writtenQuestions } from '@manhaj/db';
+import { max } from 'drizzle-orm';
 
 dotenv.config();
 
@@ -15,8 +14,8 @@ const apiId = parseInt(process.env.TELEGRAM_API_ID || '');
 const apiHash = process.env.TELEGRAM_API_HASH || '';
 const sessionString = process.env.TELEGRAM_SESSION || '';
 const channelId = process.env.TELEGRAM_CHANNEL_ID || '';
-const backfillFromId = process.env.TELEGRAM_BACKFILL_FROM_ID 
-  ? parseInt(process.env.TELEGRAM_BACKFILL_FROM_ID) 
+const backfillFromId = process.env.TELEGRAM_BACKFILL_FROM_ID
+  ? parseInt(process.env.TELEGRAM_BACKFILL_FROM_ID)
   : null;
 
 if (!apiId || !apiHash || !sessionString || !channelId) {
@@ -68,7 +67,7 @@ async function getLastProcessedMessageId(): Promise<number | null> {
   const result = await database
     .select({ maxId: max(questions.telegramMessageId) })
     .from(questions);
-  
+
   return result[0]?.maxId || backfillFromId || null;
 }
 
@@ -95,7 +94,8 @@ async function voteOnPoll(client: TelegramClient, channel: any, messageId: numbe
 
 async function insertQuestion(
   poll: any,
-  channelMessageId: number
+  channelMessageId: number,
+  correctAnswersArray: number[] | undefined
 ): Promise<boolean> {
   try {
     // Insert question
@@ -103,7 +103,8 @@ async function insertQuestion(
       .insert(questions)
       .values({
         questionText: poll.question,
-        explanation: poll.explanation || '', // Empty string since explanation is required
+        explanation: poll.explanation || '',
+        questionType: 'mcq',
         source: 'telegram_auto',
         lectureId: null,
         createdBy: null,
@@ -119,12 +120,11 @@ async function insertQuestion(
       return false;
     }
 
-    console.log(`✅ Inserted poll question: "${poll.question.substring(0, 50)}..."`);
+    console.log(`✅ Inserted poll question: "${poll.question.substring(0, 50)}..."`);    
 
     // Insert choices
     if (poll.answers && Array.isArray(poll.answers)) {
-      const correctAnswerIndex = poll.results?.correctAnswers?.[0] || -1;
-      
+
       for (let i = 0; i < poll.answers.length; i++) {
         const answer = poll.answers[i];
         // Extract text from TextWithEntities object if needed
@@ -132,12 +132,16 @@ async function insertQuestion(
         await database.insert(choices).values({
           questionId: question.id,
           choiceText: choiceText,
-          isCorrect: i === correctAnswerIndex,
+          isCorrect: (correctAnswersArray ?? []).includes(i),
         });
       }
     }
 
     stats.questionsInserted = stats.questionsInserted + 1;
+
+    // Insert MCQ subclass row
+    await database.insert(mcqQuestions).values({ questionId: question.id });
+
     return true;
   } catch (error) {
     console.error(`Failed to insert question (message ${channelMessageId}):`, error);
@@ -149,15 +153,41 @@ async function insertQuestion(
 async function insertTextQuestion(
   text: string,
   channelMessageId: number,
+  entities: any[] | null = null,
   fromMedia: boolean = false
 ): Promise<boolean> {
   try {
-    // Insert question
+    // Extract spoiler entity (the hidden answer)
+    const spoilerEntity = entities?.find(
+      (e: any) => e.className === 'MessageEntitySpoiler'
+    );
+
+    // Split message into question text and written answer
+    let questionText = text.trim();
+    let writtenAnswer: string | null = null;
+
+    if (spoilerEntity) {
+      // Text before the spoiler = the question; spoiler text = the answer
+      questionText = text.substring(0, spoilerEntity.offset).trim();
+      writtenAnswer = text.substring(
+        spoilerEntity.offset,
+        spoilerEntity.offset + spoilerEntity.length
+      ).trim();
+    }
+
+    if (!questionText) {
+      console.log(`⏭️  Skipped text message with no question part (message ${channelMessageId})`);
+      stats.skippedMessages = stats.skippedMessages + 1;
+      return false;
+    }
+
+    // Insert base question row
     const [question] = await database
       .insert(questions)
       .values({
-        questionText: text,
-        explanation: '', // Empty string since explanation is required but not available
+        questionText,
+        explanation: '',
+        questionType: 'written',
         source: 'telegram_auto',
         lectureId: null,
         createdBy: null,
@@ -173,8 +203,13 @@ async function insertTextQuestion(
       return false;
     }
 
-    const prefix = fromMedia ? 'media caption' : 'text message';
-    console.log(`✅ Inserted ${prefix} question: "${text.substring(0, 50)}..."`);
+    console.log(`✅ Inserted ${fromMedia ? 'text with media' : 'text'} question: "${questionText.substring(0, 50)}..."`);
+
+    // Insert written subclass row with the spoiler answer
+    await database.insert(writtenQuestions).values({
+      questionId: question.id,
+      writtenAnswer: writtenAnswer ?? '',
+    });
 
     stats.questionsInserted = stats.questionsInserted + 1;
     return true;
@@ -185,12 +220,12 @@ async function insertTextQuestion(
   }
 }
 
-async function processMessage(message: any, channel: any): Promise<void> {
+async function processMessage(message, channel): Promise<void> {
   stats.messagesScanned = stats.messagesScanned + 1;
 
   // Log message structure for debugging (simplified)
-  if (message.poll) {
-    const mediaPoll = message.poll;
+  if (message.media?.className === "MessageMediaPoll") {
+    const mediaPoll = message.media;
     const poll = mediaPoll.poll || mediaPoll;
     const questionText = poll.question?.text || poll.question;
     console.log(`📨 Poll ${message.id}: "${questionText?.substring(0, 40) || 'undefined'}..." (${poll.quiz ? 'quiz' : 'regular'})`);
@@ -201,48 +236,51 @@ async function processMessage(message: any, channel: any): Promise<void> {
   }
 
   // Handle poll messages
-  if (message.poll) {
-    const mediaPoll = message.poll;
-    let poll = mediaPoll.poll || mediaPoll; // Handle nested structure
+  if (message.media?.className === "MessageMediaPoll") {
+    let poll = message.media.poll;
 
     // Extract question text from TextWithEntities object
     const questionText = poll.question?.text || poll.question;
-    
+
     // Check if poll has question text
     if (!questionText) {
       console.log(`⏭️  Skipped poll without question text (message ${message.id})`);
       stats.skippedMessages = stats.skippedMessages + 1;
       return;
     }
-
     // Check if correct answer is visible
-    let hasCorrectAnswer = poll.results?.correctAnswers && poll.results.correctAnswers.length > 0;
+    let correctAnswers: number[] | undefined;
+    if (message.media.results?.results) {
+      // Each answer.option is a Buffer containing the ASCII digit of the answer index
+      // e.g. Buffer<30> = '0', Buffer<31> = '1', etc.
+      correctAnswers = message.media.results.results
+        .filter((answer: any) => answer.correct)
+        .map((answer: any) => parseInt(answer.option.toString('ascii'), 10));
+    }
 
     // If correct answer is hidden and it's a quiz, we must vote to reveal it
-    if (!hasCorrectAnswer && poll.quiz) {
+    if (!correctAnswers && poll.quiz) {
       await voteOnPoll(client, channel, message.id, poll.id.toString());
-      
-      // Fetch the updated message to get the poll results
-      const updatedMessages: any = await client.invoke(
-        new Api.messages.GetHistory({
-          peer: channel,
-          offsetId: message.id + 1,
-          limit: 1,
-          reverse: true,
-        })
-      );
 
-      if (updatedMessages && updatedMessages.messages && updatedMessages.messages.length > 0) {
-        const updatedMessage = updatedMessages.messages[0];
-        if (updatedMessage.id === message.id && updatedMessage.poll) {
-          poll = updatedMessage.poll.poll || updatedMessage.poll;
-          hasCorrectAnswer = poll.results?.correctAnswers && poll.results.correctAnswers.length > 0;
+      // Fetch the updated message to get the poll results
+      for await (const updatedMessage of client.iterMessages(channel, {
+        minId: message.id - 1,
+        maxId: message.id + 1,
+        limit: 1,
+      })) {
+        if (updatedMessage.id === message.id && updatedMessage.media?.className === "MessageMediaPoll") {
+          poll = updatedMessage.media.poll || updatedMessage.media;
+          if (updatedMessage.media.results?.results) {
+            correctAnswers = updatedMessage.media.results.results
+              .filter((answer: any) => answer.correct)
+              .map((answer: any) => parseInt(answer.option.toString('ascii'), 10));
+          }
         }
       }
     }
 
     // Insert poll question (will skip if already exists)
-    await insertQuestion({ ...poll, question: questionText }, message.id);
+    await insertQuestion({ ...poll, question: questionText }, message.id , correctAnswers);
     return;
   }
 
@@ -250,7 +288,7 @@ async function processMessage(message: any, channel: any): Promise<void> {
   if (message.message) {
     const text = message.message;
     if (text && text.trim().length > 0) {
-      await insertTextQuestion(text, message.id);
+      await insertTextQuestion(text, message.id, message.entities);
       return;
     }
   }
@@ -259,7 +297,7 @@ async function processMessage(message: any, channel: any): Promise<void> {
   if (message.media && message.message) {
     const caption = message.message;
     if (caption && caption.trim().length > 0) {
-      await insertTextQuestion(caption, message.id, true);
+      await insertTextQuestion(caption, message.id, message.entities, true);
       return;
     }
   }
@@ -288,24 +326,26 @@ async function main() {
     const lastProcessedId = await getLastProcessedMessageId();
     console.log(`📍 Last processed message ID: ${lastProcessedId || 'none (first run)'}\n`);
 
-    let offsetId = lastProcessedId || 0;
+    console.log(`Starting message fetch from ID: ${lastProcessedId || 3967}\n`);
+
+    let offsetId = lastProcessedId || 3967;
     const batchSize = 50;
     let hasMore = true;
     let emptyBatches = 0;
 
     while (hasMore && emptyBatches < 3) {
-      console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);
+      console.log(`📥 Fetching messages from ID ${offsetId}...`);
 
       try {
         const messages = await fetchWithRetry(async () => {
-          return client.invoke(
-            new Api.messages.GetHistory({
-              peer: channel,
-              offsetId: offsetId,
-              limit: batchSize,
-              reverse: true, // oldest first
-            })
-          );
+          for await (const message of client.iterMessages(channel, {
+            minId: offsetId - 1,
+            reverse: true,
+            limit: 50,
+          })) {
+            console.log(message);
+            await processMessage(message, channel);
+          }
         });
 
         if (!messages || !('messages' in messages) || messages.messages.length === 0) {
@@ -321,6 +361,7 @@ async function main() {
 
         for (const message of messages.messages) {
           if ('id' in message) {
+            // console.log(message)
             await processMessage(message, channel);
             offsetId = message.id;
           }
@@ -351,7 +392,7 @@ async function main() {
   console.log(`Questions inserted: ${stats.questionsInserted}`);
   console.log(`Messages skipped: ${stats.skippedMessages}`);
   console.log(`Errors: ${stats.errors.length}`);
-  
+
   if (stats.errors.length > 0) {
     console.log('\n❌ Errors:');
     stats.errors.forEach((err, i) => console.log(`  ${i + 1}. ${err}`));

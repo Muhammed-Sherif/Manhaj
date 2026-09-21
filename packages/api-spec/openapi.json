@@ -1274,7 +1274,8 @@
                     "type": "string",
                     "enum": [
                       "note",
-                      "recurring_question"
+                      "recurring_question",
+                      "summary"
                     ]
                   },
                   "content": {
@@ -1332,7 +1333,8 @@
                     "type": "string",
                     "enum": [
                       "note",
-                      "recurring_question"
+                      "recurring_question",
+                      "summary"
                     ]
                   },
                   "content": {

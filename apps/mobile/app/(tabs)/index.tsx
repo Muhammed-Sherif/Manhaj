@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useProgressStore } from '../../store/progressStore';
-import { BookOpenIcon, FlagIcon } from 'lucide-react-native';
+import { BookOpenIcon, FlagIcon, SlidersHorizontalIcon } from 'lucide-react-native';
 import { ContinueSolvingCard, EmptyProgressCard } from '../../components/home';
 import { scheduleTaskReminders } from '../../services/pushNotifications';
 import { db } from '../../services/database';
@@ -126,6 +126,21 @@ export default function HomeScreen() {
               <Text className="text-slate-800 dark:text-slate-100 font-semibold mt-2">SRS</Text>
             </TouchableOpacity>
           </View>
+
+          {/* The plain SRS button studies whatever is due; this one opens the launcher so
+              the student can pick the content, the source and the scope themselves. */}
+          <TouchableOpacity
+            className="mt-3 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex-row items-center border-2 border-sky-500"
+            onPress={() => router.push('/custom-study')}
+          >
+            <SlidersHorizontalIcon size={24} color="#0284c7" />
+            <View className="ml-3">
+              <Text className="text-slate-800 dark:text-slate-100 font-semibold">Custom Study</Text>
+              <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                Choose content, source and scope
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

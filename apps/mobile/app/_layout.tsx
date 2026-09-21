@@ -96,6 +96,7 @@ function AppLayout() {
         <Stack.Screen name="lecture" />
         <Stack.Screen name="video" />
         <Stack.Screen name="pdf" />
+        <Stack.Screen name="custom-study" />
       </Stack>
     </View>
   );

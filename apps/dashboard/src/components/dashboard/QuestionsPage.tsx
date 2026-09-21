@@ -26,7 +26,10 @@ interface Item { id: string; name: string; description?: string }
 
 // `getQuestions` in the API fetches questions `with: { choices: true }`, but the generated
 // `Question` model predates that embed and does not declare it.
-type QuestionRow = Question & { choices?: Choice[] };
+type QuestionRow = Question & {
+  choices?: Choice[];
+  writtenQuestion?: { questionId: string; writtenAnswer: string } | null;
+};
 
 const STEPS: { key: Step; label: string }[] = [
   { key: 'grade',   label: 'Grade' },
@@ -288,8 +291,17 @@ function EditQuestionModal({
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b px-6 py-4 shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Edit Question</h2>
+        <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Edit Question</h2>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                (question as any).questionType === 'written'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-sky-100 text-sky-700'
+              }`}>
+                {(question as any).questionType === 'written' ? 'Written' : 'MCQ'}
+              </span>
+            </div>
             <p className="text-sm text-slate-500 font-mono mt-0.5">{question.id}</p>
           </div>
           <button onClick={onClose} className="rounded p-1 hover:bg-slate-100" aria-label="Close">
@@ -323,58 +335,74 @@ function EditQuestionModal({
             />
           </div>
 
-          {/* Choices */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-700">Choices</label>
-              <button
-                onClick={addChoice}
-                className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
-              >
-                <Plus size={13} /> Add choice
-              </button>
+          {/* Written Answer / Choices */}
+          {(question as any).questionType === 'written' ? (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Model answer <span className="text-slate-400 font-normal">(spoiler text)</span>
+              </label>
+              <textarea
+                className="w-full rounded-lg border border-slate-200 bg-violet-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                rows={5}
+                value={(question as any).writtenQuestion?.writtenAnswer ?? ''}
+                readOnly
+                placeholder="No model answer stored"
+              />
+              <p className="mt-1 text-xs text-slate-400">Written answer is read-only here. Edit via the API directly.</p>
             </div>
-            {choices.length === 0 && (
-              <p className="text-xs text-slate-400 italic">No choices yet. Click "Add choice" to add one.</p>
-            )}
-            <div className="space-y-2">
-              {choices.map((choice, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
-                    choice.isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
-                  }`}
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-slate-700">Choices</label>
+                <button
+                  onClick={addChoice}
+                  className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
                 >
-                  <button
-                    type="button"
-                    title={choice.isCorrect ? 'Correct answer' : 'Mark as correct'}
-                    onClick={() => handleChoiceChange(i, 'isCorrect', !choice.isCorrect)}
-                    className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${
-                      choice.isCorrect
-                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                        : 'border-slate-300 hover:border-emerald-400'
+                  <Plus size={13} /> Add choice
+                </button>
+              </div>
+              {choices.length === 0 && (
+                <p className="text-xs text-slate-400 italic">No choices yet. Click "Add choice" to add one.</p>
+              )}
+              <div className="space-y-2">
+                {choices.map((choice, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                      choice.isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
                     }`}
                   >
-                    {choice.isCorrect && <Check size={12} strokeWidth={3} />}
-                  </button>
-                  <input
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-                    placeholder={`Choice ${String.fromCharCode(65 + i)}`}
-                    value={choice.choiceText}
-                    onChange={(e) => handleChoiceChange(i, 'choiceText', e.target.value)}
-                  />
-                  <button
-                    onClick={() => removeChoice(i)}
-                    className="shrink-0 text-slate-400 hover:text-red-500 transition-colors"
-                    aria-label="Remove choice"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
+                    <button
+                      type="button"
+                      title={choice.isCorrect ? 'Correct answer' : 'Mark as correct'}
+                      onClick={() => handleChoiceChange(i, 'isCorrect', !choice.isCorrect)}
+                      className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${
+                        choice.isCorrect
+                          ? 'border-emerald-500 bg-emerald-500 text-white'
+                          : 'border-slate-300 hover:border-emerald-400'
+                      }`}
+                    >
+                      {choice.isCorrect && <Check size={12} strokeWidth={3} />}
+                    </button>
+                    <input
+                      className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                      placeholder={`Choice ${String.fromCharCode(65 + i)}`}
+                      value={choice.choiceText}
+                      onChange={(e) => handleChoiceChange(i, 'choiceText', e.target.value)}
+                    />
+                    <button
+                      onClick={() => removeChoice(i)}
+                      className="shrink-0 text-slate-400 hover:text-red-500 transition-colors"
+                      aria-label="Remove choice"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-400">Note: Choice edits are saved via the choices API separately. Only question text and explanation are updated here.</p>
             </div>
-            <p className="mt-2 text-xs text-slate-400">Note: Choice edits are saved via the choices API separately. Only question text and explanation are updated here.</p>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -487,8 +515,9 @@ export function QuestionsPage() {
                   <input type="checkbox" checked={all} onChange={() => setSelected(all ? [] : rows.map((q) => q.id || '').filter(Boolean))} />
                 </TableHead>
                 <TableHead>ID</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Question text</TableHead>
-                <TableHead>Correct Answer</TableHead>
+                <TableHead>Answer</TableHead>
                 <TableHead>Choices</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Actions</TableHead>
@@ -505,9 +534,30 @@ export function QuestionsPage() {
                     />
                   </TableCell>
                   <TableCell><code className="text-xs text-slate-500">{question.id}</code></TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      (question as any).questionType === 'written'
+                        ? 'bg-violet-100 text-violet-700'
+                        : 'bg-sky-100 text-sky-700'
+                    }`}>
+                      {(question as any).questionType === 'written' ? 'Written' : 'MCQ'}
+                    </span>
+                  </TableCell>
                   <TableCell className="max-w-xs font-medium">{handleQuestionText(question)}</TableCell>
-                  <TableCell className="max-w-xs font-medium text-emerald-700">
-                    {(question.choices ?? []).find((c) => c.isCorrect)?.choiceText || <span className="text-slate-400 italic">None</span>}
+                  <TableCell className="max-w-xs">
+                    {(question as any).questionType === 'written' ? (
+                      question.writtenQuestion?.writtenAnswer ? (
+                        <span className="text-xs text-violet-700 bg-violet-50 rounded px-2 py-1 line-clamp-2 block max-w-[200px]">
+                          {question.writtenQuestion.writtenAnswer}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic text-xs">No answer</span>
+                      )
+                    ) : (
+                      <span className="text-emerald-700 font-medium text-sm">
+                        {(question.choices ?? []).find((c) => c.isCorrect)?.choiceText || <span className="text-slate-400 italic">None</span>}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="min-w-[220px]">
                     {(question.choices ?? []).length === 0 ? (

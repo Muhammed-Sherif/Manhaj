@@ -13,4 +13,5 @@ export type PatchStudentNotesIdBodyType = typeof PatchStudentNotesIdBodyType[key
 export const PatchStudentNotesIdBodyType = {
   note: 'note',
   recurring_question: 'recurring_question',
+  summary: 'summary',
 } as const;

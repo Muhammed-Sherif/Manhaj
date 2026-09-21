@@ -330,7 +330,7 @@ router.delete('/cases/:id', studentController.deleteCase);
  *             required: [lectureId, type, content]
  *             properties:
  *               lectureId: { type: string, format: uuid }
- *               type: { type: string, enum: ['note', 'recurring_question'] }
+ *               type: { type: string, enum: ['note', 'recurring_question', 'summary'] }
  *               content: { type: string }
  *               sourceQuestionId: { type: string, format: uuid }
  *     responses:
@@ -359,7 +359,7 @@ router.post('/notes', studentController.createNote);
  *           schema:
  *             type: object
  *             properties:
- *               type: { type: string, enum: ['note', 'recurring_question'] }
+ *               type: { type: string, enum: ['note', 'recurring_question', 'summary'] }
  *               content: { type: string }
  *               sourceQuestionId: { type: string, format: uuid, nullable: true }
  *     responses:

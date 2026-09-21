@@ -13,4 +13,5 @@ export type PostStudentNotesBodyType = typeof PostStudentNotesBodyType[keyof typ
 export const PostStudentNotesBodyType = {
   note: 'note',
   recurring_question: 'recurring_question',
+  summary: 'summary',
 } as const;

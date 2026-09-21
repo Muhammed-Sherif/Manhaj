@@ -1,26 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db } from '../services/database';
-import * as schema from '../db/schema';
-import { and, eq, lte } from 'drizzle-orm';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
-import { scheduleCard, Rating } from '@manhaj/srs/src/anki';
+import { Rating } from '@manhaj/srs/src/anki';
 import { ScreenHeader, ReviewChoices } from '../components';
 import { BookOpenIcon, CheckCircleIcon } from 'lucide-react-native';
 import { resolveImageUri } from '../services/imageUploadService';
+import {
+  buildCustomStudyQueue,
+  gradeStudyCard,
+  DEFAULT_STUDY_FILTERS,
+  type CustomStudyFilters,
+  type StudyCard,
+} from '../services/customStudyService';
 
 export default function FlashcardsScreen() {
   const router = useRouter();
-  const [items, setItems] = useState<any[]>([]);
+  // A custom-study session arrives as its filter set, JSON-encoded because expo-router
+  // params are strings and the filters are a nested object. Absent the param this is the
+  // ordinary SRS session: every due question, case, note and summary.
+  const { filters: filtersParam } = useLocalSearchParams<{ filters?: string }>();
+
+  const filters = useMemo<CustomStudyFilters>(() => {
+    if (!filtersParam) return DEFAULT_STUDY_FILTERS;
+    try {
+      return { ...DEFAULT_STUDY_FILTERS, ...JSON.parse(filtersParam) };
+    } catch {
+      return DEFAULT_STUDY_FILTERS;
+    }
+  }, [filtersParam]);
+
+  const isCustomStudy = !!filtersParam;
+
+  const [items, setItems] = useState<StudyCard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   useEffect(() => {
-    loadDueItems();
-  }, []);
+    loadItems();
+  }, [filters]);
 
   // Resolve the current card's image, preferring the local file and falling back to the
   // server copy — the device that attached it has the file, another device does not.
@@ -49,71 +69,10 @@ export default function FlashcardsScreen() {
     };
   }, [items, currentIndex]);
 
-  const loadDueItems = async () => {
+  const loadItems = async () => {
     try {
-      const nowStr = new Date().toISOString();
       const userId = useAuthStore.getState().user?.id ?? 'temp_user_id';
-      const dueItems = await db
-        .select()
-        .from(schema.reviewableItems)
-        .where(and(
-          eq(schema.reviewableItems.userId, userId),
-          lte(schema.reviewableItems.nextReviewDate, nowStr)
-        ));
-      
-      const hydratedItems = await Promise.all(dueItems.map(async (item) => {
-        if (item.itemType === 'case') {
-          const [caseLink] = await db.select().from(schema.caseReviewable).where(eq(schema.caseReviewable.reviewableId, item.id));
-          if (caseLink) {
-            const [caseData] = await db.select().from(schema.caseItems).where(eq(schema.caseItems.id, caseLink.caseId));
-            return { ...item, data: caseData };
-          }
-        } else if (item.itemType === 'note') {
-          const [noteLink] = await db.select().from(schema.noteReviewable).where(eq(schema.noteReviewable.reviewableId, item.id));
-          if (noteLink) {
-            const [noteData] = await db.select().from(schema.noteItems).where(eq(schema.noteItems.id, noteLink.noteId));
-            return { ...item, data: noteData };
-          }
-        } else if (item.itemType === 'question') {
-          const [qLink] = await db.select().from(schema.questionReviewable).where(eq(schema.questionReviewable.reviewableId, item.id));
-          if (qLink) {
-            const [qData] = await db.select().from(schema.questions).where(eq(schema.questions.id, qLink.questionId));
-            
-            // Fetch lecture information if available
-            let lectureData: any = null;
-            if (qData.lectureId) {
-              const [lecture] = await db.select().from(schema.lectures).where(eq(schema.lectures.id, qData.lectureId));
-              if (lecture) {
-                lectureData = lecture;
-              }
-            }
-            
-            // Fetch choices for MCQ questions
-            let choicesData: any[] = [];
-            if (qData.questionType === 'mcq') {
-              choicesData = await db.select().from(schema.choices).where(eq(schema.choices.questionId, qData.id));
-            }
-
-            // A written question's model answer lives in its subtype row, not on the
-            // question itself — `questions` has no `answer` column, so without this the
-            // reveal fell through to `explanation`, which is a team annotation added to
-            // hard questions rather than the answer the student was asked to produce.
-            let writtenAnswer: string | null = null;
-            if (qData.questionType === 'written') {
-              const [written] = await db
-                .select()
-                .from(schema.writtenQuestions)
-                .where(eq(schema.writtenQuestions.questionId, qData.id));
-              writtenAnswer = written?.writtenAnswer ?? null;
-            }
-
-            return { ...item, data: qData, lecture: lectureData, choices: choicesData, writtenAnswer };
-          }
-        }
-        return item;
-      }));
-
-      setItems(hydratedItems.filter((i: any) => i.data)); // Only valid items
+      setItems(await buildCustomStudyQueue(filters, userId));
     } catch (err) {
       console.error('Failed to load flashcards:', err);
     } finally {
@@ -123,32 +82,10 @@ export default function FlashcardsScreen() {
 
   const handleGrade = async (rating: Rating) => {
     const currentItem = items[currentIndex];
-    
-    // Calculate new Anki parameters
-    const cardData = {
-      state: currentItem.state,
-      currentStepIndex: currentItem.currentStepIndex,
-      interval: currentItem.interval,
-      easeFactor: currentItem.easeFactor,
-      repetitionCount: currentItem.repetitionCount,
-      lapses: currentItem.lapses,
-    };
-
-    const now = Date.now();
-    const nextParams = scheduleCard(rating, cardData, now);
+    const userId = useAuthStore.getState().user?.id ?? 'temp_user_id';
 
     try {
-      // Update locally
-      await db.update(schema.reviewableItems).set({
-        state: nextParams.state,
-        currentStepIndex: nextParams.currentStepIndex,
-        interval: nextParams.interval,
-        easeFactor: nextParams.easeFactor,
-        repetitionCount: nextParams.repetitionCount,
-        lapses: nextParams.lapses,
-        nextReviewDate: new Date(now + nextParams.dueInMs).toISOString(),
-        lastReviewedAt: new Date(now).toISOString(),
-      }).where(eq(schema.reviewableItems.id, currentItem.id));
+      await gradeStudyCard(currentItem, rating, userId);
 
       // Move to next
       setShowAnswer(false);
@@ -167,18 +104,26 @@ export default function FlashcardsScreen() {
   }
 
   if (currentIndex >= items.length) {
+    const emptyQueue = items.length === 0;
     return (
       <View className="flex-1 bg-slate-50 dark:bg-slate-900">
-        <ScreenHeader title="SRS Review" icon={<BookOpenIcon size={20} color="#0d9488" />} />
+        <ScreenHeader
+          title={isCustomStudy ? 'Custom Study' : 'SRS Review'}
+          icon={<BookOpenIcon size={20} color="#0d9488" />}
+        />
         <View className="flex-1 justify-center items-center p-6">
           <CheckCircleIcon size={64} color="#10b981" className="mb-4" />
           <Text className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2 text-center">
-            You're all caught up!
+            {emptyQueue && isCustomStudy ? 'Nothing matches yet' : "You're all caught up!"}
           </Text>
           <Text className="text-slate-500 text-center mb-6">
-            You've reviewed all your due flashcards for today.
+            {emptyQueue
+              ? isCustomStudy
+                ? 'No cards match these filters. Try widening the scope, or include content you have not reviewed before.'
+                : 'You have no cards due for review right now.'
+              : 'You have reviewed every card in this session.'}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="bg-teal-600 px-6 py-3 rounded-full"
             onPress={() => router.back()}
           >
@@ -194,10 +139,10 @@ export default function FlashcardsScreen() {
 
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <ScreenHeader 
-        title={`Review (${currentIndex + 1} of ${items.length})`} 
+      <ScreenHeader
+        title={`Review (${currentIndex + 1} of ${items.length})`}
         subtitle={itemType.toUpperCase()}
-        icon={<BookOpenIcon size={20} color="#0d9488" />} 
+        icon={<BookOpenIcon size={20} color="#0d9488" />}
       />
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>

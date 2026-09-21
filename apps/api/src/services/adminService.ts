@@ -309,6 +309,7 @@ export class AdminService {
       where: isNull(questions.deletedAt),
       with: {
         choices: true,
+        writtenQuestion: true,
       },
     });
 
@@ -318,6 +319,7 @@ export class AdminService {
         where: and(isNull(questions.lectureId), isNull(questions.deletedAt)),
         with: {
           choices: true,
+          writtenQuestion: true,
         },
       });
     } else if (lectureId) {
@@ -325,6 +327,7 @@ export class AdminService {
         where: and(eq(questions.lectureId, lectureId), isNull(questions.deletedAt)),
         with: {
           choices: true,
+          writtenQuestion: true,
         },
       });
     }
