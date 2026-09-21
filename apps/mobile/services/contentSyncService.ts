@@ -11,6 +11,7 @@ export interface ContentSyncData {
   lectures: any[];
   questions: any[];
   choices: any[];
+  questionSources: any[];
   lectureVideos: any[];
   lectureFiles: any[];
   nextCursor?: string;
@@ -190,6 +191,32 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
+    // Sync question sources (aggregate, same as choices — they ride along with their
+    // parent question, so an updated question re-sends its whole source set).
+    if (contentData.questionSources && contentData.questionSources.length > 0) {
+      const questionIdsWithUpdatedSources = Array.from(new Set(
+        contentData.questionSources.map((source: any) => source.questionId)
+      ));
+
+      for (const questionId of questionIdsWithUpdatedSources) {
+        await tx
+          .delete(schema.questionSources)
+          .where(eq(schema.questionSources.questionId, questionId));
+      }
+
+      for (const source of contentData.questionSources) {
+        await tx
+          .insert(schema.questionSources)
+          .values({
+            id: source.id,
+            questionId: source.questionId,
+            sourceType: source.sourceType,
+            updatedAt: source.updatedAt,
+            deletedAt: source.deletedAt ?? null,
+          });
+      }
+    }
+
     // Sync lecture videos (handle tombstones)
     for (const video of contentData.lectureVideos) {
       if (video.deletedAt) {
@@ -289,6 +316,7 @@ export const syncContentFromServer = async (): Promise<void> => {
     lectures: response.data.lectures || [],
     questions: response.data.questions || [],
     choices: response.data.choices || [],
+    questionSources: response.data.questionSources || [],
     lectureVideos: response.data.lectureVideos || [],
     lectureFiles: response.data.lectureFiles || [],
     nextCursor: response.data.nextCursor,
@@ -884,6 +912,27 @@ export const saveLectureDetailsToSqlite = async (lecture: any): Promise<void> =>
                   choiceText: c.choiceText ?? c.choice_text ?? '',
                   isCorrect: c.isCorrect ? 1 : 0,
                 },
+              });
+          }
+        }
+
+        // Replace this question's source set wholesale, mirroring the choices handling
+        // above — the payload carries every source, so a diff would be redundant work.
+        if (Array.isArray(q.questionSources)) {
+          await tx
+            .delete(schema.questionSources)
+            .where(eq(schema.questionSources.questionId, q.id));
+
+          for (const s of q.questionSources) {
+            if (!s.id || !s.sourceType) continue;
+            await tx
+              .insert(schema.questionSources)
+              .values({
+                id: s.id,
+                questionId: q.id,
+                sourceType: s.sourceType,
+                updatedAt: s.updatedAt ?? new Date().toISOString(),
+                deletedAt: s.deletedAt ?? null,
               });
           }
         }

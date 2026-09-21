@@ -12,6 +12,7 @@ import type { Subject } from './subject';
 import type { Lecture } from './lecture';
 import type { Question } from './question';
 import type { Choice } from './choice';
+import type { QuestionSourceTag } from './questionSourceTag';
 import type { LectureVideo } from './lectureVideo';
 import type { LectureFile } from './lectureFile';
 
@@ -23,6 +24,7 @@ export type GetContentSync200 = {
   lectures?: Lecture[];
   questions?: Question[];
   choices?: Choice[];
+  questionSources?: QuestionSourceTag[];
   lectureVideos?: LectureVideo[];
   lectureFiles?: LectureFile[];
   nextCursor?: string;

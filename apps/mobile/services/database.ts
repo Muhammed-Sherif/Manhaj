@@ -211,6 +211,7 @@ export const initializeDatabase = () => {
       id TEXT PRIMARY KEY,
       task_type TEXT NOT NULL,
       recurrence TEXT NOT NULL DEFAULT 'once',
+      recurrence_status TEXT NOT NULL DEFAULT 'active',
       start_time TEXT,
       end_time TEXT,
       consumed_time INTEGER,
@@ -219,6 +220,27 @@ export const initializeDatabase = () => {
       achieved_from TEXT,
       created_at TEXT NOT NULL,
       UNIQUE(task_type, start_time, end_time, created_at)
+    );
+
+    CREATE TABLE IF NOT EXISTS question_sources (
+      id TEXT PRIMARY KEY,
+      question_id TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
+      FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+    );
+
+    -- Device-local lecture attachments: never uploaded, never synced. See db/schema.ts.
+    CREATE TABLE IF NOT EXISTS lecture_local_files (
+      id TEXT PRIMARY KEY,
+      lecture_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      local_file_path TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_size INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (lecture_id) REFERENCES lectures(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS zekr_categories (
@@ -493,6 +515,13 @@ export const initializeDatabase = () => {
     }
   }
 
+  // ── Migration: add recurrence_status to tasks.
+  // Recurring series are rebuilt from their latest surviving instance, so a series can
+  // only be stopped by a flag — deleting rows just makes the pass fall back to an older
+  // instance and continue. Runs after the rebuilds above so it also covers installs that
+  // came through either of them with the old column set.
+  addColumnIfMissing('tasks', 'recurrence_status', "TEXT NOT NULL DEFAULT 'active'");
+
   // ── Migration: add created_at, updated_at, deleted_at to reviewable_items table
   const reviewableItemsColumns = expoDb.getAllSync(
     `PRAGMA table_info(reviewable_items)`
@@ -566,7 +595,9 @@ export const clearDatabase = async () => {
     DROP TABLE IF EXISTS lectures;
     DROP TABLE IF EXISTS lecture_videos;
     DROP TABLE IF EXISTS lecture_files;
+    DROP TABLE IF EXISTS lecture_local_files;
     DROP TABLE IF EXISTS questions;
+    DROP TABLE IF EXISTS question_sources;
     DROP TABLE IF EXISTS choices;
     DROP TABLE IF EXISTS attempts;
     DROP TABLE IF EXISTS flags;

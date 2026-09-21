@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { grades, terms, modules, subjects, lectures, lectureVideos, lectureFiles, videoProgress, questions, choices } from '@manhaj/db/schema';
+import { grades, terms, modules, subjects, lectures, lectureVideos, lectureFiles, videoProgress, questions, choices, questionSources } from '@manhaj/db/schema';
 import { eq, gt, and, isNull, inArray } from 'drizzle-orm';
 
 export class ContentService {
@@ -18,6 +18,7 @@ export class ContentService {
       lectures: await this.lectures(sinceDate),
       questions: await this.questions(sinceDate),
       choices: await this.choices(sinceDate),
+      questionSources: await this.questionSources(sinceDate),
       lectureVideos: await this.lectureVideos(sinceDate),
       lectureFiles: await this.lectureFiles(sinceDate),
       nextCursor,
@@ -56,6 +57,7 @@ export class ContentService {
         questions: {
           with: {
             choices: true,
+            questionSources: true,
           },
         },
       },
@@ -162,6 +164,33 @@ export class ContentService {
 
     // Full sync: return all choices
     return db.query.choices.findMany();
+  }
+
+  private async questionSources(since?: Date) {
+    // Like choices, these are weak entities that ride along with their parent question:
+    // a source is only meaningful in the context of the question it annotates, so a
+    // question update re-sends its whole source set rather than diffing them separately.
+    if (since) {
+      const updatedQuestions = await db
+        .select({ id: questions.id })
+        .from(questions)
+        .where(and(
+          gt(questions.updatedAt, since),
+          isNull(questions.deletedAt)
+        ));
+
+      const questionIds = updatedQuestions.map(q => q.id);
+
+      if (questionIds.length > 0) {
+        return db.query.questionSources.findMany({
+          where: inArray(questionSources.questionId, questionIds),
+        });
+      }
+
+      return [];
+    }
+
+    return db.query.questionSources.findMany();
   }
 
   private async lectureVideos(since?: Date) {

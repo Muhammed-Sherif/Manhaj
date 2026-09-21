@@ -52,7 +52,8 @@
         {
           "photosPermission": "Manhaj attaches a photo to your own case and note cards. It is never used for anything else."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "router": {},

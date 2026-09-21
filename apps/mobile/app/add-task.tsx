@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ScreenHeader } from '../components';
-import { CircleIcon, CheckCircle2Icon, BookOpenIcon, CheckSquareIcon, SaveIcon, ChevronRightIcon, CheckIcon } from 'lucide-react-native';
+import { CircleIcon, CheckCircle2Icon, BookOpenIcon, CheckSquareIcon, SaveIcon, ChevronRightIcon, CheckIcon, Edit2Icon } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Modal from '../components/Modal';
 import { db } from '../services/database';
@@ -12,6 +12,7 @@ import { formatTime } from '../utils/format';
 
 export default function AddTaskScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   const [taskType, setTaskType] = useState<'zekr' | 'wird' | 'work' | 'study'>('zekr');
   const [recurrence, setRecurrence] = useState<'once' | 'daily' | 'weekly'>('daily');
   const [startTime, setStartTime] = useState(new Date(new Date().setHours(5, 0, 0, 0)));
@@ -77,6 +78,61 @@ export default function AddTaskScreen() {
   }, [taskType]);
 
   useEffect(() => {
+    if (id) {
+      loadExistingTask(id as string);
+    }
+  }, [id]);
+
+  const loadExistingTask = async (taskId: string) => {
+    try {
+      const [task] = await db.select().from(schema.tasks).where(require('drizzle-orm').eq(schema.tasks.id, taskId));
+      if (!task) return;
+
+      setTaskType(task.taskType as any);
+      setRecurrence(task.recurrence as any);
+      if (task.startTime) setStartTime(new Date(task.startTime));
+      if (task.endTime) setEndTime(new Date(task.endTime));
+
+      if (task.taskType === 'zekr') {
+        const [zekrData] = await db.select().from(schema.zekrTasks).where(require('drizzle-orm').eq(schema.zekrTasks.taskId, taskId));
+        if (zekrData) {
+          if (zekrData.categoryId) setSelectedCategoryId(zekrData.categoryId);
+          if (zekrData.zekrId) setSelectedZekrId(zekrData.zekrId);
+        }
+      } else if (task.taskType === 'wird') {
+        const [wirdData] = await db.select().from(schema.wirdTasks).where(require('drizzle-orm').eq(schema.wirdTasks.taskId, taskId));
+        if (wirdData) {
+          setWirdMode(wirdData.wirdMode as any);
+          if (wirdData.wirdMode === 'by_pages') {
+            setStartPage(wirdData.startPage?.toString() || '');
+            setEndPage(wirdData.endPage?.toString() || '');
+          } else {
+            setStartVerseId(wirdData.startVerseId || null);
+            setEndVerseId(wirdData.endVerseId || null);
+          }
+        }
+      } else if (task.taskType === 'work') {
+        const [workData] = await db.select().from(schema.workTasks).where(require('drizzle-orm').eq(schema.workTasks.taskId, taskId));
+        if (workData) {
+          setWorkCategory(workData.category as any);
+          setProjectName(workData.projectName || '');
+          setWorkCost(workData.cost?.toString() || '');
+          setWorkLink(workData.link || '');
+          setWorkDescription(workData.description || '');
+        }
+      } else if (task.taskType === 'study') {
+        const [studyData] = await db.select().from(schema.studyTasks).where(require('drizzle-orm').eq(schema.studyTasks.taskId, taskId));
+        if (studyData) {
+          setStudyLectureId(studyData.lectureId || '');
+          setStudyActivityType(studyData.activityType as any);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load existing task:', err);
+    }
+  };
+
+  useEffect(() => {
     if (startChapterId) {
       db.select()
         .from(schema.quranVerses)
@@ -135,20 +191,35 @@ export default function AddTaskScreen() {
 
   const handleSave = async () => {
     try {
-      const taskId = Crypto.randomUUID();
+      const taskId = id ? (id as string) : Crypto.randomUUID();
       const nowStr = new Date().toISOString();
 
-      // Insert Task Superclass
-      await db.insert(schema.tasks).values({
-        id: taskId,
+      const taskData = {
         taskType,
         recurrence,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        status: 'pending',
-        createdAt: nowStr,
+        status: 'pending' as const,
         updatedAt: nowStr,
-      });
+      };
+
+      if (id) {
+        await db.update(schema.tasks)
+          .set(taskData)
+          .where(require('drizzle-orm').eq(schema.tasks.id, taskId));
+
+        // Delete old subclass rows to start fresh for this task
+        await db.delete(schema.zekrTasks).where(require('drizzle-orm').eq(schema.zekrTasks.taskId, taskId));
+        await db.delete(schema.wirdTasks).where(require('drizzle-orm').eq(schema.wirdTasks.taskId, taskId));
+        await db.delete(schema.workTasks).where(require('drizzle-orm').eq(schema.workTasks.taskId, taskId));
+        await db.delete(schema.studyTasks).where(require('drizzle-orm').eq(schema.studyTasks.taskId, taskId));
+      } else {
+        await db.insert(schema.tasks).values({
+          id: taskId,
+          ...taskData,
+          createdAt: nowStr,
+        });
+      }
 
       if (taskType === 'wird') {
         if (wirdMode === 'by_pages') {
@@ -235,9 +306,9 @@ export default function AddTaskScreen() {
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
-        title="Add Task"
-        subtitle="Create a new daily or weekly task"
-        icon={<CheckSquareIcon size={20} color="#0d9488" />}
+        title={id ? "Edit Task" : "Add Task"}
+        subtitle={id ? "Update your existing task" : "Create a new daily or weekly task"}
+        icon={id ? <Edit2Icon size={20} color="#0d9488" /> : <CheckSquareIcon size={20} color="#0d9488" />}
       />
 
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
@@ -565,7 +636,7 @@ export default function AddTaskScreen() {
           className="bg-teal-600 gap-2 flex-row items-center justify-center p-4 rounded-xl mt-2 mb-8"
         >
           <SaveIcon size={20} color="white" className="mr-2" />
-          <Text className="text-white font-bold text-lg">Create Task</Text>
+          <Text className="text-white font-bold text-lg">{id ? "Save Changes" : "Create Task"}</Text>
         </TouchableOpacity>
       </ScrollView >
       {/* ── Zekr Category Modal ─────────────────────────────────────────── */}

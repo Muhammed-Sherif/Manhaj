@@ -48,14 +48,25 @@ export const processRecurringTasks = async (): Promise<void> => {
     for (const [key, tasksInGroup] of groups.entries()) {
       const [taskType, recurrence] = key.split('-');
       
-      // Find the latest start time date among this group
+      // Find the latest task instance date and its recurrenceStatus among this group
       let latestDate = new Date(0);
+      let isStopped = false;
       for (const task of tasksInGroup) {
         if (!task.startTime) continue;
         const taskDate = getStartOfDay(new Date(task.startTime));
         if (taskDate > latestDate) {
           latestDate = taskDate;
+          isStopped = task.recurrenceStatus === 'stopped';
+        } else if (taskDate.getTime() === latestDate.getTime()) {
+          if (task.recurrenceStatus === 'stopped') {
+            isStopped = true;
+          }
         }
+      }
+
+      // If the series has been explicitly stopped on the latest instance, do not recreate.
+      if (isStopped) {
+        continue;
       }
 
       // Fetch all tasks in this group that fall on the exact latest date

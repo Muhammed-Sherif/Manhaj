@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenHeader, ImagePickerField, type PickedImage } from '../components';
-import { BookOpenIcon, SaveIcon } from 'lucide-react-native';
+import { BookOpenIcon, SaveIcon, Trash2Icon } from 'lucide-react-native';
 import { db } from '../services/database';
 import * as schema from '../db/schema';
+import { eq } from 'drizzle-orm';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';
 import { attachImage } from '../services/imageUploadService';
+import { StudentContentService } from '../services/studentContentService';
 
 export default function AddCaseScreen() {
-  const { lectureId } = useLocalSearchParams<{ lectureId: string }>();
+  const { lectureId, caseId } = useLocalSearchParams<{ lectureId: string; caseId?: string }>();
   const router = useRouter();
 
   const [category, setCategory] = useState('disease');
@@ -20,6 +22,19 @@ export default function AddCaseScreen() {
   const [answer, setAnswer] = useState('');
   const [image, setImage] = useState<PickedImage | null>(null);
 
+  useEffect(() => {
+    if (caseId) {
+      db.select().from(schema.caseItems).where(eq(schema.caseItems.id, caseId as string)).then(([c]) => {
+        if (c) {
+          setCategory(c.category);
+          setTitle(c.title);
+          setContent(c.content);
+          setAnswer(c.answer || '');
+        }
+      });
+    }
+  }, [caseId]);
+
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
       Alert.alert('Error', 'Please fill in both title and content.');
@@ -27,7 +42,13 @@ export default function AddCaseScreen() {
     }
 
     try {
-      const caseId = Crypto.randomUUID();
+      if (caseId) {
+        await StudentContentService.updateCase(caseId as string, title, content, category, answer.trim() || undefined);
+        Alert.alert('Success', 'Case updated!', [{ text: 'OK', onPress: () => router.back() }]);
+        return;
+      }
+
+      const caseItemId = Crypto.randomUUID();
       const reviewableId = Crypto.randomUUID();
       const nowStr = new Date().toISOString();
 
@@ -35,7 +56,7 @@ export default function AddCaseScreen() {
 
       // Insert case
       await db.insert(schema.caseItems).values({
-        id: caseId,
+        id: caseItemId,
         lectureId: lectureId!,
         category,
         title,
@@ -55,7 +76,7 @@ export default function AddCaseScreen() {
         easeFactor: card.easeFactor,
         repetitionCount: card.repetitionCount,
         lapses: card.lapses,
-        nextReviewDate: nowStr, // new cards are due immediately
+        nextReviewDate: nowStr,
         createdAt: nowStr,
         updatedAt: nowStr,
       });
@@ -63,15 +84,13 @@ export default function AddCaseScreen() {
       // Link case to reviewable
       await db.insert(schema.caseReviewable).values({
         reviewableId,
-        caseId,
+        caseId: caseItemId,
       });
 
-      // Copy the image into app storage and queue it. Done after the row exists because
-      // the upload is addressed by the card's id.
       if (image) {
         await attachImage({
           ownerKind: 'case',
-          ownerId: caseId,
+          ownerId: caseItemId,
           sourceUri: image.uri,
           mimeType: image.mimeType,
         });
@@ -86,10 +105,31 @@ export default function AddCaseScreen() {
     }
   };
 
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Case',
+      'This will permanently remove the case and its SRS card. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            try {
+              await StudentContentService.deleteCase(caseId as string);
+              router.back();
+            } catch (err) {
+              console.error('Failed to delete case:', err);
+              Alert.alert('Error', 'Failed to delete case.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
-        title="Add Case"
+        title={caseId ? 'Edit Case' : 'Add Case'}
         subtitle="Create a custom case study"
         icon={<BookOpenIcon size={20} color="#0d9488" />}
       />
@@ -152,8 +192,18 @@ export default function AddCaseScreen() {
             className="bg-teal-600 flex-row items-center gap-2 justify-center p-4 rounded-xl mt-2"
           >
             <SaveIcon size={20} color="white" className="mr-2" />
-            <Text className="text-white font-bold text-lg">Save Case</Text>
+            <Text className="text-white font-bold text-lg">{caseId ? 'Save Changes' : 'Save Case'}</Text>
           </TouchableOpacity>
+
+          {!!caseId && (
+            <TouchableOpacity
+              onPress={handleDelete}
+              className="flex-row items-center gap-2 justify-center p-4 rounded-xl mt-3 border border-red-300 dark:border-red-800"
+            >
+              <Trash2Icon size={18} color="#ef4444" />
+              <Text className="text-red-500 font-semibold">Delete Case</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>

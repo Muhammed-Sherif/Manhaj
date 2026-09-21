@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight, Plus, Check } from 'lucide-react';
 import {
   useGetAdminQuestions,
   usePatchAdminQuestionsBulkAssignLecture,
+  usePatchAdminQuestionsId,
   usePostAdminQuestionsBulkDelete,
   useGetAdminGrades,
   useGetAdminTerms,
@@ -212,6 +213,185 @@ function AssignModal({
 
 import { toast } from '@/components/ui/sonner';
 
+// ─── Edit Question Modal ───────────────────────────────────────────────────
+type EditableChoice = {
+  id?: string;
+  choiceText: string;
+  isCorrect: boolean;
+};
+
+function EditQuestionModal({
+  question,
+  onClose,
+  onSaved,
+}: {
+  question: QuestionRow;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [questionText, setQuestionText] = useState(question.questionText ?? '');
+  const [explanation, setExplanation]   = useState(question.explanation ?? '');
+  const [choices, setChoices]           = useState<EditableChoice[]>(
+    (question.choices ?? []).map((c) => ({
+      id: c.id,
+      choiceText: c.choiceText ?? '',
+      isCorrect: c.isCorrect ?? false,
+    }))
+  );
+
+  const updateMutation = usePatchAdminQuestionsId({
+    mutation: {
+      onSuccess: () => {
+        toast.success('Question updated successfully');
+        onSaved();
+        onClose();
+      },
+      onError: () => toast.error('Failed to update question'),
+    },
+  });
+
+  const handleChoiceChange = (index: number, field: 'choiceText' | 'isCorrect', value: string | boolean) => {
+    setChoices((prev) =>
+      prev.map((c, i) => {
+        if (i !== index) {
+          // when marking a new correct answer, clear others
+          if (field === 'isCorrect' && value === true) return { ...c, isCorrect: false };
+          return c;
+        }
+        return { ...c, [field]: value };
+      })
+    );
+  };
+
+  const addChoice = () =>
+    setChoices((prev) => [...prev, { choiceText: '', isCorrect: false }]);
+
+  const removeChoice = (index: number) =>
+    setChoices((prev) => prev.filter((_, i) => i !== index));
+
+  const handleSubmit = () => {
+    if (!question.id) return;
+    updateMutation.mutate({
+      id: question.id,
+      data: {
+        questionText,
+        explanation,
+      },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl rounded-xl bg-white shadow-2xl flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between border-b px-6 py-4 shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Edit Question</h2>
+            <p className="text-sm text-slate-500 font-mono mt-0.5">{question.id}</p>
+          </div>
+          <button onClick={onClose} className="rounded p-1 hover:bg-slate-100" aria-label="Close">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
+          {/* Question text */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Question text</label>
+            <textarea
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+              rows={4}
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              placeholder="Enter question text…"
+            />
+          </div>
+
+          {/* Explanation */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Explanation <span className="text-slate-400 font-normal">(optional)</span></label>
+            <textarea
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+              rows={2}
+              value={explanation}
+              onChange={(e) => setExplanation(e.target.value)}
+              placeholder="Enter explanation…"
+            />
+          </div>
+
+          {/* Choices */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700">Choices</label>
+              <button
+                onClick={addChoice}
+                className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+              >
+                <Plus size={13} /> Add choice
+              </button>
+            </div>
+            {choices.length === 0 && (
+              <p className="text-xs text-slate-400 italic">No choices yet. Click "Add choice" to add one.</p>
+            )}
+            <div className="space-y-2">
+              {choices.map((choice, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                    choice.isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    title={choice.isCorrect ? 'Correct answer' : 'Mark as correct'}
+                    onClick={() => handleChoiceChange(i, 'isCorrect', !choice.isCorrect)}
+                    className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${
+                      choice.isCorrect
+                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                        : 'border-slate-300 hover:border-emerald-400'
+                    }`}
+                  >
+                    {choice.isCorrect && <Check size={12} strokeWidth={3} />}
+                  </button>
+                  <input
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                    placeholder={`Choice ${String.fromCharCode(65 + i)}`}
+                    value={choice.choiceText}
+                    onChange={(e) => handleChoiceChange(i, 'choiceText', e.target.value)}
+                  />
+                  <button
+                    onClick={() => removeChoice(i)}
+                    className="shrink-0 text-slate-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove choice"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-400">Note: Choice edits are saved via the choices API separately. Only question text and explanation are updated here.</p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!questionText.trim() || updateMutation.isPending}
+          >
+            {updateMutation.isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function QuestionsPage() {
   const query = useGetAdminQuestions({ lectureId: 'null' });
   const rows = (query.data?.data ?? []) as QuestionRow[];
@@ -221,6 +401,8 @@ export function QuestionsPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   // Question ids awaiting delete confirmation; null when the dialog is closed.
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
+  // Question currently being edited; null when the dialog is closed.
+  const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
 
   // Auto-select questions that already have choices attached
   useEffect(() => {
@@ -353,7 +535,7 @@ export function QuestionsPage() {
                   </TableCell>
                   <TableCell><Badge variant={question.source === 'telegram_auto' ? 'secondary' : 'outline'}>{question.source || 'unknown'}</Badge></TableCell>
                   <TableCell>
-                    <Button size="icon" variant="ghost" onClick={() => toast.info('Question editor opened')}><Pencil size={15} /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => setEditingQuestion(question)} aria-label="Edit question"><Pencil size={15} /></Button>
                     <Button size="icon" variant="ghost" onClick={() => question.id && setPendingDelete([question.id])}><Trash2 size={15} /></Button>
                   </TableCell>
                 </TableRow>
@@ -363,6 +545,14 @@ export function QuestionsPage() {
           </Table>
         )}
       </Card>
+
+      {editingQuestion && (
+        <EditQuestionModal
+          question={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onSaved={refresh}
+        />
+      )}
 
       {assignModalOpen && (
         <AssignModal

@@ -264,6 +264,7 @@ export class StudentSyncService {
           .set({
             taskType: task.taskType!,
             recurrence: task.recurrence || 'once',
+            recurrenceStatus: task.recurrenceStatus || 'active',
             startTime: task.startTime ? new Date(task.startTime) : null,
             endTime: task.endTime ? new Date(task.endTime) : null,
             consumedTime: task.consumedTime,
@@ -278,11 +279,11 @@ export class StudentSyncService {
           .where(eq(tasks.id, task.id));
       }
     } else {
-      // Insert new task
       await db.insert(tasks).values({
         id: task.id,
         taskType: task.taskType!,
         recurrence: task.recurrence || 'once',
+        recurrenceStatus: task.recurrenceStatus || 'active',
         startTime: task.startTime ? new Date(task.startTime) : null,
         endTime: task.endTime ? new Date(task.endTime) : null,
         consumedTime: task.consumedTime,
@@ -443,6 +444,7 @@ export interface TaskChange {
   id: string;
   taskType: 'zekr' | 'wird' | 'work' | 'study';
   recurrence?: 'once' | 'daily' | 'weekly';
+  recurrenceStatus?: 'active' | 'stopped';
   startTime?: string;
   endTime?: string;
   consumedTime?: number;

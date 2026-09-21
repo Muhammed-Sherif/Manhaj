@@ -4,8 +4,17 @@ import { relations } from 'drizzle-orm';
 // Enums
 export const authProviderEnum = pgEnum('auth_provider', ['google', 'credentials']);
 export const roleEnum = pgEnum('role', ['student', 'admin']);
+// How a question entered the system (ingestion provenance).
 export const questionSourceEnum = pgEnum('question_source', ['telegram_auto', 'admin_manual']);
 export const questionTypeEnum = pgEnum('question_type', ['mcq', 'written']);
+// Why a question is worth studying (clinical provenance) — a different axis from
+// `question_source` above, and what the custom-study launcher filters on.
+export const questionSourceTypeEnum = pgEnum('question_source_type', [
+  'previous_exam',
+  'doctor_confirmation',
+  'owner',
+  'team_expectation',
+]);
 
 // Tables
 export const grades = pgTable('grades', {
@@ -118,6 +127,17 @@ export const choices = pgTable('choices', {
   questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
   choiceText: text('choice_text').notNull(),
   isCorrect: boolean('is_correct').notNull(),
+});
+
+// Why a question is worth studying. A child table rather than a column on `questions`
+// because a single question can carry several of these, and the custom-study launcher
+// offers them as a multi-select filter.
+export const questionSources = pgTable('question_sources', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  questionId: uuid('question_id').notNull().references(() => questions.id, { onDelete: 'cascade' }),
+  sourceType: questionSourceTypeEnum('source_type').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const attempts = pgTable('attempts', {
@@ -293,6 +313,7 @@ export const reviewLogs = pgTable('review_logs', {
 
 export const taskTypeEnum = pgEnum('task_type', ['zekr', 'wird', 'work', 'study']);
 export const taskRecurrenceEnum = pgEnum('task_recurrence', ['once', 'daily', 'weekly']);
+export const taskRecurrenceStatusEnum = pgEnum('task_recurrence_status', ['active', 'stopped']);
 export const wirdModeEnum = pgEnum('wird_mode', ['by_ayat', 'by_pages']);
 export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'done', 'missed']);
 export const workTaskCategoryEnum = pgEnum('work_task_category', ['programming', 'video_editing']);
@@ -304,6 +325,7 @@ export const tasks = pgTable('tasks', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   taskType: taskTypeEnum('task_type').notNull(),
   recurrence: taskRecurrenceEnum('recurrence').notNull().default('once'),
+  recurrenceStatus: taskRecurrenceStatusEnum('recurrence_status').notNull().default('active'),
   startTime: timestamp('start_time'),
   endTime: timestamp('end_time'),
   consumedTime: integer('consumed_time'),
@@ -507,6 +529,7 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
   choices: many(choices),
   attempts: many(attempts),
   flags: many(flags),
+  questionSources: many(questionSources),
   // Subclass relations
   mcqQuestion: one(mcqQuestions, {
     fields: [questions.id],
@@ -549,6 +572,13 @@ export const flagsRelations = relations(flags, ({ one }) => ({
   }),
   question: one(questions, {
     fields: [flags.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const questionSourcesRelations = relations(questionSources, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionSources.questionId],
     references: [questions.id],
   }),
 }));
@@ -770,6 +800,9 @@ export type NewAttempt = typeof attempts.$inferInsert;
 
 export type Flag = typeof flags.$inferSelect;
 export type NewFlag = typeof flags.$inferInsert;
+
+export type QuestionSource = typeof questionSources.$inferSelect;
+export type NewQuestionSource = typeof questionSources.$inferInsert;
 
 export type McqQuestion = typeof mcqQuestions.$inferSelect;
 export type NewMcqQuestion = typeof mcqQuestions.$inferInsert;

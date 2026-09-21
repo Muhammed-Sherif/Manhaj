@@ -195,6 +195,27 @@ const options = {
             updatedAt: { type: 'string', format: 'date-time' },
           },
         },
+        // Note: named `QuestionSourceTag` rather than `QuestionSource` because the latter is
+        // already taken by the enum generated for `Question.source` (ingestion provenance).
+        // This is the *clinical* provenance — why a question is worth studying.
+        QuestionSourceTag: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            questionId: { type: 'string', format: 'uuid' },
+            sourceType: {
+              type: 'string',
+              enum: [
+                'previous_exam',
+                'doctor_confirmation',
+                'owner',
+                'team_expectation',
+              ],
+            },
+            updatedAt: { type: 'string', format: 'date-time' },
+            deletedAt: { type: 'string', format: 'date-time', nullable: true },
+          },
+        },
         LectureVideo: {
           type: 'object',
           properties: {

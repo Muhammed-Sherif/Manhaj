@@ -105,6 +105,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
             id: task.id,
             taskType: task.taskType,
             recurrence: task.recurrence,
+            recurrenceStatus: task.recurrenceStatus,
             startTime: task.startTime,
             endTime: task.endTime,
             consumedTime: task.consumedTime,
@@ -120,6 +121,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
             set: {
               taskType: task.taskType,
               recurrence: task.recurrence,
+              recurrenceStatus: task.recurrenceStatus,
               startTime: task.startTime,
               endTime: task.endTime,
               consumedTime: task.consumedTime,

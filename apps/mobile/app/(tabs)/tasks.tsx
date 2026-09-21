@@ -3,14 +3,15 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated } fr
 import { useRouter } from 'expo-router';
 import { db } from '../../services/database';
 import * as schema from '../../db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, isNull, and } from 'drizzle-orm';
 import * as Haptics from 'expo-haptics';
 import { ScreenHeader } from '../../components';
-import { CheckSquareIcon, PlusIcon, CircleIcon, CheckCircle2Icon, ClockIcon, LinkIcon } from 'lucide-react-native';
+import Modal from '../../components/Modal';
+import { CheckSquareIcon, PlusIcon, CircleIcon, CheckCircle2Icon, ClockIcon, LinkIcon, MoreHorizontalIcon, Edit2Icon, Trash2Icon } from 'lucide-react-native';
 import { formatTime } from '../../utils/format';
 
 // ── Animated task row with completion animation ─────────────────────────────
-function TaskRow({ task, onPress, onToggleStatus }: { task: any; onPress: () => void; onToggleStatus: () => void }) {
+function TaskRow({ task, onPress, onToggleStatus, onOpenMenu }: { task: any; onPress: () => void; onToggleStatus: () => void; onOpenMenu: () => void; }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const checkAnim = useRef(new Animated.Value(task.status === 'done' ? 1 : 0)).current;
   const [isExpanded, setIsExpanded] = useState(false);
@@ -94,6 +95,9 @@ function TaskRow({ task, onPress, onToggleStatus }: { task: any; onPress: () => 
                 {task.taskType === 'work' && (task.workTask?.projectName || 'Work Task')}
                 {task.taskType === 'study' && (task.lecture?.name || 'Study Session')}
               </Text>
+              <TouchableOpacity onPress={onOpenMenu} className="p-1 -mt-1 -mr-1 rounded-full active:bg-slate-200 dark:active:bg-slate-700">
+                <MoreHorizontalIcon size={20} color={isDone ? '#94a3b8' : '#64748b'} />
+              </TouchableOpacity>
             </View>
 
             {(task.startTime || task.endTime) && (
@@ -205,6 +209,7 @@ export default function TasksScreen() {
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   useEffect(() => {
     loadTasks();
@@ -213,7 +218,7 @@ export default function TasksScreen() {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const allTasks = await db.select().from(schema.tasks);
+      const allTasks = await db.select().from(schema.tasks).where(and(isNull(schema.tasks.deletedAt), eq(schema.tasks.recurrenceStatus, 'active')));
 
       const hydrated = await Promise.all(allTasks.map(async (task) => {
         if (task.taskType === 'zekr') {
@@ -300,6 +305,25 @@ export default function TasksScreen() {
     }
   };
 
+  const handleDeleteTask = async (task: any) => {
+    try {
+      if (task.recurrence === 'once') {
+        await db.update(schema.tasks).set({ deletedAt: new Date().toISOString() }).where(eq(schema.tasks.id, task.id));
+      } else {
+        await db.update(schema.tasks).set({ deletedAt: new Date().toISOString(), recurrenceStatus: 'stopped' }).where(eq(schema.tasks.id, task.id));
+      }
+      setTasks(prev => prev.filter(t => t.id !== task.id));
+      setSelectedTask(null);
+    } catch (err) {
+      console.error('Failed to delete task', err);
+    }
+  };
+
+  const handleEditTask = (task: any) => {
+    setSelectedTask(null);
+    router.push(`/add-task?id=${task.id}` as any);
+  };
+
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader title="My Tasks" icon={<CheckSquareIcon size={20} color="#0d9488" />} />
@@ -339,6 +363,7 @@ export default function TasksScreen() {
                 }
               }}
               onToggleStatus={() => toggleTaskStatus(task)}
+              onOpenMenu={() => setSelectedTask(task)}
             />
           );
         })}
@@ -356,6 +381,27 @@ export default function TasksScreen() {
         )}
         <View className="h-10" />
       </ScrollView>
+
+      <Modal
+        visible={!!selectedTask}
+        title="Task Options"
+        onClose={() => setSelectedTask(null)}
+      >
+        <TouchableOpacity
+          className="flex-row items-center py-4 border-b border-slate-100 dark:border-slate-800"
+          onPress={() => handleEditTask(selectedTask)}
+        >
+          <Edit2Icon size={20} color="#3b82f6" className="mr-3" />
+          <Text className="text-base text-slate-800 dark:text-slate-200">Edit Task</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="flex-row items-center py-4"
+          onPress={() => handleDeleteTask(selectedTask)}
+        >
+          <Trash2Icon size={20} color="#ef4444" className="mr-3" />
+          <Text className="text-base text-red-500">Delete Task</Text>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }

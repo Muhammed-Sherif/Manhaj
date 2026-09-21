@@ -402,6 +402,37 @@
           }
         }
       },
+      "QuestionSourceTag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "previous_exam",
+              "doctor_confirmation",
+              "owner",
+              "team_expectation"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
       "LectureVideo": {
         "type": "object",
         "properties": {
@@ -1978,6 +2009,12 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/components/schemas/Choice"
+                      }
+                    },
+                    "questionSources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionSourceTag"
                       }
                     },
                     "lectureVideos": {

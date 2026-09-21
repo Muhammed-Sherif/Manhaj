@@ -99,6 +99,8 @@ export * from './postStudentTasksCompleteStudyBody';
 export * from './postStudentTasksCompleteStudyBodyActivityType';
 export * from './question';
 export * from './questionSource';
+export * from './questionSourceTag';
+export * from './questionSourceTagSourceType';
 export * from './structuredGrade';
 export * from './structuredModule';
 export * from './structuredSubject';

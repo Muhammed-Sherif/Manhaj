@@ -57,6 +57,10 @@ const contentController = new ContentController();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Choice'
+ *                 questionSources:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/QuestionSourceTag'
  *                 lectureVideos:
  *                   type: array
  *                   items:

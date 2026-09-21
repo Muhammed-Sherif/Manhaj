@@ -70,6 +70,30 @@ export const lectureFiles = sqliteTable('lecture_files', {
   deletedAt: text('deleted_at'),
 });
 
+/**
+ * Files the student attached to a lecture for their own convenience.
+ *
+ * Deliberately device-local: this table exists only here, never on the server, and is
+ * absent from both sync services. Attaching a file on one device does not make it appear
+ * on another — that is the intended behaviour, not an omission, and the reason there is
+ * no `synced`/`deleted_at` column to reconcile against a remote.
+ *
+ * `localFilePath` points inside the app's own sandbox (`documentDirectory/...`), where a
+ * copy of the bytes was placed at attach time. Referencing the original URI instead would
+ * break as soon as the OS, or another app, moved or reclaimed it.
+ */
+export const lectureLocalFiles = sqliteTable('lecture_local_files', {
+  id: text('id').primaryKey(),
+  lectureId: text('lecture_id')
+    .notNull()
+    .references(() => lectures.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  localFilePath: text('local_file_path').notNull(),
+  fileName: text('file_name').notNull(),
+  fileSize: integer('file_size'),
+  createdAt: text('created_at').notNull(),
+});
+
 export const questions = sqliteTable('questions', {
   id: text('id').primaryKey(),
   lectureId: text('lecture_id').references(() => lectures.id, { onDelete: 'set null' }),
@@ -78,6 +102,32 @@ export const questions = sqliteTable('questions', {
   questionText: text('question_text').notNull(),
   explanation: text('explanation').notNull(),
   source: text('source').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  deletedAt: text('deleted_at'),
+});
+
+/**
+ * Why a question is worth studying — its clinical provenance, distinct from
+ * `questions.source`, which only records how the row got into the database
+ * (telegram_auto / admin_manual).
+ *
+ * A question may carry several of these, so this is a child table rather than a column,
+ * and the custom-study launcher filters on it as a multi-select.
+ */
+export const questionSourceTypes = [
+  'previous_exam',
+  'doctor_confirmation',
+  'owner',
+  'team_expectation',
+] as const;
+export type QuestionSourceType = (typeof questionSourceTypes)[number];
+
+export const questionSources = sqliteTable('question_sources', {
+  id: text('id').primaryKey(),
+  questionId: text('question_id')
+    .notNull()
+    .references(() => questions.id, { onDelete: 'cascade' }),
+  sourceType: text('source_type').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
 });
@@ -203,10 +253,23 @@ export const noteReviewable = sqliteTable('note_reviewable', {
   noteId: text('note_id').notNull().references(() => noteItems.id, { onDelete: 'cascade' }),
 });
 
+/**
+ * Whether a recurring series is still producing new instances.
+ *
+ * Deleting a daily/weekly task cannot be expressed as a row delete: the recurrence pass
+ * rebuilds each series from the latest surviving instance, so soft-deleting the newest
+ * one would only make it fall back to an older instance and carry on. Stopping is a
+ * property of the series, recorded on its latest instance, and is what the recurrence
+ * pass consults before cloning. 'once' tasks never need it — they have no series.
+ */
+export const taskRecurrenceStatuses = ['active', 'stopped'] as const;
+export type TaskRecurrenceStatus = (typeof taskRecurrenceStatuses)[number];
+
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
   taskType: text('task_type').notNull(),
   recurrence: text('recurrence').notNull().default('once'),
+  recurrenceStatus: text('recurrence_status').notNull().default('active'),
   startTime: text('start_time'),
   endTime: text('end_time'),
   consumedTime: integer('consumed_time'),
@@ -324,6 +387,7 @@ export const lecturesRelations = relations(lectures, ({ one, many }) => ({
   }),
   lectureVideos: many(lectureVideos),
   lectureFiles: many(lectureFiles),
+  lectureLocalFiles: many(lectureLocalFiles),
   questions: many(questions),
 }));
 
@@ -347,6 +411,14 @@ export const questionsRelations = relations(questions, ({ one, many }) => ({
     references: [lectures.id],
   }),
   choices: many(choices),
+  questionSources: many(questionSources),
+}));
+
+export const questionSourcesRelations = relations(questionSources, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionSources.questionId],
+    references: [questions.id],
+  }),
 }));
 
 export const choicesRelations = relations(choices, ({ one }) => ({
