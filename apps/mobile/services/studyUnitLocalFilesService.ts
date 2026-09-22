@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import { File, Directory, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as Crypto from 'expo-crypto';
 import { db } from './database';
@@ -7,15 +7,14 @@ import * as schema from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { useAuthStore } from '../store/authStore';
 
-const LOCAL_FILES_DIR = FileSystem.documentDirectory + 'studyUnit-files/';
+const LOCAL_FILES_DIR = new Directory(Paths.document, 'studyUnit-files');
 
 /**
  * Ensure the studyUnit-files directory exists.
  */
-async function ensureDir() {
-  const info = await FileSystem.getInfoAsync(LOCAL_FILES_DIR);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(LOCAL_FILES_DIR, { intermediates: true });
+function ensureDir() {
+  if (!LOCAL_FILES_DIR.exists) {
+    LOCAL_FILES_DIR.create({ intermediates: true });
   }
 }
 
@@ -34,19 +33,19 @@ export async function attachLocalFile(studyUnitId: string): Promise<(typeof sche
   }
 
   const asset = result.assets[0];
-  await ensureDir();
+  ensureDir();
 
   const ext = asset.name.includes('.') ? asset.name.split('.').pop() : '';
   const localFileName = `${Crypto.randomUUID()}${ext ? '.' + ext : ''}`;
-  const destPath = LOCAL_FILES_DIR + localFileName;
+  const destFile = new File(LOCAL_FILES_DIR, localFileName);
 
-  await FileSystem.copyAsync({ from: asset.uri, to: destPath });
+  new File(asset.uri).copy(destFile);
 
   const row: typeof schema.studyUnitLocalFiles.$inferInsert = {
     id: Crypto.randomUUID(),
     studyUnitId,
     userId: useAuthStore.getState().user?.id ?? '',
-    localFilePath: destPath,
+    localFilePath: destFile.uri,
     fileName: asset.name,
     fileSize: asset.size ?? null,
     createdAt: new Date().toISOString(),
@@ -60,8 +59,8 @@ export async function attachLocalFile(studyUnitId: string): Promise<(typeof sche
  * Open a locally stored file using the native sharing / viewer sheet.
  */
 export async function openLocalFile(localFilePath: string): Promise<void> {
-  const info = await FileSystem.getInfoAsync(localFilePath);
-  if (!info.exists) {
+  const file = new File(localFilePath);
+  if (!file.exists) {
     throw new Error('File no longer exists at: ' + localFilePath);
   }
 
@@ -81,7 +80,10 @@ export async function deleteLocalFile(fileId: string): Promise<void> {
   if (!row) return;
 
   try {
-    await FileSystem.deleteAsync(row.localFilePath, { idempotent: true });
+    const file = new File(row.localFilePath);
+    if (file.exists) {
+      file.delete();
+    }
   } catch (err) {
     console.error('Failed to delete file bytes:', err);
   }

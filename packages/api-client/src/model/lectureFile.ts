@@ -8,10 +8,9 @@
 
 export interface LectureFile {
   id?: string;
-  studyUnitId?: string;
-  sourceName?: string;
-  fileUrl?: string;
-  fileType?: string;
+  lectureId?: string;
+  url?: string;
+  type?: string;
   createdAt?: string;
   updatedAt?: string;
 }

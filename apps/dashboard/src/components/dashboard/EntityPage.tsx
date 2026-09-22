@@ -1,6 +1,6 @@
 import { Pencil, Plus, X, Trash2 } from 'lucide-react';
 import { useGetContentSync } from '@manhaj/api-client/src/content/content';
-import { usePostAdminGrades, usePostAdminTerms, usePostAdminModules, usePostAdminSubjects, usePatchAdminGradesId, usePatchAdminTermsId, usePatchAdminModulesId, usePatchAdminSubjectsId, useDeleteAdminQuestionsId, useDeleteAdminGradesId, useDeleteAdminTermsId, useDeleteAdminModulesId, useDeleteAdminSubjectsId, useDeleteAdminLecturesId } from '@manhaj/api-client/src/admin/admin';
+import { usePostAdminGrades, usePostAdminTerms, usePostAdminModules, usePostAdminSubjects, usePatchAdminGradesId, usePatchAdminTermsId, usePatchAdminModulesId, usePatchAdminSubjectsId, useDeleteAdminQuestionsId, useDeleteAdminGradesId, useDeleteAdminTermsId, useDeleteAdminModulesId, useDeleteAdminSubjectsId, useDeleteAdminStudyUnitsId } from '@manhaj/api-client/src/admin/admin';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ export function EntityPage({ type }: { type: Page }) {
   const deleteTermsMutation = useDeleteAdminTermsId();
   const deleteModulesMutation = useDeleteAdminModulesId();
   const deleteSubjectsMutation = useDeleteAdminSubjectsId();
-  const deleteLecturesMutation = useDeleteAdminLecturesId();
+  const deleteStudyUnitsMutation = useDeleteAdminStudyUnitsId();
 
   const getMutation = () => {
     switch (type) {
@@ -64,7 +64,7 @@ export function EntityPage({ type }: { type: Page }) {
       case 'terms': return deleteTermsMutation;
       case 'modules': return deleteModulesMutation;
       case 'subjects': return deleteSubjectsMutation;
-      case 'lectures': return deleteLecturesMutation;
+      case 'studyUnits': return deleteStudyUnitsMutation;
       case 'questions': return deleteQuestionsMutation;
       default: return null;
     }
@@ -314,7 +314,7 @@ export function EntityPage({ type }: { type: Page }) {
                   <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
                     <Pencil size={15} />
                   </Button>
-                  {(type === 'grades' || type === 'terms' || type === 'modules' || type === 'subjects' || type === 'lectures' || type === 'questions') && (
+                  {(type === 'grades' || type === 'terms' || type === 'modules' || type === 'subjects' || type === 'studyUnits' || type === 'questions') && (
                     <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                       <Trash2 size={15} />
                     </Button>

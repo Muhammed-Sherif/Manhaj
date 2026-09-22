@@ -29,7 +29,7 @@ export default function SettingsScreen() {
     const [grades, setGrades] = useState<GradeWithTerms[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [autoDownload, setAutoDownload] = useState(false);
+    const [autoDownload, setAutoDownload] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);

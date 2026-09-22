@@ -329,6 +329,11 @@ router.patch('/questions/bulk-assign-study-unit', adminController.bulkAssignStud
  *               startMessageId: { type: integer }
  *               endMessageId: { type: integer }
  *               studyUnitId: { type: string, format: uuid }
+ *               sourceTypes: 
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [previous_exam, doctor_confirmation, owner, team_expectation]
  *     responses:
  *       200: { description: Questions assigned }
  */

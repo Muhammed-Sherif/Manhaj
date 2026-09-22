@@ -9,7 +9,9 @@
 export interface VideoProgress {
   id?: string;
   userId?: string;
-  lectureVideoId?: string;
-  positionSeconds?: number;
-  updatedAt?: string;
+  lectureId?: string;
+  videoId?: string;
+  currentTime?: number;
+  completed?: boolean;
+  lastWatchedAt?: string;
 }

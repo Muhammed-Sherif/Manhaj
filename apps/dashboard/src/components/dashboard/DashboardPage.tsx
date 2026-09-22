@@ -1,5 +1,5 @@
 import { BookOpen, Check, ClipboardList, Plus, Upload } from 'lucide-react';
-import { useGetAdminLectures, useGetAdminQuestions } from '@manhaj/api-client/src/admin/admin';
+import { useGetAdminStudyUnits, useGetAdminQuestions } from '@manhaj/api-client/src/admin/admin';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,17 +11,17 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
   const userName = session?.user?.name || 'Admin';
   const firstName = userName.split(' ')[0] || 'Admin';
 
-  const questions = useGetAdminQuestions({ lectureId: 'null' }); 
+  const questions = useGetAdminQuestions({ studyUnitId: 'null' }); 
   const allQuestions = useGetAdminQuestions({});
-  const lectures = useGetAdminLectures(); 
+  const studyUnits = useGetAdminStudyUnits(); 
   const unclassified = questions.data?.data.length || 0; 
-  const lectureCount = lectures.data?.data.length || 0;
+  const studyUnitCount = studyUnits.data?.data.length || 0;
   const totalQuestions = allQuestions.data?.data.length || 0;
   const classified = totalQuestions - unclassified;
   const stats = [
     ['Unclassified Questions', unclassified, ClipboardList, 'questions'],
-    ['Pending Lecture Uploads', '—', Upload, 'lectures'],
-    ['Lectures', lectureCount, BookOpen, 'lectures'],
+    ['Pending Video Uploads', '—', Upload, 'studyUnits'],
+    ['Study Units', studyUnitCount, BookOpen, 'studyUnits'],
     ['Classified Questions', classified, Check, 'questions'],
   ] as const;
 
@@ -57,7 +57,7 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
         <Card className="transition hover:border-teal-500 hover:shadow-md">
           <CardHeader>
             <CardTitle>Unclassified questions</CardTitle>
-            <CardDescription>Questions without a lecture</CardDescription>
+            <CardDescription>Questions without a study unit</CardDescription>
           </CardHeader>
           <CardContent>
             {questions.isLoading ? (
@@ -71,16 +71,16 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
         </Card>
         <Card className="transition hover:border-teal-500 hover:shadow-md">
           <CardHeader>
-            <CardTitle>Lectures</CardTitle>
+            <CardTitle>Study Units</CardTitle>
             <CardDescription>Available through the admin API</CardDescription>
           </CardHeader>
           <CardContent>
-            {lectures.isLoading ? (
+            {studyUnits.isLoading ? (
               <p className="text-sm text-slate-500">Loading...</p>
-            ) : lectures.isError ? (
-              <p className="text-sm text-red-600">Unable to load lectures.</p>
+            ) : studyUnits.isError ? (
+              <p className="text-sm text-red-600">Unable to load study units.</p>
             ) : (
-              <p className="text-4xl font-bold text-teal-700">{lectureCount}</p>
+              <p className="text-4xl font-bold text-teal-700">{studyUnitCount}</p>
             )}
           </CardContent>
         </Card>

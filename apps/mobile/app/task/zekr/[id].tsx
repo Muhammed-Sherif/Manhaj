@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { db } from '../../../services/database';
 import * as schema from '../../../db/schema';
@@ -135,19 +135,24 @@ export default function ZekrSessionScreen() {
         />
       </View>
 
-      <View className="flex-1 p-6 items-center justify-center">
-        <Text className="text-slate-500 dark:text-slate-400 font-medium mb-6">
+      <View className="flex-1 p-6 items-center">
+        <Text className="text-slate-500 dark:text-slate-400 font-medium mb-6 mt-2">
           Dua {currentIndex + 1} of {duas.length}
         </Text>
 
         {/* Text Container */}
-        <View className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm w-full mb-8">
-          <Text className="text-slate-800 dark:text-slate-100 text-2xl text-center leading-loose mb-6" style={{ fontFamily: 'sans-serif' }}>
-            {currentDua?.textAr}
-          </Text>
-          <Text className="text-slate-600 dark:text-slate-300 text-base text-center leading-relaxed">
-            {currentDua?.textEn}
-          </Text>
+        <View className="flex-1 w-full mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
+          <ScrollView 
+            contentContainerStyle={{ padding: 24 }}
+            showsVerticalScrollIndicator={true}
+          >
+            <Text className="text-slate-800 dark:text-slate-100 text-2xl text-center leading-loose mb-6" style={{ fontFamily: 'sans-serif' }}>
+              {currentDua?.textAr}
+            </Text>
+            <Text className="text-slate-600 dark:text-slate-300 text-base text-center leading-relaxed">
+              {currentDua?.textEn}
+            </Text>
+          </ScrollView>
         </View>
 
         {/* Tap Area */}

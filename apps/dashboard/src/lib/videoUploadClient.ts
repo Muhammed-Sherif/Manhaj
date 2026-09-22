@@ -60,7 +60,7 @@ export async function uploadStudyUnitVideo(
 
   // Step 1: Init or check existing upload status
   if (!uploadId) {
-    const initRes = await fetch(`${API_BASE_URL}/admin/lectures/${studyUnitId}/videos/upload/init`, {
+    const initRes = await fetch(`${API_BASE_URL}/admin/study-units/${studyUnitId}/videos/upload/init`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export async function uploadStudyUnitVideo(
   } else {
     // Resume: query status of existing upload
     const statusRes = await fetch(
-      `${API_BASE_URL}/admin/lectures/${studyUnitId}/videos/upload/${uploadId}/status`,
+      `${API_BASE_URL}/admin/study-units/${studyUnitId}/videos/upload/${uploadId}/status`,
       {
         headers: getAuthHeaders(),
       }
@@ -122,7 +122,7 @@ export async function uploadStudyUnitVideo(
       attempts++;
       try {
         const uploadRes = await fetch(
-          `${API_BASE_URL}/admin/lectures/${studyUnitId}/videos/upload/chunk`,
+          `${API_BASE_URL}/admin/study-units/${studyUnitId}/videos/upload/chunk`,
           {
             method: 'POST',
             headers: {
@@ -187,7 +187,7 @@ export async function uploadStudyUnitVideo(
   });
 
   const completeRes = await fetch(
-    `${API_BASE_URL}/admin/lectures/${studyUnitId}/videos/upload/complete`,
+    `${API_BASE_URL}/admin/study-units/${studyUnitId}/videos/upload/complete`,
     {
       method: 'POST',
       headers: {

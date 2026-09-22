@@ -20,7 +20,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { key: 'terms', label: 'Terms', icon: FileText },
   { key: 'modules', label: 'Modules', icon: BookOpen },
   { key: 'subjects', label: 'Subjects', icon: Activity },
-  { key: 'lectures', label: 'Lectures', icon: FileText },
+  { key: 'studyUnits', label: 'Study Units', icon: FileText },
   { key: 'questions', label: 'Questions', icon: ClipboardList },
   { key: 'users', label: 'Users', icon: Users },
   { key: 'zekr', label: 'Zekr Catalog', icon: BookOpen },

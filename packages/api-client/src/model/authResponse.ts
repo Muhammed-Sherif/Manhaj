@@ -5,10 +5,10 @@
  * Offline-First Student Question Bank API
  * OpenAPI spec version: 1.0.0
  */
-import type { User } from './user';
+import type { AuthResponseUser } from './authResponseUser';
 
 export interface AuthResponse {
+  user?: AuthResponseUser;
   accessToken?: string;
   refreshToken?: string;
-  user?: User;
 }

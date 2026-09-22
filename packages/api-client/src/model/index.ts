@@ -44,6 +44,7 @@ export * from './patchAdminProfileBody';
 export * from './patchAdminQuestionsBulkAssignLectureBody';
 export * from './patchAdminQuestionsBulkAssignStudyUnitBody';
 export * from './patchAdminQuestionsBulkAssignTelegramRangeBody';
+export * from './patchAdminQuestionsBulkAssignTelegramRangeBodySourceTypesItem';
 export * from './patchAdminQuestionsBulkUnassignLectureBody';
 export * from './patchAdminQuestionsBulkUnassignStudyUnitBody';
 export * from './patchAdminStudyUnitsIdBody';

@@ -9,7 +9,7 @@
 export interface Choice {
   id?: string;
   questionId?: string;
-  choiceText?: string;
+  text?: string;
   isCorrect?: boolean;
   createdAt?: string;
   updatedAt?: string;

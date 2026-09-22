@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
-import { useGetAdminGrades, useGetAdminTerms, useGetAdminModules, useGetAdminSubjects, useGetAdminLectures } from '@manhaj/api-client';
+import { useGetAdminGrades, useGetAdminTerms, useGetAdminModules, useGetAdminSubjects, useGetAdminStudyUnits } from '@manhaj/api-client';
 import { Button } from '@/components/ui/button';
 
-type Step = 'grade' | 'term' | 'module' | 'subject' | 'lecture';
-interface Item { id: string; name: string; description?: string }
+type Step = 'grade' | 'term' | 'module' | 'subject' | 'studyUnit';
+interface Item { id?: string; name?: string; description?: string }
 
 function StepList({ items, loading, selected, onSelect }: {
   items: Item[];
@@ -26,9 +26,9 @@ function StepList({ items, loading, selected, onSelect }: {
           <input
             type="radio"
             name="step-item"
-            value={item.id}
+            value={item.id || ''}
             checked={selected === item.id}
-            onChange={() => onSelect(item.id)}
+            onChange={() => item.id && onSelect(item.id)}
             className="accent-teal-600"
           />
           <div className="flex-1">
@@ -43,7 +43,7 @@ function StepList({ items, loading, selected, onSelect }: {
 
 interface AssignByRangeModalProps {
   onClose: () => void;
-  onConfirm: (startMessageId: number, endMessageId: number, lectureId: string) => void;
+  onConfirm: (startMessageId: number, endMessageId: number, studyUnitId: string) => void;
   isPending: boolean;
 }
 
@@ -60,7 +60,7 @@ export function AssignByRangeModal({
   const [termId,    setTermId]    = useState('');
   const [moduleId,  setModuleId]  = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [lectureId, setLectureId] = useState('');
+  const [studyUnitId, setStudyUnitId] = useState('');
 
   const grades = useGetAdminGrades();
   const terms = useGetAdminTerms(
@@ -75,7 +75,7 @@ export function AssignByRangeModal({
     moduleId ? { moduleId } : undefined,
     { query: { enabled: !!moduleId } }
   );
-  const lectures = useGetAdminLectures(
+  const studyUnits = useGetAdminStudyUnits(
     subjectId ? { subjectId } : undefined,
     { query: { enabled: !!subjectId } }
   );
@@ -157,11 +157,11 @@ export function AssignByRangeModal({
               <button
                 disabled={!subjectId}
                 className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
-                  step === 'lecture' ? 'bg-teal-600 text-white' : lectureId ? 'bg-teal-50 text-teal-700' : 'bg-slate-50 text-slate-400'
+                  step === 'studyUnit' ? 'bg-teal-600 text-white' : studyUnitId ? 'bg-teal-50 text-teal-700' : 'bg-slate-50 text-slate-400'
                 }`}
-                onClick={() => setStep('lecture')}
+                onClick={() => setStep('studyUnit')}
               >
-                5. Lecture
+                5. Study Unit
               </button>
             </div>
 
@@ -173,7 +173,7 @@ export function AssignByRangeModal({
                   selected={gradeId}
                   onSelect={(id) => {
                     setGradeId(id);
-                    setTermId(''); setModuleId(''); setSubjectId(''); setLectureId('');
+                    setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId('');
                     setStep('term');
                   }}
                 />
@@ -185,7 +185,7 @@ export function AssignByRangeModal({
                   selected={termId}
                   onSelect={(id) => {
                     setTermId(id);
-                    setModuleId(''); setSubjectId(''); setLectureId('');
+                    setModuleId(''); setSubjectId(''); setStudyUnitId('');
                     setStep('module');
                   }}
                 />
@@ -197,7 +197,7 @@ export function AssignByRangeModal({
                   selected={moduleId}
                   onSelect={(id) => {
                     setModuleId(id);
-                    setSubjectId(''); setLectureId('');
+                    setSubjectId(''); setStudyUnitId('');
                     setStep('subject');
                   }}
                 />
@@ -209,17 +209,17 @@ export function AssignByRangeModal({
                   selected={subjectId}
                   onSelect={(id) => {
                     setSubjectId(id);
-                    setLectureId('');
-                    setStep('lecture');
+                    setStudyUnitId('');
+                    setStep('studyUnit');
                   }}
                 />
               )}
-              {step === 'lecture' && (
+              {step === 'studyUnit' && (
                 <StepList
-                  items={lectures.data?.data || []}
-                  loading={lectures.isLoading}
-                  selected={lectureId}
-                  onSelect={setLectureId}
+                  items={studyUnits.data?.data || []}
+                  loading={studyUnits.isLoading}
+                  selected={studyUnitId}
+                  onSelect={setStudyUnitId}
                 />
               )}
             </div>
@@ -236,12 +236,12 @@ export function AssignByRangeModal({
             </Button>
             <Button
               className="flex-1 bg-teal-600 hover:bg-teal-700"
-              disabled={!lectureId || !startMessageId || !endMessageId || isPending}
+              disabled={!studyUnitId || !startMessageId || !endMessageId || isPending}
               onClick={() => {
                 const start = parseInt(startMessageId, 10);
                 const end = parseInt(endMessageId, 10);
                 if (isNaN(start) || isNaN(end)) return;
-                onConfirm(start, end, lectureId);
+                onConfirm(start, end, studyUnitId);
               }}
             >
               {isPending ? (
@@ -249,7 +249,7 @@ export function AssignByRangeModal({
               ) : (
                 <>
                   <Check size={16} className="mr-2" />
-                  Assign to Lecture
+                  Assign to Study Unit
                 </>
               )}
             </Button>

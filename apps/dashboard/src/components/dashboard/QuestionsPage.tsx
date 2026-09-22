@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight, Plus, Check } from 'lucide-react';
 import {
   useGetAdminQuestions,
-  usePatchAdminQuestionsBulkAssignLecture,
+  usePatchAdminQuestionsBulkAssignStudyUnit,
   usePatchAdminQuestionsBulkAssignTelegramRange,
   usePatchAdminQuestionsId,
   usePostAdminQuestionsBulkDelete,
@@ -10,7 +10,7 @@ import {
   useGetAdminTerms,
   useGetAdminModules,
   useGetAdminSubjects,
-  useGetAdminLectures,
+  useGetAdminStudyUnits,
 } from '@manhaj/api-client';
 import type { Choice, Question } from '@manhaj/api-client';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,8 @@ import { Toolbar } from './Toolbar';
 import { UploadQuestionsModal } from './UploadQuestionsModal';
 import { AssignByRangeModal } from './AssignByRangeModal';
 
-type Step = 'grade' | 'term' | 'module' | 'subject' | 'lecture';
-interface Item { id: string; name: string; description?: string }
+type Step = 'grade' | 'term' | 'module' | 'subject' | 'studyUnit';
+interface Item { id?: string; name?: string; description?: string }
 
 // `getQuestions` in the API fetches questions `with: { choices: true }`, but the generated
 // `Question` model predates that embed and does not declare it.
@@ -38,7 +38,7 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'term',    label: 'Term' },
   { key: 'module',  label: 'Module' },
   { key: 'subject', label: 'Subject' },
-  { key: 'lecture', label: 'Lecture' },
+  { key: 'studyUnit', label: 'Study Unit' },
 ];
 
 function StepList({ items, loading, selected, onSelect }: {
@@ -61,9 +61,9 @@ function StepList({ items, loading, selected, onSelect }: {
           <input
             type="radio"
             name="step-item"
-            value={item.id}
+            value={item.id || ''}
             checked={selected === item.id}
-            onChange={() => onSelect(item.id)}
+            onChange={() => item.id && onSelect(item.id)}
             className="accent-teal-600"
           />
           <div className="flex-1">
@@ -84,7 +84,7 @@ function AssignModal({
 }: {
   selectedCount: number;
   onClose: () => void;
-  onConfirm: (lectureId: string) => void;
+  onConfirm: (studyUnitId: string) => void;
   isPending: boolean;
 }) {
   const [step, setStep] = useState<Step>('grade');
@@ -92,7 +92,7 @@ function AssignModal({
   const [termId,    setTermId]    = useState('');
   const [moduleId,  setModuleId]  = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [lectureId, setLectureId] = useState('');
+  const [studyUnitId, setStudyUnitId] = useState('');
 
   const grades = useGetAdminGrades();
   const terms = useGetAdminTerms(
@@ -107,7 +107,7 @@ function AssignModal({
     moduleId ? { moduleId } : undefined,
     { query: { enabled: !!moduleId } }
   );
-  const lectures = useGetAdminLectures(
+  const studyUnits = useGetAdminStudyUnits(
     subjectId ? { subjectId } : undefined,
     { query: { enabled: !!subjectId } }
   );
@@ -119,7 +119,7 @@ function AssignModal({
     step === 'term' ? (gradeId && Array.isArray(terms.data?.data) ? terms.data.data : []) :
     step === 'module' ? (termId && Array.isArray(modules.data?.data) ? modules.data.data : []) :
     step === 'subject' ? (moduleId && Array.isArray(subjects.data?.data) ? subjects.data.data : []) :
-    (subjectId && Array.isArray(lectures.data?.data) ? lectures.data.data : [])
+    (subjectId && Array.isArray(studyUnits.data?.data) ? studyUnits.data.data : [])
   ) || []) as Item[];
 
   const currentLoading =
@@ -127,17 +127,17 @@ function AssignModal({
     step === 'term' ? terms.isLoading :
     step === 'module' ? modules.isLoading :
     step === 'subject' ? subjects.isLoading :
-    lectures.isLoading;
+    studyUnits.isLoading;
 
   const currentSelected = step === 'grade' ? gradeId : step === 'term' ? termId
-    : step === 'module' ? moduleId : step === 'subject' ? subjectId : lectureId;
+    : step === 'module' ? moduleId : step === 'subject' ? subjectId : studyUnitId;
 
   const handleSelect = (id: string) => {
-    if (step === 'grade')   { setGradeId(id);   setTermId(''); setModuleId(''); setSubjectId(''); setLectureId(''); }
-    if (step === 'term')    { setTermId(id);    setModuleId(''); setSubjectId(''); setLectureId(''); }
-    if (step === 'module')  { setModuleId(id);  setSubjectId(''); setLectureId(''); }
-    if (step === 'subject') { setSubjectId(id); setLectureId(''); }
-    if (step === 'lecture') { setLectureId(id); }
+    if (step === 'grade')   { setGradeId(id);   setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'term')    { setTermId(id);    setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'module')  { setModuleId(id);  setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'subject') { setSubjectId(id); setStudyUnitId(''); }
+    if (step === 'studyUnit') { setStudyUnitId(id); }
   };
 
   const goNext = () => { if (stepIdx < STEPS.length - 1) setStep(STEPS[stepIdx + 1].key); };
@@ -150,7 +150,7 @@ function AssignModal({
         {/* Header */}
         <div className="flex items-start justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Assign to lecture</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Assign to study unit</h2>
             <p className="text-sm text-slate-500">
               Assigning <b>{selectedCount}</b> question{selectedCount !== 1 ? 's' : ''} â€” choose a destination.
             </p>
@@ -196,17 +196,17 @@ function AssignModal({
           <Button variant="outline" onClick={goBack} disabled={stepIdx === 0}>Back</Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            {step !== 'lecture' ? (
+            {step !== 'studyUnit' ? (
               <Button onClick={goNext} disabled={!currentSelected}>
                 Next <ChevronRight size={14} className="ml-1" />
               </Button>
             ) : (
               <Button
-                onClick={() => onConfirm(lectureId)}
-                disabled={!lectureId || isPending}
+                onClick={() => onConfirm(studyUnitId)}
+                disabled={!studyUnitId || isPending}
               >
                 <BookOpen size={14} className="mr-1" />
-                {isPending ? 'Assigningâ€¦' : 'Confirm assign'}
+                {isPending ? 'Assigning…' : 'Confirm assign'}
               </Button>
             )}
           </div>
@@ -427,7 +427,7 @@ function EditQuestionModal({
 }
 
 export function QuestionsPage() {
-  const query = useGetAdminQuestions({ lectureId: 'null' });
+  const query = useGetAdminQuestions({ studyUnitId: 'null' });
   const refresh = () => query.refetch();
 
   const [selected, setSelected] = useState<string[]>([]);
@@ -451,8 +451,7 @@ export function QuestionsPage() {
     setSelected(withChoices);
   }, [query.data]);
 
-  const refresh = () => void query.refetch();
-  const assign = usePatchAdminQuestionsBulkAssignLecture({
+  const assign = usePatchAdminQuestionsBulkAssignStudyUnit({
     mutation: {
       onSuccess: () => {
         refresh();
@@ -522,7 +521,7 @@ export function QuestionsPage() {
             Delete selected
           </Button>
           <Button size="sm" disabled={!selected.length || assign.isPending} onClick={() => setAssignModalOpen(true)}>
-            Assign to lecture
+            Assign to study unit
           </Button>
         </div>
       </div>
@@ -635,7 +634,7 @@ export function QuestionsPage() {
         <AssignModal
           selectedCount={selected.length}
           onClose={() => setAssignModalOpen(false)}
-          onConfirm={(lectureId) => assign.mutate({ data: { questionIds: selected, lectureId } })}
+          onConfirm={(studyUnitId) => assign.mutate({ data: { questionIds: selected, studyUnitId } })}
           isPending={assign.isPending}
         />
       )}
@@ -672,12 +671,12 @@ export function QuestionsPage() {
         <AssignByRangeModal
           isPending={assignRange.isPending}
           onClose={() => setAssignRangeModalOpen(false)}
-          onConfirm={(startMessageId, endMessageId, lectureId) => {
+          onConfirm={(startMessageId, endMessageId, studyUnitId) => {
             assignRange.mutate({
               data: {
                 startMessageId,
                 endMessageId,
-                lectureId,
+                studyUnitId,
               },
             });
           }}

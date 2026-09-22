@@ -101,8 +101,8 @@ function TaskRow({ task, onPress, onToggleStatus, onOpenMenu }: { task: any; onP
             </View>
 
             {(task.startTime || task.endTime) && (
-              <View className="flex-row items-center mt-1">
-                <ClockIcon size={12} color={isDone ? '#94a3b8' : '#0d9488'} className="mr-1" />
+              <View className="flex-row items-center mt-1 gap-1">
+                <ClockIcon size={12} color={isDone ? '#94a3b8' : '#0d9488'} />
                 <Text className={`text-xs font-medium ${isDone ? 'text-slate-400' : 'text-teal-600 dark:text-teal-400'}`}>
                   {task.startTime ? formatTime(task.startTime) : ''}
                   {task.startTime && task.endTime ? ' - ' : ''}
@@ -388,14 +388,14 @@ export default function TasksScreen() {
         onClose={() => setSelectedTask(null)}
       >
         <TouchableOpacity
-          className="flex-row items-center py-4 border-b border-slate-100 dark:border-slate-800"
+          className="flex-row items-center gap-1 py-4 border-b border-slate-100 dark:border-slate-800"
           onPress={() => handleEditTask(selectedTask)}
         >
           <Edit2Icon size={20} color="#3b82f6" className="mr-3" />
           <Text className="text-base text-slate-800 dark:text-slate-200">Edit Task</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="flex-row items-center py-4"
+          className="flex-row items-center py-4 gap-1"
           onPress={() => handleDeleteTask(selectedTask)}
         >
           <Trash2Icon size={20} color="#ef4444" className="mr-3" />

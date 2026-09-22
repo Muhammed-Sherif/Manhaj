@@ -5,9 +5,11 @@
  * Offline-First Student Question Bank API
  * OpenAPI spec version: 1.0.0
  */
+import type { PatchAdminQuestionsBulkAssignTelegramRangeBodySourceTypesItem } from './patchAdminQuestionsBulkAssignTelegramRangeBodySourceTypesItem';
 
 export type PatchAdminQuestionsBulkAssignTelegramRangeBody = {
   startMessageId: number;
   endMessageId: number;
   studyUnitId: string;
+  sourceTypes?: PatchAdminQuestionsBulkAssignTelegramRangeBodySourceTypesItem[];
 };

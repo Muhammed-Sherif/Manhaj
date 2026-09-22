@@ -1,7 +1,7 @@
 import { db } from './database';
 import * as schema from '../db/schema';
 import { eq } from 'drizzle-orm';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 
 /**
@@ -20,7 +20,10 @@ export class StudentContentService {
 
     if (note.imageLocalPath) {
       try {
-        await FileSystem.deleteAsync(note.imageLocalPath, { idempotent: true });
+        const file = new File(note.imageLocalPath);
+        if (file.exists) {
+          file.delete();
+        }
       } catch (err) {
         console.error('Failed to delete local image for note:', err);
       }
@@ -57,7 +60,10 @@ export class StudentContentService {
 
     if (caseItem.imageLocalPath) {
       try {
-        await FileSystem.deleteAsync(caseItem.imageLocalPath, { idempotent: true });
+        const file = new File(caseItem.imageLocalPath);
+        if (file.exists) {
+          file.delete();
+        }
       } catch (err) {
         console.error('Failed to delete local image for case:', err);
       }

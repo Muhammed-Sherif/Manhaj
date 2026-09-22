@@ -370,7 +370,7 @@ export class AdminService {
     return result;
   }
 
-  async bulkAssignTelegramRange(startMessageId: number, endMessageId: number, studyUnitId: string) {
+  async bulkAssignTelegramRange(startMessageId: number, endMessageId: number, studyUnitId: string, sourceTypes?: string[]) {
     if (startMessageId > endMessageId) {
       throw new Error('startMessageId cannot be greater than endMessageId');
     }
@@ -386,6 +386,27 @@ export class AdminService {
           )
         )
         .returning({ id: questions.id });
+
+      if (sourceTypes && sourceTypes.length > 0 && updatedQuestions.length > 0) {
+        const questionIds = updatedQuestions.map(q => q.id);
+        
+        // Remove existing sources first to avoid duplicates
+        await transaction
+          .delete(questionSources)
+          .where(inArray(questionSources.questionId, questionIds));
+
+        // Insert new sources
+        const newSources = [];
+        for (const q of updatedQuestions) {
+          for (const s of sourceTypes) {
+            newSources.push({ questionId: q.id, sourceType: s as any });
+          }
+        }
+        
+        if (newSources.length > 0) {
+          await transaction.insert(questionSources).values(newSources);
+        }
+      }
 
       return { success: true, assignedCount: updatedQuestions.length };
     });
