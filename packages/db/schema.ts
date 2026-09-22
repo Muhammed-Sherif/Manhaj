@@ -55,8 +55,6 @@ export const studyUnits = pgTable('study_units', {
   deletedAt: timestamp('deleted_at'),
 });
 
-export const lectures = studyUnits; // Alias for backward compatibility during transition
-
 export const lectureFiles = pgTable('lecture_files', {
   id: uuid('id').defaultRandom().primaryKey(),
   studyUnitId: uuid('study_unit_id').notNull().references(() => studyUnits.id, { onDelete: 'cascade' }),
@@ -777,8 +775,8 @@ export type NewSubject = typeof subjects.$inferInsert;
 export type StudyUnit = typeof studyUnits.$inferSelect;
 export type NewStudyUnit = typeof studyUnits.$inferInsert;
 
-export type Lecture = typeof lectures.$inferSelect;
-export type NewLecture = typeof lectures.$inferInsert;
+export type Lecture = typeof studyUnits.$inferSelect;
+export type NewLecture = typeof studyUnits.$inferInsert;
 
 export type LectureFile = typeof lectureFiles.$inferSelect;
 export type NewLectureFile = typeof lectureFiles.$inferInsert;

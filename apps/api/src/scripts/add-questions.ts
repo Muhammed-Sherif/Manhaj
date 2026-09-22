@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { choices, lectures, questions } from '@manhaj/db';
+import { choices, studyUnits, questions } from '@manhaj/db';
 import { eq } from '@manhaj/db';
 
 interface QuestionSeed {
@@ -57,8 +57,8 @@ const newQuestions: QuestionSeed[] = [
 
 async function addQuestions() {
   // Find "Cardiovascular System - Part 1" lecture
-  const lecture = await db.query.lectures.findFirst({
-    where: eq(lectures.name, 'Cardiovascular System - Part 1'),
+  const lecture = await db.query.studyUnits.findFirst({
+    where: eq(studyUnits.name, 'Cardiovascular System - Part 1'),
   });
 
   if (!lecture) {

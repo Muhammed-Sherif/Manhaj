@@ -1,5 +1,5 @@
 import { db } from '../config/database.js';
-import { choices, grades, lectureFiles, lectureVideos, lectures, modules, questions, subjects, terms } from '@manhaj/db';
+import { choices, grades, lectureFiles, lectureVideos, studyUnits, modules, questions, subjects, terms } from '@manhaj/db';
 import { and, eq } from '@manhaj/db';
 
 async function findOrCreateGrade(name: string, description: string) {
@@ -31,9 +31,9 @@ async function findOrCreateSubject(moduleId: string, name: string) {
 }
 
 async function findOrCreateLecture(subjectId: string, name: string, description: string) {
-  const existing = await db.query.lectures.findFirst({ where: and(eq(lectures.subjectId, subjectId), eq(lectures.name, name)) });
+  const existing = await db.query.studyUnits.findFirst({ where: and(eq(studyUnits.subjectId, subjectId), eq(studyUnits.name, name)) });
   if (existing) return existing;
-  const [created] = await db.insert(lectures).values({ subjectId, name, description }).returning();
+  const [created] = await db.insert(studyUnits).values({ subjectId, name, description }).returning();
   return created;
 }
 
