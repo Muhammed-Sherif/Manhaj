@@ -677,7 +677,7 @@ export function QuestionsPage() {
                 startMessageId,
                 endMessageId,
                 studyUnitId,
-                sourceTypes,
+                sourceTypes: sourceTypes as any,
               },
             });
           }}
