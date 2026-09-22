@@ -168,9 +168,9 @@ export class AdminController {
 
   getQuestions = async (req: Request, res: Response) => {
     try {
-      const { lectureId } = req.query;
+      const { studyUnitId } = req.query;
       const questions = await this.adminService.getQuestions(
-        lectureId as string | undefined
+        studyUnitId as string | undefined
       );
       res.json(questions);
     } catch (error) {
