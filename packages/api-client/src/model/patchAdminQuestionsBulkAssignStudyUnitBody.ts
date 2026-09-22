@@ -9,4 +9,5 @@
 export type PatchAdminQuestionsBulkAssignStudyUnitBody = {
   questionIds: string[];
   studyUnitId: string;
+  sourceTypes?: string[];
 };

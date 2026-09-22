@@ -83,7 +83,7 @@ function AssignModal({
 }: {
   selectedCount: number;
   onClose: () => void;
-  onConfirm: (studyUnitId: string) => void;
+  onConfirm: (studyUnitId: string, sourceTypes: string[]) => void;
   isPending: boolean;
 }) {
   const [step, setStep] = useState<Step>('grade');
@@ -92,6 +92,13 @@ function AssignModal({
   const [moduleId, setModuleId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [studyUnitId, setStudyUnitId] = useState('');
+  const [sourceTypes, setSourceTypes] = useState<string[]>([]);
+
+  const handleToggleSource = (source: string) => {
+    setSourceTypes(prev =>
+      prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source]
+    );
+  };
 
   const grades = useGetAdminGrades();
   const terms = useGetAdminTerms(
@@ -176,6 +183,42 @@ function AssignModal({
           ))}
         </div>
 
+        {/* Source Type Filter */}
+        <div className="px-6 pb-3">
+          <p className="mb-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Question Source (optional)</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'data', label: 'Data' },
+              { id: 'doctor_confirmation', label: 'Doctor' },
+              { id: 'previous_exam', label: 'Previous Exam' },
+              { id: 'team_expectation', label: 'Team Expectation' },
+              { id: 'owner', label: 'Owner' },
+            ].map((src) => (
+              <label
+                key={src.id}
+                className={`flex items-center gap-1.5 cursor-pointer border rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  sourceTypes.includes(src.id)
+                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={sourceTypes.includes(src.id)}
+                  onChange={() => handleToggleSource(src.id)}
+                />
+                {src.label}
+              </label>
+            ))}
+          </div>
+          {sourceTypes.length > 0 && (
+            <p className="mt-1.5 text-xs text-teal-600">
+              Tags selected questions as: {sourceTypes.join(', ')}
+            </p>
+          )}
+        </div>
+
         {/* List */}
         <div className="px-6 py-4">
           <p className="mb-3 text-sm font-medium text-slate-600">
@@ -200,7 +243,7 @@ function AssignModal({
               </Button>
             ) : (
               <Button
-                onClick={() => onConfirm(studyUnitId)}
+                onClick={() => onConfirm(studyUnitId, sourceTypes)}
                 disabled={!studyUnitId || isPending}
               >
                 <BookOpen size={14} className="mr-1" />
@@ -631,7 +674,9 @@ export function QuestionsPage() {
         <AssignModal
           selectedCount={selected.length}
           onClose={() => setAssignModalOpen(false)}
-          onConfirm={(studyUnitId) => assign.mutate({ data: { questionIds: selected, studyUnitId } })}
+          onConfirm={(studyUnitId, sourceTypes) =>
+            assign.mutate({ data: { questionIds: selected, studyUnitId, sourceTypes } })
+          }
           isPending={assign.isPending}
         />
       )}

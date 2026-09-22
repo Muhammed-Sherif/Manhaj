@@ -336,7 +336,7 @@ export class AdminService {
       return query;
     }
 
-    async bulkAssignStudyUnit(questionIds: string[], studyUnitId: string) {
+    async bulkAssignStudyUnit(questionIds: string[], studyUnitId: string, sourceTypes?: string[]) {
       if (questionIds.length === 0) {
         throw new Error('At least one question ID is required');
       }
@@ -350,6 +350,27 @@ export class AdminService {
 
       if (updatedQuestions.length !== questionIds.length) {
         throw new Error('One or more question IDs were not found');
+      }
+
+      if (sourceTypes && sourceTypes.length > 0 && updatedQuestions.length > 0) {
+        const assignedIds = updatedQuestions.map(q => q.id);
+
+        // Remove existing source tags to avoid duplicates
+        await transaction
+          .delete(questionSources)
+          .where(inArray(questionSources.questionId, assignedIds));
+
+        // Insert fresh source tags
+        const newSources = [];
+        for (const q of updatedQuestions) {
+          for (const s of sourceTypes) {
+            newSources.push({ questionId: q.id, sourceType: s as any });
+          }
+        }
+
+        if (newSources.length > 0) {
+          await transaction.insert(questionSources).values(newSources);
+        }
       }
 
       return { success: true, assignedCount: updatedQuestions.length };
@@ -370,6 +391,7 @@ export class AdminService {
 
     return result;
   }
+
 
   async bulkAssignTelegramRange(startMessageId: number, endMessageId: number, studyUnitId: string, sourceTypes?: string[]) {
     if (startMessageId > endMessageId) {

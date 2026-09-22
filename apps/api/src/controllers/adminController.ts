@@ -180,8 +180,8 @@ export class AdminController {
 
   bulkAssignStudyUnit = async (req: Request, res: Response) => {
     try {
-      const { questionIds, studyUnitId } = req.body;
-      const result = await this.adminService.bulkAssignStudyUnit(questionIds, studyUnitId);
+      const { questionIds, studyUnitId, sourceTypes } = req.body;
+      const result = await this.adminService.bulkAssignStudyUnit(questionIds, studyUnitId, sourceTypes);
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });

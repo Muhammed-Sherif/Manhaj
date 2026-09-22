@@ -308,6 +308,11 @@ router.get('/questions', adminController.getQuestions);
  *             properties:
  *               questionIds: { type: array, items: { type: string, format: uuid } }
  *               studyUnitId: { type: string, format: uuid }
+ *               sourceTypes:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [previous_exam, doctor_confirmation, owner, team_expectation, data]
  *     responses:
  *       200: { description: Questions assigned }
  */

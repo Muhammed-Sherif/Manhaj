@@ -393,7 +393,7 @@ async function main() {
           for await (const message of client.iterMessages(channel, {
             minId: offsetId -1,
             reverse: true,
-            limit: 50,
+            limit: 5000,
           })) {
             await processMessage(message, channel);
             offsetId = message.id;
