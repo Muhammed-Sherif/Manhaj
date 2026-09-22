@@ -16,6 +16,8 @@ export interface Question {
   questionText?: string;
   explanation?: string;
   source?: QuestionSource;
+  /** @nullable */
+  telegramMessageId?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }

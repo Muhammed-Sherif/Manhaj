@@ -184,6 +184,7 @@ const options = {
             questionText: { type: 'string' },
             explanation: { type: 'string' },
             source: { type: 'string', enum: ['telegram_auto', 'admin_manual'] },
+            telegramMessageId: { type: 'integer', nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },

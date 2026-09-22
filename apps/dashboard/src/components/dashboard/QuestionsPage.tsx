@@ -34,9 +34,9 @@ type QuestionRow = Question & {
 };
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: 'grade',   label: 'Grade' },
-  { key: 'term',    label: 'Term' },
-  { key: 'module',  label: 'Module' },
+  { key: 'grade', label: 'Grade' },
+  { key: 'term', label: 'Term' },
+  { key: 'module', label: 'Module' },
   { key: 'subject', label: 'Subject' },
   { key: 'studyUnit', label: 'Study Unit' },
 ];
@@ -54,9 +54,8 @@ function StepList({ items, loading, selected, onSelect }: {
       {items.map(item => (
         <label
           key={item.id}
-          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-            selected === item.id ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:bg-slate-50'
-          }`}
+          className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${selected === item.id ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:bg-slate-50'
+            }`}
         >
           <input
             type="radio"
@@ -88,9 +87,9 @@ function AssignModal({
   isPending: boolean;
 }) {
   const [step, setStep] = useState<Step>('grade');
-  const [gradeId,   setGradeId]   = useState('');
-  const [termId,    setTermId]    = useState('');
-  const [moduleId,  setModuleId]  = useState('');
+  const [gradeId, setGradeId] = useState('');
+  const [termId, setTermId] = useState('');
+  const [moduleId, setModuleId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [studyUnitId, setStudyUnitId] = useState('');
 
@@ -116,26 +115,26 @@ function AssignModal({
 
   const currentItems = ((
     step === 'grade' ? (Array.isArray(grades.data?.data) ? grades.data.data : []) :
-    step === 'term' ? (gradeId && Array.isArray(terms.data?.data) ? terms.data.data : []) :
-    step === 'module' ? (termId && Array.isArray(modules.data?.data) ? modules.data.data : []) :
-    step === 'subject' ? (moduleId && Array.isArray(subjects.data?.data) ? subjects.data.data : []) :
-    (subjectId && Array.isArray(studyUnits.data?.data) ? studyUnits.data.data : [])
+      step === 'term' ? (gradeId && Array.isArray(terms.data?.data) ? terms.data.data : []) :
+        step === 'module' ? (termId && Array.isArray(modules.data?.data) ? modules.data.data : []) :
+          step === 'subject' ? (moduleId && Array.isArray(subjects.data?.data) ? subjects.data.data : []) :
+            (subjectId && Array.isArray(studyUnits.data?.data) ? studyUnits.data.data : [])
   ) || []) as Item[];
 
   const currentLoading =
     step === 'grade' ? grades.isLoading :
-    step === 'term' ? terms.isLoading :
-    step === 'module' ? modules.isLoading :
-    step === 'subject' ? subjects.isLoading :
-    studyUnits.isLoading;
+      step === 'term' ? terms.isLoading :
+        step === 'module' ? modules.isLoading :
+          step === 'subject' ? subjects.isLoading :
+            studyUnits.isLoading;
 
   const currentSelected = step === 'grade' ? gradeId : step === 'term' ? termId
     : step === 'module' ? moduleId : step === 'subject' ? subjectId : studyUnitId;
 
   const handleSelect = (id: string) => {
-    if (step === 'grade')   { setGradeId(id);   setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
-    if (step === 'term')    { setTermId(id);    setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
-    if (step === 'module')  { setModuleId(id);  setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'grade') { setGradeId(id); setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'term') { setTermId(id); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
+    if (step === 'module') { setModuleId(id); setSubjectId(''); setStudyUnitId(''); }
     if (step === 'subject') { setSubjectId(id); setStudyUnitId(''); }
     if (step === 'studyUnit') { setStudyUnitId(id); }
   };
@@ -165,11 +164,10 @@ function AssignModal({
               <button
                 onClick={() => { if (i < stepIdx) setStep(s.key); }}
                 disabled={i >= stepIdx}
-                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                  i === stepIdx ? 'bg-teal-600 text-white'
-                  : i < stepIdx ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
-                  : 'text-slate-400 cursor-default'
-                }`}
+                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${i === stepIdx ? 'bg-teal-600 text-white'
+                    : i < stepIdx ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
+                      : 'text-slate-400 cursor-default'
+                  }`}
               >
                 {s.label}
               </button>
@@ -235,11 +233,11 @@ function EditQuestionModal({
   onSaved: () => void;
 }) {
   const [questionText, setQuestionText] = useState(question.questionText ?? '');
-  const [explanation, setExplanation]   = useState(question.explanation ?? '');
+  const [explanation, setExplanation] = useState(question.explanation ?? '');
   const [writtenAnswer, setWrittenAnswer] = useState(
     question.writtenQuestion?.writtenAnswer ?? ''
   );
-  const [choices, setChoices]           = useState<EditableChoice[]>(
+  const [choices, setChoices] = useState<EditableChoice[]>(
     (question.choices ?? []).map((c) => ({
       id: c.id,
       choiceText: c.choiceText ?? '',
@@ -298,14 +296,13 @@ function EditQuestionModal({
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b px-6 py-4 shrink-0">
-        <div>
+          <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Edit Question</h2>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                (question as any).questionType === 'written'
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${(question as any).questionType === 'written'
                   ? 'bg-violet-100 text-violet-700'
                   : 'bg-sky-100 text-sky-700'
-              }`}>
+                }`}>
                 {(question as any).questionType === 'written' ? 'Written' : 'MCQ'}
               </span>
             </div>
@@ -374,19 +371,17 @@ function EditQuestionModal({
                 {choices.map((choice, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
-                      choice.isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
-                    }`}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${choice.isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
+                      }`}
                   >
                     <button
                       type="button"
                       title={choice.isCorrect ? 'Correct answer' : 'Mark as correct'}
                       onClick={() => handleChoiceChange(i, 'isCorrect', !choice.isCorrect)}
-                      className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${
-                        choice.isCorrect
+                      className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${choice.isCorrect
                           ? 'border-emerald-500 bg-emerald-500 text-white'
                           : 'border-slate-300 hover:border-emerald-400'
-                      }`}
+                        }`}
                     >
                       {choice.isCorrect && <Check size={12} strokeWidth={3} />}
                     </button>
@@ -461,7 +456,7 @@ export function QuestionsPage() {
       },
     },
   });
-  
+
   const assignRange = usePatchAdminQuestionsBulkAssignTelegramRange({
     mutation: {
       onSuccess: () => {
@@ -559,13 +554,16 @@ export function QuestionsPage() {
                       onChange={() => setSelected((curr) => curr.includes(question.id || '') ? curr.filter((id) => id !== question.id) : [...curr, question.id || ''])}
                     />
                   </TableCell>
-                  <TableCell><code className="text-xs text-slate-500">{question.id}</code></TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      (question as any).questionType === 'written'
+                    <code className="text-xs text-slate-500">
+                      {question.telegramMessageId ? `#${question.telegramMessageId}` : (question.id || '').substring(0, 8)}
+                    </code>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${(question as any).questionType === 'written'
                         ? 'bg-violet-100 text-violet-700'
                         : 'bg-sky-100 text-sky-700'
-                    }`}>
+                      }`}>
                       {(question as any).questionType === 'written' ? 'Written' : 'MCQ'}
                     </span>
                   </TableCell>
@@ -593,11 +591,10 @@ export function QuestionsPage() {
                         {(question.choices ?? []).map((choice, i) => (
                           <li
                             key={choice.id ?? i}
-                            className={`flex items-start gap-1.5 rounded px-2 py-1 text-xs ${
-                              choice.isCorrect
+                            className={`flex items-start gap-1.5 rounded px-2 py-1 text-xs ${choice.isCorrect
                                 ? 'bg-emerald-50 text-emerald-800 font-semibold ring-1 ring-emerald-300'
                                 : 'text-slate-600'
-                            }`}
+                              }`}
                           >
                             <span className="shrink-0 font-bold">{String.fromCharCode(65 + i)}.</span>
                             <span>{choice.choiceText ?? '—'}</span>
@@ -666,7 +663,7 @@ export function QuestionsPage() {
           onConfirm={() => bulkDelete.mutate({ data: { questionIds: pendingDelete } })}
         />
       )}
-      
+
       {assignRangeModalOpen && (
         <AssignByRangeModal
           isPending={assignRange.isPending}

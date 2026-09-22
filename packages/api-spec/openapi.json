@@ -385,6 +385,10 @@
               "admin_manual"
             ]
           },
+          "telegramMessageId": {
+            "type": "integer",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
