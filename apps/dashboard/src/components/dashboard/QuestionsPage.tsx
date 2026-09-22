@@ -671,12 +671,13 @@ export function QuestionsPage() {
         <AssignByRangeModal
           isPending={assignRange.isPending}
           onClose={() => setAssignRangeModalOpen(false)}
-          onConfirm={(startMessageId, endMessageId, studyUnitId) => {
+          onConfirm={(startMessageId, endMessageId, studyUnitId, sourceTypes) => {
             assignRange.mutate({
               data: {
                 startMessageId,
                 endMessageId,
                 studyUnitId,
+                sourceTypes,
               },
             });
           }}

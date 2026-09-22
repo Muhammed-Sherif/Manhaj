@@ -8,7 +8,7 @@ import { attempts, deviceTokens, flags, questions, choices, grades, terms, users
   betterAuthAccount,
   betterAuthSession,
   refreshTokens } from '@manhaj/db/schema';
-import { eq, and, not, inArray, lt, isNull, sql } from 'drizzle-orm';
+import { eq, and, not, inArray, lt, isNull, sql } from '@manhaj/db';
 
 export class StudentService {
   async getProfile(userId: string) {

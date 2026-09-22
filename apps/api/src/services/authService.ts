@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { db } from '../config/database.js';
 import { users, refreshTokens } from '@manhaj/db';
-import { eq } from 'drizzle-orm';
+import { eq } from '@manhaj/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const REFRESH_TOKEN_EXPIRY = '7d';

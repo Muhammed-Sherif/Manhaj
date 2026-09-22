@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { choices, grades, lectureFiles, lectureVideos, lectures, modules, questions, subjects, terms } from '@manhaj/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq } from '@manhaj/db';
 
 async function findOrCreateGrade(name: string, description: string) {
   const existing = await db.query.grades.findFirst({ where: eq(grades.name, name) });

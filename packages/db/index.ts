@@ -3,9 +3,11 @@ import postgres from 'postgres';
 import * as schema from './schema.js';
 
 export * from './schema.js';
+export * from 'drizzle-orm';
 
 let client: postgres.Sql | null = null;
-let dbInstance: ReturnType<typeof drizzle> | null = null;
+type DbType = ReturnType<typeof drizzle<typeof schema>>;
+let dbInstance: DbType | null = null;
 
 export function getDb() {
   if (!dbInstance) {

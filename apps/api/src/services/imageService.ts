@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq } from '@manhaj/db';
 import { db } from '../config/database.js';
 import { caseItems, noteItems, reviewItems } from '@manhaj/db/schema';
 import { getStorage } from './storage/index.js';

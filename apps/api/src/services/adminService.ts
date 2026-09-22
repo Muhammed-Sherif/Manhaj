@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '../config/database.js';
 import {
   questions,
+  questionSources,
   choices,
   attempts,
   flags,
@@ -21,7 +22,7 @@ import {
   mcqQuestions,
   writtenQuestions,
 } from '@manhaj/db/schema';
-import { and, eq, inArray, isNull, sql, gte, lte } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql, gte, lte } from '@manhaj/db';
 import { notifyContentUpdated } from './pushService.js';
 
 export class AdminConflictError extends Error {

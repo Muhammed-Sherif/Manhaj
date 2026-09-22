@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { eq } from 'drizzle-orm';
+import { eq } from '@manhaj/db';
 import {
   getDb,
   users,

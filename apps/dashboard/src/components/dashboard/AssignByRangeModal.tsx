@@ -43,7 +43,7 @@ function StepList({ items, loading, selected, onSelect }: {
 
 interface AssignByRangeModalProps {
   onClose: () => void;
-  onConfirm: (startMessageId: number, endMessageId: number, studyUnitId: string) => void;
+  onConfirm: (startMessageId: number, endMessageId: number, lectureId: string, sourceTypes: string[]) => void;
   isPending: boolean;
 }
 
@@ -60,7 +60,14 @@ export function AssignByRangeModal({
   const [termId,    setTermId]    = useState('');
   const [moduleId,  setModuleId]  = useState('');
   const [subjectId, setSubjectId] = useState('');
-  const [studyUnitId, setStudyUnitId] = useState('');
+  const [lectureId, setLectureId] = useState('');
+  const [sourceTypes, setSourceTypes] = useState<string[]>([]);
+
+  const handleToggleSource = (source: string) => {
+    setSourceTypes(prev => 
+      prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source]
+    );
+  };
 
   const grades = useGetAdminGrades();
   const terms = useGetAdminTerms(
@@ -115,6 +122,32 @@ export function AssignByRangeModal({
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Source Types</label>
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { id: 'previous_exam', label: 'Previous Exam' },
+                  { id: 'doctor_confirmation', label: 'Doctor Examination' },
+                  { id: 'team_expectation', label: 'Team Expectation' },
+                  { id: 'owner', label: 'Owner' }
+                ].map((src) => (
+                  <label key={src.id} className={`flex items-center gap-2 cursor-pointer border rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    sourceTypes.includes(src.id) 
+                      ? 'border-teal-500 bg-teal-50 text-teal-700' 
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={sourceTypes.includes(src.id)}
+                      onChange={() => handleToggleSource(src.id)}
+                    />
+                    {src.label}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="mb-6">
@@ -157,7 +190,7 @@ export function AssignByRangeModal({
               <button
                 disabled={!subjectId}
                 className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
-                  step === 'studyUnit' ? 'bg-teal-600 text-white' : studyUnitId ? 'bg-teal-50 text-teal-700' : 'bg-slate-50 text-slate-400'
+                  step === 'studyUnit' ? 'bg-teal-600 text-white' : lectureId ? 'bg-teal-50 text-teal-700' : 'bg-slate-50 text-slate-400'
                 }`}
                 onClick={() => setStep('studyUnit')}
               >
@@ -173,7 +206,7 @@ export function AssignByRangeModal({
                   selected={gradeId}
                   onSelect={(id) => {
                     setGradeId(id);
-                    setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId('');
+                    setTermId(''); setModuleId(''); setSubjectId(''); setLectureId('');
                     setStep('term');
                   }}
                 />
@@ -185,7 +218,7 @@ export function AssignByRangeModal({
                   selected={termId}
                   onSelect={(id) => {
                     setTermId(id);
-                    setModuleId(''); setSubjectId(''); setStudyUnitId('');
+                    setModuleId(''); setSubjectId(''); setLectureId('');
                     setStep('module');
                   }}
                 />
@@ -197,7 +230,7 @@ export function AssignByRangeModal({
                   selected={moduleId}
                   onSelect={(id) => {
                     setModuleId(id);
-                    setSubjectId(''); setStudyUnitId('');
+                    setSubjectId(''); setLectureId('');
                     setStep('subject');
                   }}
                 />
@@ -209,7 +242,7 @@ export function AssignByRangeModal({
                   selected={subjectId}
                   onSelect={(id) => {
                     setSubjectId(id);
-                    setStudyUnitId('');
+                    setLectureId('');
                     setStep('studyUnit');
                   }}
                 />
@@ -218,8 +251,8 @@ export function AssignByRangeModal({
                 <StepList
                   items={studyUnits.data?.data || []}
                   loading={studyUnits.isLoading}
-                  selected={studyUnitId}
-                  onSelect={setStudyUnitId}
+                  selected={lectureId}
+                  onSelect={setLectureId}
                 />
               )}
             </div>
@@ -236,12 +269,12 @@ export function AssignByRangeModal({
             </Button>
             <Button
               className="flex-1 bg-teal-600 hover:bg-teal-700"
-              disabled={!studyUnitId || !startMessageId || !endMessageId || isPending}
+              disabled={!lectureId || !startMessageId || !endMessageId || isPending}
               onClick={() => {
                 const start = parseInt(startMessageId, 10);
                 const end = parseInt(endMessageId, 10);
                 if (isNaN(start) || isNaN(end)) return;
-                onConfirm(start, end, studyUnitId);
+                onConfirm(start, end, lectureId, sourceTypes);
               }}
             >
               {isPending ? (

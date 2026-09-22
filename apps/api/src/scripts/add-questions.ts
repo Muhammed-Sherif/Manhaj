@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { choices, lectures, questions } from '@manhaj/db';
-import { eq } from 'drizzle-orm';
+import { eq } from '@manhaj/db';
 
 interface QuestionSeed {
   questionText: string;

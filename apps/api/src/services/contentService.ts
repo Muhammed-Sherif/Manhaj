@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { grades, terms, modules, subjects, studyUnits, lectureVideos, lectureFiles, videoProgress, questions, choices, questionSources } from '@manhaj/db/schema';
-import { eq, gt, and, isNull, inArray } from 'drizzle-orm';
+import { eq, gt, and, isNull, inArray } from '@manhaj/db';
 
 export class ContentService {
   async syncContent(since?: string) {

@@ -3,7 +3,7 @@ import {
   reviewItems, caseItems, noteItems, tasks,
   questionReviewItems
 } from '@manhaj/db/schema';
-import { eq, and, isNull, gt, or } from 'drizzle-orm';
+import { eq, and, isNull, gt, or } from '@manhaj/db';
 
 export class StudentSyncService {
   /**

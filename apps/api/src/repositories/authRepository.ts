@@ -1,6 +1,6 @@
 import { db } from '../config/database.js';
 import { users, refreshTokens } from '@manhaj/db';
-import { eq } from 'drizzle-orm';
+import { eq } from '@manhaj/db';
 
 export class AuthRepository {
   async findUserByEmail(email: string) {

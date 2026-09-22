@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { db } from '../config/database.js';
 import { users } from '@manhaj/db';
-import { eq } from 'drizzle-orm';
+import { eq } from '@manhaj/db';
 
 async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
