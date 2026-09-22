@@ -9,10 +9,13 @@ import type { QuestionSource } from './questionSource';
 
 export interface Question {
   id?: string;
-  lectureId?: string;
-  source?: QuestionSource;
-  text?: string;
+  /** @nullable */
+  studyUnitId?: string | null;
+  /** @nullable */
+  createdBy?: string | null;
+  questionText?: string;
   explanation?: string;
+  source?: QuestionSource;
   createdAt?: string;
   updatedAt?: string;
 }

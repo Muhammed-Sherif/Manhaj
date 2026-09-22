@@ -8,7 +8,8 @@
 
 export interface LectureVideo {
   id?: string;
-  lectureId?: string;
+  studyUnitId?: string;
+  sourceName?: string;
   url?: string;
   duration?: number;
   createdAt?: string;

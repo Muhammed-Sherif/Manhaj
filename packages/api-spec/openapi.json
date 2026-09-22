@@ -47,10 +47,10 @@
             "type": "string",
             "format": "date-time"
           },
-          "lectures": {
+          "studyUnits": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Lecture"
+              "$ref": "#/components/schemas/StudyUnit"
             }
           }
         }
@@ -251,7 +251,7 @@
           }
         }
       },
-      "Lecture": {
+      "StudyUnit": {
         "type": "object",
         "properties": {
           "id": {
@@ -267,6 +267,16 @@
           },
           "description": {
             "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "lecture",
+              "section"
+            ]
+          },
+          "order": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -278,7 +288,7 @@
           }
         }
       },
-      "LectureDetails": {
+      "StudyUnitDetails": {
         "type": "object",
         "properties": {
           "id": {
@@ -294,6 +304,16 @@
           },
           "description": {
             "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "lecture",
+              "section"
+            ]
+          },
+          "order": {
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -342,22 +362,28 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
-          "source": {
+          "createdBy": {
             "type": "string",
-            "enum": [
-              "manual",
-              "imported"
-            ]
+            "format": "uuid",
+            "nullable": true
           },
-          "text": {
+          "questionText": {
             "type": "string"
           },
           "explanation": {
             "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "telegram_auto",
+              "admin_manual"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -380,7 +406,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "text": {
+          "choiceText": {
             "type": "string"
           },
           "isCorrect": {
@@ -434,15 +460,18 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
             "format": "uuid"
+          },
+          "sourceName": {
+            "type": "string"
           },
           "url": {
             "type": "string"
           },
           "duration": {
-            "type": "number"
+            "type": "integer"
           },
           "createdAt": {
             "type": "string",
@@ -461,14 +490,17 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "studyUnitId": {
             "type": "string",
             "format": "uuid"
           },
-          "url": {
+          "sourceName": {
             "type": "string"
           },
-          "type": {
+          "fileUrl": {
+            "type": "string"
+          },
+          "fileType": {
             "type": "string"
           },
           "createdAt": {
@@ -492,56 +524,193 @@
             "type": "string",
             "format": "uuid"
           },
-          "lectureId": {
+          "lectureVideoId": {
             "type": "string",
             "format": "uuid"
           },
-          "videoId": {
-            "type": "string",
-            "format": "uuid"
+          "positionSeconds": {
+            "type": "integer"
           },
-          "currentTime": {
-            "type": "number"
-          },
-          "completed": {
-            "type": "boolean"
-          },
-          "lastWatchedAt": {
+          "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "authProvider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "credentials"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "student",
+              "admin"
+            ]
+          },
+          "termId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         }
       },
       "AuthResponse": {
         "type": "object",
         "properties": {
-          "user": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "email": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "role": {
-                "type": "string",
-                "enum": [
-                  "student",
-                  "admin"
-                ]
-              }
-            }
-          },
           "accessToken": {
             "type": "string"
           },
           "refreshToken": {
             "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "Attempt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "choiceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Flag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SyncAttemptResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "synced": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "StudentProfile": {
+        "type": "object",
+        "properties": {
+          "termId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "GradeWithTerms": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Zekr": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "transliteration": {
+            "type": "string"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "defaultCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

@@ -11,6 +11,6 @@ export type QuestionSource = typeof QuestionSource[keyof typeof QuestionSource];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QuestionSource = {
-  manual: 'manual',
-  imported: 'imported',
+  telegram_auto: 'telegram_auto',
+  admin_manual: 'admin_manual',
 } as const;
