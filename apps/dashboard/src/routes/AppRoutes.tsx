@@ -11,7 +11,11 @@ import type { Navigate as NavigatePage, Page } from '@/components/dashboard/type
 
 export function AppRoutes() {
   const routerNavigate = useNavigate();
-  const navigate: NavigatePage = (page) => routerNavigate(page === 'dashboard' ? '/' : `/${page}`);
+  const navigate: NavigatePage = (page) => {
+    if (page === 'dashboard') return routerNavigate('/');
+    if (page === 'studyUnits') return routerNavigate('/study-units');
+    return routerNavigate(`/${page}`);
+  };
   const route = (page: Page, element: React.ReactNode) => (
     <DashboardLayout page={page} navigate={navigate}>
       {element}
