@@ -121,6 +121,7 @@ export const questionSourceTypes = [
   'doctor_confirmation',
   'owner',
   'team_expectation',
+  'data',
 ] as const;
 export type QuestionSourceType = (typeof questionSourceTypes)[number];
 

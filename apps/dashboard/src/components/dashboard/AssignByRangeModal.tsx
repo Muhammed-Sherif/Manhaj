@@ -130,7 +130,8 @@ export function AssignByRangeModal({
                   { id: 'previous_exam', label: 'Previous Exam' },
                   { id: 'doctor_confirmation', label: 'Doctor Examination' },
                   { id: 'team_expectation', label: 'Team Expectation' },
-                  { id: 'owner', label: 'Owner' }
+                  { id: 'owner', label: 'Owner' },
+                  { id: 'data', label: 'Data' }
                 ].map((src) => (
                   <label key={src.id} className={`flex items-center gap-2 cursor-pointer border rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                     sourceTypes.includes(src.id) 

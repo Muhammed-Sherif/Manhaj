@@ -233,6 +233,15 @@ export const initializeDatabase = () => {
       FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS question_images (
+      id TEXT PRIMARY KEY,
+      question_id TEXT NOT NULL,
+      image_url TEXT NOT NULL,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      is_answer INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+    );
+
     -- Device-local lecture attachments: never uploaded, never synced. See db/schema.ts.
     CREATE TABLE IF NOT EXISTS study_unit_local_files (
       id TEXT PRIMARY KEY,
@@ -600,6 +609,7 @@ export const clearDatabase = async () => {
     DROP TABLE IF EXISTS study_unit_local_files;
     DROP TABLE IF EXISTS questions;
     DROP TABLE IF EXISTS question_sources;
+    DROP TABLE IF EXISTS question_images;
     DROP TABLE IF EXISTS choices;
     DROP TABLE IF EXISTS attempts;
     DROP TABLE IF EXISTS flags;

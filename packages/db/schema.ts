@@ -15,6 +15,7 @@ export const questionSourceTypeEnum = pgEnum('question_source_type', [
   'doctor_confirmation',
   'owner',
   'team_expectation',
+  'data',
 ]);
 
 // Tables

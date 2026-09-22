@@ -49,6 +49,7 @@ const QUESTION_SOURCE_LABELS: Record<schema.QuestionSourceType, string> = {
   doctor_confirmation: 'Doctor confirmation',
   owner: 'Owner',
   team_expectation: 'Team expectation',
+  data: 'Data',
 };
 
 type ScopeKind = 'all' | 'subject' | 'studyUnit';

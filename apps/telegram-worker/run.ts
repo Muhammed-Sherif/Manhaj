@@ -380,9 +380,9 @@ async function main() {
     const lastProcessedId = await getLastProcessedMessageId();
     console.log(`📍 Last processed message ID: ${lastProcessedId || 'none (first run)'}\n`);
 
-    console.log(`Starting message fetch from ID: 3997\n`);
+    console.log(`Starting message fetch from ID: 3967\n`);
 
-    let offsetId = 3996; // 3997 - 1, to test 3997 photo specifically
+    let offsetId = 3967;
 
     while (true) {
       console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);
@@ -391,7 +391,7 @@ async function main() {
       try {
         await fetchWithRetry(async () => {
           for await (const message of client.iterMessages(channel, {
-            minId: offsetId,
+            minId: offsetId -1,
             reverse: true,
             limit: 50,
           })) {
