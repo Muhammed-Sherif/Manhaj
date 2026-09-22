@@ -44,20 +44,20 @@ async function main() {
   const subject = await findOrCreateSubject(module.id, 'Cardiology');
   const lecture = await findOrCreateLecture(subject.id, 'Cardiovascular System - Part 1', 'Foundations of cardiovascular anatomy, physiology, and disease.');
 
-  const existingVideo = await db.query.lectureVideos.findFirst({ where: eq(lectureVideos.lectureId, lecture.id) });
+  const existingVideo = await db.query.lectureVideos.findFirst({ where: eq(lectureVideos.studyUnitId, lecture.id) });
   if (!existingVideo) {
-    await db.insert(lectureVideos).values({ lectureId: lecture.id, sourceName: 'Cardiovascular lecture video', url: 'https://example.com/videos/cardiovascular-system-part-1.mp4', duration: 2700 });
+    await db.insert(lectureVideos).values({ studyUnitId: lecture.id, sourceName: 'Cardiovascular lecture video', url: 'https://example.com/videos/cardiovascular-system-part-1.mp4', duration: 2700 });
   }
 
-  const existingFile = await db.query.lectureFiles.findFirst({ where: eq(lectureFiles.lectureId, lecture.id) });
+  const existingFile = await db.query.lectureFiles.findFirst({ where: eq(lectureFiles.studyUnitId, lecture.id) });
   if (!existingFile) {
-    await db.insert(lectureFiles).values({ lectureId: lecture.id, sourceName: 'Cardiovascular notes', fileUrl: 'https://example.com/files/cardiovascular-system-part-1.pdf', fileType: 'application/pdf' });
+    await db.insert(lectureFiles).values({ studyUnitId: lecture.id, sourceName: 'Cardiovascular notes', fileUrl: 'https://example.com/files/cardiovascular-system-part-1.pdf', fileType: 'application/pdf' });
   }
 
   const questionText = 'Which artery supplies the lateral wall of the left ventricle?';
   let question = await db.query.questions.findFirst({ where: eq(questions.questionText, questionText) });
   if (!question) {
-    const [created] = await db.insert(questions).values({ lectureId: lecture.id, questionText, explanation: 'The left circumflex artery runs in the atrioventricular groove and supplies the lateral wall of the left ventricle.', source: 'admin_manual' }).returning();
+    const [created] = await db.insert(questions).values({ studyUnitId: lecture.id, questionText, explanation: 'The left circumflex artery runs in the atrioventricular groove and supplies the lateral wall of the left ventricle.', source: 'admin_manual' }).returning();
     question = created;
     await db.insert(choices).values([
       { questionId: question.id, choiceText: 'Left anterior descending artery', isCorrect: false },

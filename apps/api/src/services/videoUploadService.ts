@@ -254,7 +254,7 @@ export class VideoUploadService {
       await fs.promises.rename(tempFinalFilePath, finalFilePath);
 
       // 5. Insert record into PostgreSQL DB
-      const videoRecord = await adminService.addLectureVideo(lectureId, {
+      const videoRecord = await adminService.addStudyUnitVideo(lectureId, {
         sourceName: metadata.sourceName,
         url: `/uploads/videos/${metadata.savedFileName}`,
         duration: duration || 0,
