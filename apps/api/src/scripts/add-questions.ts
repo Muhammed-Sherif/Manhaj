@@ -82,7 +82,7 @@ async function addQuestions() {
     const [createdQuestion] = await db
       .insert(questions)
       .values({
-        lectureId: lecture.id,
+        studyUnitId: lecture.id,
         questionText: q.questionText,
         explanation: q.explanation,
         source: 'admin_manual',
@@ -103,7 +103,7 @@ async function addQuestions() {
 
   // Count total questions for lecture
   const allQuestions = await db.query.questions.findMany({
-    where: eq(questions.lectureId, lecture.id),
+    where: eq(questions.studyUnitId, lecture.id),
   });
 
   console.log(`Done! Lecture now has ${allQuestions.length} questions (added ${addedCount} new).`);

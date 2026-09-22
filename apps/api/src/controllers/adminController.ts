@@ -130,10 +130,10 @@ export class AdminController {
     }
   };
 
-  deleteLecture = async (req: Request, res: Response) => {
+  deleteStudyUnit = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      await this.adminService.deleteLecture(id);
+      await this.adminService.deleteStudyUnit(id);
       res.json({ success: true });
     } catch (error) {
       if (error instanceof AdminConflictError) {
@@ -178,10 +178,10 @@ export class AdminController {
     }
   };
 
-  bulkAssignLecture = async (req: Request, res: Response) => {
+  bulkAssignStudyUnit = async (req: Request, res: Response) => {
     try {
-      const { questionIds, lectureId } = req.body;
-      const result = await this.adminService.bulkAssignLecture(questionIds, lectureId);
+      const { questionIds, studyUnitId } = req.body;
+      const result = await this.adminService.bulkAssignStudyUnit(questionIds, studyUnitId);
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -190,15 +190,15 @@ export class AdminController {
 
   bulkAssignTelegramRange = async (req: Request, res: Response) => {
     try {
-      const { startMessageId, endMessageId, lectureId } = req.body;
-      res.json(await this.adminService.bulkAssignTelegramRange(startMessageId, endMessageId, lectureId));
+      const { startMessageId, endMessageId, studyUnitId } = req.body;
+      res.json(await this.adminService.bulkAssignTelegramRange(startMessageId, endMessageId, studyUnitId));
     } catch (error) { res.status(400).json({ error: (error as Error).message }); }
   };
 
-  bulkUnassignLecture = async (req: Request, res: Response) => {
+  bulkUnassignStudyUnit = async (req: Request, res: Response) => {
     try {
       const { questionIds } = req.body;
-      const result = await this.adminService.bulkUnassignLecture(questionIds);
+      const result = await this.adminService.bulkUnassignStudyUnit(questionIds);
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -248,53 +248,53 @@ export class AdminController {
     }
   };
 
-  // Lectures
-  createLecture = async (req: Request, res: Response) => {
+  // Study Units
+  createStudyUnit = async (req: Request, res: Response) => {
     try {
-      const lectureData = req.body;
-      const lecture = await this.adminService.createLecture(lectureData);
-      res.json(lecture);
+      const studyUnitData = req.body;
+      const studyUnit = await this.adminService.createStudyUnit(studyUnitData);
+      res.json(studyUnit);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   };
 
-  updateLecture = async (req: Request, res: Response) => {
+  updateStudyUnit = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const lecture = await this.adminService.updateLecture(id, req.body);
-      res.json(lecture);
+      const studyUnit = await this.adminService.updateStudyUnit(id, req.body);
+      res.json(studyUnit);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   };
 
-  getLectures = async (req: Request, res: Response) => {
+  getStudyUnits = async (req: Request, res: Response) => {
     try {
-      const { subjectId } = req.query;
-      const lectures = await this.adminService.getLectures(subjectId as string | undefined);
-      res.json(lectures);
+      const { subjectId, type } = req.query;
+      const studyUnits = await this.adminService.getStudyUnits(subjectId as string | undefined, type as 'lecture' | 'section' | undefined);
+      res.json(studyUnits);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   };
 
-  addLectureVideo = async (req: Request, res: Response) => {
+  addStudyUnitVideo = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const videoData = req.body;
-      const video = await this.adminService.addLectureVideo(id, videoData);
+      const video = await this.adminService.addStudyUnitVideo(id, videoData);
       res.json(video);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   };
 
-  addLectureFile = async (req: Request, res: Response) => {
+  addStudyUnitFile = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const fileData = req.body;
-      const file = await this.adminService.addLectureFile(id, fileData);
+      const file = await this.adminService.addStudyUnitFile(id, fileData);
       res.json(file);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });

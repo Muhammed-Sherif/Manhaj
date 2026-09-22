@@ -27,23 +27,23 @@ export class ContentController {
     }
   };
 
-  getLectureDetails = async (req: Request, res: Response) => {
+  getStudyUnitDetails = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const lecture = await this.contentService.getLectureDetails(id);
-      if (!lecture) {
-        return res.status(404).json({ error: 'Lecture not found' });
+      const studyUnit = await this.contentService.getStudyUnitDetails(id);
+      if (!studyUnit) {
+        return res.status(404).json({ error: 'Study unit not found' });
       }
-      res.json(lecture);
+      res.json(studyUnit);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }
   };
 
-  getLectureVideos = async (req: Request, res: Response) => {
+  getStudyUnitVideos = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const videos = await this.contentService.getLectureVideos(id);
+      const videos = await this.contentService.getStudyUnitVideos(id);
       res.json(videos);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
