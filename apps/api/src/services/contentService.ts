@@ -19,8 +19,8 @@ export class ContentService {
       questions: await this.questions(sinceDate),
       choices: await this.choices(sinceDate),
       questionSources: await this.questionSources(sinceDate),
-      lectureVideos: await this.lectureVideos(sinceDate),
-      lectureFiles: await this.lectureFiles(sinceDate),
+      studyUnitVideos: await this.lectureVideos(sinceDate),
+      studyUnitFiles: await this.lectureFiles(sinceDate),
       nextCursor,
     };
 
