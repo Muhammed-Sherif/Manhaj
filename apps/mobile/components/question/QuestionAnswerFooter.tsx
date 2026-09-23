@@ -6,13 +6,17 @@ import { useSolveStore } from '../../store/solveStore';
 
 export const QuestionAnswerFooter: React.FC = () => {
   const router = useRouter();
-  const { showAnswer, explanation, mode, currentIndex, questions, nextQuestion } =
+  const { showAnswer, explanation, mode, currentIndex, questions, nextQuestion, hasEvaluatedWritten } =
     useSolveStore();
 
   if (!showAnswer) return null;
 
   const currentQuestion = questions[currentIndex];
   const explanationText = explanation || currentQuestion?.explanation || '';
+
+  // Only show the continue button if it's an MCQ, or if it's a written question that has been evaluated.
+  const isWritten = !!currentQuestion?.writtenQuestion;
+  const canContinue = !isWritten || hasEvaluatedWritten;
 
   const handleContinue = async () => {
     if (mode === 'review') {
@@ -78,18 +82,20 @@ export const QuestionAnswerFooter: React.FC = () => {
       </View>
 
       {/* Continue Button */}
-      <TouchableOpacity
-        className="bg-teal-600 rounded-xl p-4 mb-8 items-center active:bg-teal-700"
-        onPress={handleContinue}
-      >
-        <Text className="text-white font-semibold text-lg">
-          {mode === 'review'
-            ? 'Back to Review'
-            : currentIndex < questions.length - 1
-            ? 'Next Question'
-            : 'Finish Session'}
-        </Text>
-      </TouchableOpacity>
+      {canContinue && (
+        <TouchableOpacity
+          className="bg-teal-600 rounded-xl p-4 mb-8 items-center active:bg-teal-700"
+          onPress={handleContinue}
+        >
+          <Text className="text-white font-semibold text-lg">
+            {mode === 'review'
+              ? 'Back to Review'
+              : currentIndex < questions.length - 1
+              ? 'Next Question'
+              : 'Finish Session'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 };

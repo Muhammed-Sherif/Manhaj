@@ -104,7 +104,7 @@ export const initializeDatabase = () => {
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       question_id TEXT NOT NULL,
-      choice_id TEXT NOT NULL,
+      choice_id TEXT,
       is_correct INTEGER NOT NULL,
       synced INTEGER DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -583,6 +583,39 @@ export const initializeDatabase = () => {
       updateUpdatedAtIfNull(table);
     } catch (e) {
       // Ignore if table doesn't exist or column doesn't exist
+    }
+  }
+
+  // ── Migration: attempts table had choice_id NOT NULL, which blocked saving
+  // written question attempts. Rebuild it to allow choice_id to be NULL.
+  const attemptsTableSqlRows = expoDb.getAllSync(
+    `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attempts'`
+  ) as Array<{ sql: string }>;
+  const attemptsTableSql = attemptsTableSqlRows[0]?.sql ?? '';
+  if (attemptsTableSql.length > 0 && attemptsTableSql.includes('choice_id TEXT NOT NULL')) {
+    const fkRows = expoDb.getAllSync(`PRAGMA foreign_keys`) as Array<{ foreign_keys: number }>;
+    const fkWasOn = fkRows[0]?.foreign_keys === 1;
+    expoDb.execSync(`PRAGMA foreign_keys = OFF;`);
+    try {
+      expoDb.execSync(`
+        CREATE TABLE attempts_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          question_id TEXT NOT NULL,
+          choice_id TEXT,
+          is_correct INTEGER NOT NULL,
+          synced INTEGER DEFAULT 0,
+          created_at TEXT NOT NULL,
+          UNIQUE(user_id, question_id)
+        );
+        INSERT INTO attempts_new (id, user_id, question_id, choice_id, is_correct, synced, created_at)
+          SELECT id, user_id, question_id, choice_id, is_correct, synced, created_at
+          FROM attempts;
+        DROP TABLE attempts;
+        ALTER TABLE attempts_new RENAME TO attempts;
+      `);
+    } finally {
+      if (fkWasOn) expoDb.execSync(`PRAGMA foreign_keys = ON;`);
     }
   }
 };

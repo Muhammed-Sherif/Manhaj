@@ -43,6 +43,7 @@ interface SolveState {
   explanation: string;
   loading: boolean;
   mode: SolveMode;
+  hasEvaluatedWritten: boolean;
 
   // Actions
   setMode: (mode: SolveMode) => void;
@@ -50,6 +51,7 @@ interface SolveState {
   setQuestions: (questions: Question[]) => void;
   setError: () => void;
   selectChoice: (choiceId: string, isOnline: boolean) => Promise<void>;
+  submitWrittenAnswer: (isCorrect: boolean, isOnline: boolean) => Promise<void>;
   revealAnswer: () => void;
   nextQuestion: () => void;
   resetSession: () => void;
@@ -63,6 +65,7 @@ export const useSolveStore = create<SolveState>((set, get) => ({
   explanation: '',
   loading: true,
   mode: 'solve',
+  hasEvaluatedWritten: false,
 
   setMode: (mode) => set({ mode }),
   setLoading: (loading) => set({ loading }),
@@ -75,6 +78,7 @@ export const useSolveStore = create<SolveState>((set, get) => ({
       showAnswer: false,
       explanation: '',
       loading: false,
+      hasEvaluatedWritten: false,
     }),
 
   setError: () =>
@@ -119,6 +123,40 @@ export const useSolveStore = create<SolveState>((set, get) => ({
     }
   },
 
+  submitWrittenAnswer: async (isCorrect, isOnline) => {
+    const { questions, currentIndex } = get();
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
+
+    let finalExplanation = currentQuestion.explanation || '';
+
+    try {
+      const result = await storeAnswer({
+        id: `attempt-${Date.now()}`,
+        questionId: currentQuestion.id,
+        isCorrect,
+        createdAt: new Date().toISOString(),
+      });
+
+      if (result?.explanation) {
+        finalExplanation = result.explanation;
+      }
+
+      if (isOnline) {
+        syncAttempts().catch((err) =>
+          console.warn('Sync failed, will retry later:', err)
+        );
+      }
+    } catch (error) {
+      console.warn('Local store attempt note:', error);
+    } finally {
+      set({
+        hasEvaluatedWritten: true,
+        explanation: finalExplanation,
+      });
+    }
+  },
+
   revealAnswer: () => {
     const { showAnswer, questions, currentIndex } = get();
     if (showAnswer) return;
@@ -136,6 +174,7 @@ export const useSolveStore = create<SolveState>((set, get) => ({
       selectedChoice: null,
       showAnswer: false,
       explanation: '',
+      hasEvaluatedWritten: false,
     });
   },
 
@@ -147,5 +186,6 @@ export const useSolveStore = create<SolveState>((set, get) => ({
       showAnswer: false,
       explanation: '',
       loading: true,
+      hasEvaluatedWritten: false,
     }),
 }));

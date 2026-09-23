@@ -26,6 +26,7 @@
       "package": "com.manhaj.student",
       "versionCode": 7,
       "permissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -65,6 +66,12 @@
         "projectId": "163709dd-eabf-4338-a629-65d9a6247d9f"
       },
       "apiUrl": "https://manhaj-api-five.vercel.app"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/163709dd-eabf-4338-a629-65d9a6247d9f"
     }
   }
 }

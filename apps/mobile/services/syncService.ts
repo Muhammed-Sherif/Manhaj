@@ -14,7 +14,7 @@ import {
 export interface Attempt {
   id: string;
   questionId: string;
-  choiceId: string;
+  choiceId?: string | null;
   isCorrect: boolean;
   createdAt: string;
 }
@@ -89,23 +89,37 @@ export const storeAnswer = async (
     throw new Error('User not authenticated');
   }
 
-  // Get question with choice
-  const choice = await db.query.choices.findFirst({
-    where: and(
-      eq(schema.choices.id, attempt.choiceId),
-      eq(schema.choices.questionId, attempt.questionId)
-    ),
-    with: {
-      question: true,
-    },
-  });
+  let isCorrect = attempt.isCorrect;
+  let explanation = '';
 
-  if (!choice || !choice.question) {
-    throw new Error('Question or choice not found locally');
+  // If choiceId is provided (MCQ), look it up
+  if (attempt.choiceId) {
+    const choice = await db.query.choices.findFirst({
+      where: and(
+        eq(schema.choices.id, attempt.choiceId),
+        eq(schema.choices.questionId, attempt.questionId)
+      ),
+      with: {
+        question: true,
+      },
+    });
+
+    if (!choice || !choice.question) {
+      throw new Error('Question or choice not found locally');
+    }
+
+    isCorrect = choice.isCorrect === 1;
+    explanation = choice.question.explanation || '';
+  } else {
+    // For written questions, fetch the question to get the explanation
+    const question = await db.query.questions.findFirst({
+      where: eq(schema.questions.id, attempt.questionId),
+    });
+    
+    if (question) {
+      explanation = question.explanation || '';
+    }
   }
-
-  const isCorrect = choice.isCorrect === 1;
-  const explanation = choice.question.explanation;
 
   // Store attempt in SQLite
   await db
@@ -114,7 +128,7 @@ export const storeAnswer = async (
       id: attempt.id,
       userId,
       questionId: attempt.questionId,
-      choiceId: attempt.choiceId,
+      choiceId: attempt.choiceId || null,
       isCorrect: isCorrect ? 1 : 0,
       synced: 0,
       createdAt: attempt.createdAt,
@@ -482,6 +496,9 @@ export const getUnsolvedQuestions = async (studyUnitId: string) => {
     where: eq(schema.questions.studyUnitId, studyUnitId),
     with: {
       choices: true,
+      writtenQuestion: true,
+      mcqQuestion: true,
+      questionImages: true,
       studyUnit: {
         with: {
           subject: true,

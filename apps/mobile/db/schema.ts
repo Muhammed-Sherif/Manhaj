@@ -157,7 +157,7 @@ export const attempts = sqliteTable('attempts', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
   questionId: text('question_id').notNull(),
-  choiceId: text('choice_id').notNull(),
+  choiceId: text('choice_id'),
   isCorrect: integer('is_correct').notNull(),
   synced: integer('synced').notNull().default(0),
   createdAt: text('created_at').notNull(),

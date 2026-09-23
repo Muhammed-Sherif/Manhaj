@@ -8,7 +8,7 @@ export interface QuestionChoicesProps {
 }
 
 export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = true }) => {
-  const { questions, currentIndex, selectedChoice, showAnswer, selectChoice, revealAnswer } = useSolveStore();
+  const { questions, currentIndex, selectedChoice, showAnswer, hasEvaluatedWritten, selectChoice, revealAnswer, submitWrittenAnswer } = useSolveStore();
   const currentQuestion = questions[currentIndex];
   const [writtenText, setWrittenText] = useState('');
 
@@ -44,13 +44,40 @@ export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = tru
             <Text className="text-white text-base font-semibold">Show Answer</Text>
           </TouchableOpacity>
         ) : (
-          <View className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-xl p-4 mt-2">
-            <Text className="text-sm font-semibold text-green-800 dark:text-green-400 mb-1">
-              Model Answer:
-            </Text>
-            <Text className="text-base text-green-900 dark:text-green-100">
-              {currentQuestion.writtenQuestion.writtenAnswer}
-            </Text>
+          <View className="space-y-3">
+            <View className="bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 rounded-xl p-4 mt-2">
+              <Text className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Model Answer:
+              </Text>
+              <Text className="text-base text-slate-800 dark:text-slate-100">
+                {currentQuestion.writtenQuestion.writtenAnswer}
+              </Text>
+            </View>
+
+            {!hasEvaluatedWritten && (
+              <View className="mt-4">
+                <Text className="text-center font-medium text-slate-600 dark:text-slate-300 mb-3">
+                  How did you do?
+                </Text>
+                <View className="flex-row space-x-3">
+                  <TouchableOpacity
+                    className="flex-1 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-4 items-center justify-center flex-row shadow-sm"
+                    onPress={() => submitWrittenAnswer(false, isOnline)}
+                  >
+                    <XCircleIcon size={20} color="#ef4444" style={{ marginRight: 8 }} />
+                    <Text className="text-red-700 dark:text-red-400 font-semibold">I got it wrong</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    className="flex-1 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-xl p-4 items-center justify-center flex-row shadow-sm ml-3"
+                    onPress={() => submitWrittenAnswer(true, isOnline)}
+                  >
+                    <CheckCircleIcon size={20} color="#22c55e" style={{ marginRight: 8 }} />
+                    <Text className="text-green-700 dark:text-green-400 font-semibold">I got it right</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         )}
       </View>
