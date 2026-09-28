@@ -21,6 +21,7 @@ import {
   useGetAdminSubjects,
   useGetAdminQuestions,
   usePatchAdminQuestionsBulkUnassignStudyUnit,
+  usePostAdminQuestionsBulkDelete,
   postAdminStudyUnitsIdVideos,
   postAdminStudyUnitsIdFiles,
 } from '@manhaj/api-client';
@@ -28,8 +29,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
+import { EditQuestionModal, type QuestionRow } from './QuestionsPage';
 import { toast } from '@/components/ui/sonner';
 import {
   StudyUnitVideoUpload,
@@ -65,6 +68,8 @@ export function StudyUnitsPage() {
   const [expandedStudyUnitId, setExpandedStudyUnitId] = useState<string | null>(null);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [studyUnitQuestionsMap, setStudyUnitQuestionsMap] = useState<Record<string, any[]>>({});
+  const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
+  const [pendingDeleteQuestion, setPendingDeleteQuestion] = useState<string | null>(null);
 
   // Fetch questions for expanded lecture
   const questionsQuery = useGetAdminQuestions(
@@ -93,6 +98,20 @@ export function StudyUnitsPage() {
         }
       },
     },
+  });
+
+  const bulkDeleteMutation = usePostAdminQuestionsBulkDelete({
+    mutation: {
+      onSuccess: () => {
+        toast.success('Question deleted successfully');
+        setPendingDeleteQuestion(null);
+        setSelectedQuestionIds([]);
+        if (expandedStudyUnitId) {
+          questionsQuery.refetch();
+        }
+      },
+      onError: () => toast.error('Failed to delete question'),
+    }
   });
 
   const [formData, setFormData] = useState({
@@ -420,27 +439,37 @@ export function StudyUnitsPage() {
                                 {studyUnitQuestionsMap[studyUnit.id].map((question: any) => (
                                   <div
                                     key={question.id}
-                                    className="flex items-start gap-3 p-3 bg-white rounded border border-slate-200"
+                                    className="flex items-start justify-between gap-3 p-3 bg-white rounded border border-slate-200"
                                   >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedQuestionIds.includes(question.id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedQuestionIds([...selectedQuestionIds, question.id]);
-                                        } else {
-                                          setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== question.id));
-                                        }
-                                      }}
-                                      className="mt-1 accent-teal-600"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-slate-800 truncate">
-                                        {question.questionText || question.text || 'No text'}
-                                      </p>
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        {question.choices?.find((c: any) => c.isCorrect)?.choiceText || 'No correct answer'}
-                                      </p>
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedQuestionIds.includes(question.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedQuestionIds([...selectedQuestionIds, question.id]);
+                                          } else {
+                                            setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== question.id));
+                                          }
+                                        }}
+                                        className="mt-1 accent-teal-600"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-800 line-clamp-2">
+                                          {question.questionText || question.text || 'No text'}
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                          {question.choices?.find((c: any) => c.isCorrect)?.choiceText || 'No correct answer'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingQuestion(question as unknown as QuestionRow)}>
+                                        <Pencil size={14} className="text-slate-500" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50" onClick={() => setPendingDeleteQuestion(question.id)}>
+                                        <Trash2 size={14} className="text-red-500" />
+                                      </Button>
                                     </div>
                                   </div>
                                 ))}
@@ -691,6 +720,27 @@ export function StudyUnitsPage() {
             </form>
           </div>
         </div>
+      )}
+      {/* Question Modals */}
+      {editingQuestion && (
+        <EditQuestionModal
+          question={editingQuestion}
+          onClose={() => setEditingQuestion(null)}
+          onSaved={() => expandedStudyUnitId && questionsQuery.refetch()}
+        />
+      )}
+
+      {pendingDeleteQuestion && (
+        <ConfirmDialog
+          isOpen
+          title="Delete question"
+          description="Are you sure you want to delete this question completely? This action cannot be undone."
+          confirmLabel="Delete"
+          pendingLabel="Deleting..."
+          isPending={bulkDeleteMutation.isPending}
+          onClose={() => setPendingDeleteQuestion(null)}
+          onConfirm={() => bulkDeleteMutation.mutate({ data: { questionIds: [pendingDeleteQuestion] } })}
+        />
       )}
     </>
   );

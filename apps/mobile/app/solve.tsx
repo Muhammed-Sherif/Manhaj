@@ -127,18 +127,22 @@ export default function SolveScreen() {
         {/* Question Text with Flag Button and Images */}
         <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
           
-          {currentQuestion.questionImages && currentQuestion.questionImages.length > 0 && (
+          {((currentQuestion.questionImages && currentQuestion.questionImages.length > 0) || 
+            ((currentQuestion as any).images && (currentQuestion as any).images.length > 0)) && (
             <View className="mb-4">
-              {currentQuestion.questionImages
-                .sort((a, b) => a.displayOrder - b.displayOrder)
-                .map((img) => (
-                  <Image
-                    key={img.id}
-                    source={{ uri: img.imageUrl }}
-                    className="w-full h-48 rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
-                    resizeMode="contain"
-                  />
-                ))}
+              {(() => {
+                const images = currentQuestion.questionImages?.length ? currentQuestion.questionImages : (currentQuestion as any).images || [];
+                return images
+                  .sort((a: any, b: any) => a.displayOrder - b.displayOrder)
+                  .map((img: any) => (
+                    <Image
+                      key={img.id}
+                      source={{ uri: img.imageUrl }}
+                      className="w-full h-48 rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
+                      resizeMode="contain"
+                    />
+                  ));
+              })()}
             </View>
           )}
 

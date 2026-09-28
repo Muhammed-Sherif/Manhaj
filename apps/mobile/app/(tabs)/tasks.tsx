@@ -7,7 +7,7 @@ import { eq, inArray, isNull, and } from 'drizzle-orm';
 import * as Haptics from 'expo-haptics';
 import { ScreenHeader } from '../../components';
 import Modal from '../../components/Modal';
-import { CheckSquareIcon, PlusIcon, CircleIcon, CheckCircle2Icon, ClockIcon, LinkIcon, MoreHorizontalIcon, Edit2Icon, Trash2Icon } from 'lucide-react-native';
+import { CheckSquareIcon, PlusIcon, CircleIcon, CheckCircle2Icon, ClockIcon, LinkIcon, MoreHorizontalIcon, Edit2Icon, Trash2Icon, FilterIcon } from 'lucide-react-native';
 import { formatTime } from '../../utils/format';
 
 // ── Animated task row with completion animation ─────────────────────────────
@@ -211,6 +211,10 @@ export default function TasksScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'zekr' | 'wird' | 'work' | 'study'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'upcoming'>('all');
+
   useEffect(() => {
     loadTasks();
   }, []);
@@ -324,26 +328,97 @@ export default function TasksScreen() {
     router.push(`/add-task?id=${task.id}` as any);
   };
 
+  const filteredTasks = tasks.filter(task => {
+    if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+    if (typeFilter !== 'all' && task.taskType !== typeFilter) return false;
+    
+    if (dateFilter === 'today') {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const taskDate = task.startTime ? task.startTime.substring(0, 10) : task.createdAt.substring(0, 10);
+      if (taskDate !== todayStr) return false;
+    } else if (dateFilter === 'upcoming') {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const taskDate = task.startTime ? task.startTime.substring(0, 10) : task.createdAt.substring(0, 10);
+      if (taskDate <= todayStr) return false;
+    }
+    
+    return true;
+  });
+
+  const FilterPill = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      className={`px-4 py-1.5 rounded-full border mr-2 ${
+        active 
+          ? 'bg-teal-100 dark:bg-teal-900/40 border-teal-200 dark:border-teal-800' 
+          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+      }`}
+    >
+      <Text className={`font-medium text-sm ${
+        active ? 'text-teal-800 dark:text-teal-300' : 'text-slate-600 dark:text-slate-400'
+      }`}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader title="My Tasks" icon={<CheckSquareIcon size={20} color="#0d9488" />} />
+
+      <View className="py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
+          <View className="flex-row items-center mr-3">
+            <FilterIcon size={14} color="#94a3b8" className="mr-1" />
+            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</Text>
+          </View>
+          <FilterPill label="All" active={statusFilter === 'all'} onPress={() => setStatusFilter('all')} />
+          <FilterPill label="Pending" active={statusFilter === 'pending'} onPress={() => setStatusFilter('pending')} />
+          <FilterPill label="Done" active={statusFilter === 'done'} onPress={() => setStatusFilter('done')} />
+
+          <View className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
+
+          <View className="flex-row items-center mr-3">
+            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Day</Text>
+          </View>
+          <FilterPill label="All Time" active={dateFilter === 'all'} onPress={() => setDateFilter('all')} />
+          <FilterPill label="Today" active={dateFilter === 'today'} onPress={() => setDateFilter('today')} />
+          <FilterPill label="Upcoming" active={dateFilter === 'upcoming'} onPress={() => setDateFilter('upcoming')} />
+
+          <View className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
+
+          <View className="flex-row items-center mr-3">
+            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</Text>
+          </View>
+          <FilterPill label="All Types" active={typeFilter === 'all'} onPress={() => setTypeFilter('all')} />
+          <FilterPill label="Zekr" active={typeFilter === 'zekr'} onPress={() => setTypeFilter('zekr')} />
+          <FilterPill label="Wird" active={typeFilter === 'wird'} onPress={() => setTypeFilter('wird')} />
+          <FilterPill label="Study" active={typeFilter === 'study'} onPress={() => setTypeFilter('study')} />
+          <FilterPill label="Work" active={typeFilter === 'work'} onPress={() => setTypeFilter('work')} />
+          <View className="w-8" />
+        </ScrollView>
+      </View>
 
       <ScrollView
         className="flex-1 p-4"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={loadTasks} />}
       >
-        {tasks.length === 0 && !loading && (
+        {filteredTasks.length === 0 && !loading && (
           <View className="items-center justify-center py-10">
-            <Text className="text-slate-500 mb-4">No tasks found.</Text>
-            <TouchableOpacity
-              className="bg-teal-600 px-6 py-3 rounded-full"
-              onPress={() => router.push('/add-task' as any)}
-            >
-              <Text className="text-white font-bold">Create your first task</Text>
-            </TouchableOpacity>
+            <Text className="text-slate-500 mb-4">No tasks found matching your filters.</Text>
+            {tasks.length === 0 && (
+              <TouchableOpacity
+                className="bg-teal-600 px-6 py-3 rounded-full"
+                onPress={() => router.push('/add-task' as any)}
+              >
+                <Text className="text-white font-bold">Create your first task</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
-        {tasks.map((task) => {
+        {filteredTasks.map((task) => {
           const isDone = task.status === 'done';
           return (
             <TaskRow

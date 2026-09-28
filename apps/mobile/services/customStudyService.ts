@@ -46,6 +46,8 @@ export interface CustomStudyFilters {
   dueScope: StudyDueScope;
   /** Empty means "don't filter on source" — not "match nothing". */
   questionSources: schema.QuestionSourceType[];
+  /** Empty means "don't filter on type" — not "match nothing". */
+  questionTypes: ('mcq' | 'written')[];
   scope: StudyScope;
 }
 
@@ -53,6 +55,7 @@ export const DEFAULT_STUDY_FILTERS: CustomStudyFilters = {
   contentTypes: ['question', 'case', 'note', 'summary'],
   dueScope: 'due',
   questionSources: [],
+  questionTypes: [],
   scope: { kind: 'all' },
 };
 
@@ -181,6 +184,10 @@ async function questionCards(
   const conditions = [isNull(schema.questions.deletedAt)];
 
   if (studyUnitIds) conditions.push(inArray(schema.questions.studyUnitId, studyUnitIds));
+
+  if (filters.questionTypes.length > 0) {
+    conditions.push(inArray(schema.questions.questionType, filters.questionTypes));
+  }
 
   if (filters.questionSources.length > 0) {
     // A question matches when any chosen tag is still live on it. Tombstoned tags are

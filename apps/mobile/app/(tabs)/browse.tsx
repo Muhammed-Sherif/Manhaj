@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { View, ScrollView } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { LoadingView, ErrorView } from '../../components';
 import { BrowseHeader, BrowseContent } from '../../components/browse';
 import { useBrowseStore } from '../../store/browseStore';
@@ -7,9 +8,11 @@ import { useBrowseStore } from '../../store/browseStore';
 export default function BrowseScreen() {
   const { grades, isLoading, error, loadHierarchy } = useBrowseStore();
 
-  useEffect(() => {
-    loadHierarchy();
-  }, [loadHierarchy]);
+  useFocusEffect(
+    useCallback(() => {
+      loadHierarchy();
+    }, [loadHierarchy])
+  );
 
   if (isLoading) {
     return <LoadingView message="Loading content..." />;

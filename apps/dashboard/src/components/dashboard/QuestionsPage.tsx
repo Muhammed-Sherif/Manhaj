@@ -28,7 +28,7 @@ interface Item { id?: string; name?: string; description?: string }
 
 // `getQuestions` in the API fetches questions `with: { choices: true }`, but the generated
 // `Question` model predates that embed and does not declare it.
-type QuestionRow = Question & {
+export type QuestionRow = Question & {
   choices?: Choice[];
   writtenQuestion?: { questionId: string; writtenAnswer: string } | null;
 };
@@ -266,7 +266,7 @@ type EditableChoice = {
   isCorrect: boolean;
 };
 
-function EditQuestionModal({
+export function EditQuestionModal({
   question,
   onClose,
   onSaved,

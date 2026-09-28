@@ -10,6 +10,8 @@ import {
   deleteStudentFlagsQuestionId,
   postContentVideoProgress,
 } from '@manhaj/api-client';
+import { newCard } from '@manhaj/srs/src/anki';
+import * as Crypto from 'expo-crypto';
 
 export interface Attempt {
   id: string;
@@ -134,6 +136,43 @@ export const storeAnswer = async (
       createdAt: attempt.createdAt,
     })
     .onConflictDoNothing();
+
+  if (!isCorrect) {
+    // Automatically add to SRS if answered incorrectly and not already there
+    const existing = await db
+      .select({ id: schema.questionReviewable.reviewableId })
+      .from(schema.questionReviewable)
+      .where(eq(schema.questionReviewable.questionId, attempt.questionId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      const reviewableId = Crypto.randomUUID();
+      const card = newCard();
+      const timestamp = new Date().toISOString();
+
+      await db.transaction(async (tx) => {
+        await tx.insert(schema.reviewableItems).values({
+          id: reviewableId,
+          userId,
+          itemType: 'question',
+          state: card.state,
+          currentStepIndex: card.currentStepIndex,
+          interval: card.interval,
+          easeFactor: card.easeFactor,
+          repetitionCount: card.repetitionCount,
+          lapses: card.lapses,
+          nextReviewDate: timestamp,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        });
+
+        await tx.insert(schema.questionReviewable).values({
+          reviewableId,
+          questionId: attempt.questionId,
+        });
+      });
+    }
+  }
 
   return { isCorrect, explanation };
 };

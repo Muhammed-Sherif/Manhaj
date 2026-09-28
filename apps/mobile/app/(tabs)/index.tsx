@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useProgressStore } from '../../store/progressStore';
 import { BookOpenIcon, FlagIcon, SlidersHorizontalIcon } from 'lucide-react-native';
@@ -33,11 +33,13 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    loadProgress();
-    loadDueCount();
-    scheduleTaskReminders().catch(console.error);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProgress();
+      loadDueCount();
+      scheduleTaskReminders().catch(console.error);
+    }, [])
+  );
 
   const formatLastStudied = (timestamp: string | null) => {
     if (!timestamp) return 'Recently';
@@ -138,6 +140,19 @@ export default function HomeScreen() {
               <Text className="text-slate-800 dark:text-slate-100 font-semibold">Custom Study</Text>
               <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
                 Choose content, source and scope
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="mt-3 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex-row items-center border-2 border-slate-200 dark:border-slate-700"
+            onPress={() => router.push('/srs-manage')}
+          >
+            <FlagIcon size={24} color="#64748b" />
+            <View className="ml-3">
+              <Text className="text-slate-800 dark:text-slate-100 font-semibold">Manage SRS</Text>
+              <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                View & delete reviewable items, or add custom ones
               </Text>
             </View>
           </TouchableOpacity>

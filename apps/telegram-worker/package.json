@@ -11,7 +11,7 @@
     "@manhaj/db": "workspace:*",
     "dotenv": "^16.4.0",
     "input": "^1.0.1",
-    "telegram": "^2.22.0"
+    "teleproto": "^1.229.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

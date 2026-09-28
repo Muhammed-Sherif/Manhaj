@@ -99,6 +99,7 @@ export default function CustomStudyScreen() {
   );
   const [dueScope, setDueScope] = useState<StudyDueScope>(DEFAULT_STUDY_FILTERS.dueScope);
   const [questionSources, setQuestionSources] = useState<schema.QuestionSourceType[]>([]);
+  const [questionTypes, setQuestionTypes] = useState<('mcq' | 'written')[]>([]);
   const [scopeKind, setScopeKind] = useState<ScopeKind>('all');
   const [subjectId, setSubjectId] = useState<string | null>(null);
   const [studyUnitId, setStudyUnitId] = useState<string | null>(null);
@@ -125,9 +126,10 @@ export default function CustomStudyScreen() {
       // Source tags are a question-only axis; carrying them into a case/note session
       // would silently filter those types down to nothing.
       questionSources: includesQuestions ? questionSources : [],
+      questionTypes: includesQuestions ? questionTypes : [],
       scope,
     }),
-    [contentTypes, dueScope, questionSources, includesQuestions, scope],
+    [contentTypes, dueScope, questionSources, questionTypes, includesQuestions, scope],
   );
 
   useEffect(() => {
@@ -194,6 +196,12 @@ export default function CustomStudyScreen() {
   const toggleQuestionSource = (source: schema.QuestionSourceType) => {
     setQuestionSources(prev =>
       prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source],
+    );
+  };
+
+  const toggleQuestionType = (type: 'mcq' | 'written') => {
+    setQuestionTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type],
     );
   };
 
@@ -267,6 +275,24 @@ export default function CustomStudyScreen() {
                 onPress={() => toggleQuestionSource(source)}
               />
             ))}
+          </Section>
+        )}
+
+        {includesQuestions && (
+          <Section
+            title="Question types"
+            hint="Leave all unselected to include both MCQ and Written questions."
+          >
+            <Chip
+              label="Multiple Choice"
+              selected={questionTypes.includes('mcq')}
+              onPress={() => toggleQuestionType('mcq')}
+            />
+            <Chip
+              label="Written"
+              selected={questionTypes.includes('written')}
+              onPress={() => toggleQuestionType('written')}
+            />
           </Section>
         )}
 

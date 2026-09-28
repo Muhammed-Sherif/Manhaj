@@ -6,6 +6,7 @@ import { CheckIcon, ChevronRightIcon, LogOutIcon, MoonIcon, SunIcon, MonitorIcon
 import { getStudentProfile, patchStudentProfile, getStudentGradesWithTerms } from '@manhaj/api-client';
 import { useAuthStore } from '../../store/authStore';
 import { getAutoDownloadEnabled, setAutoDownloadEnabled } from '../../services/contentSyncService';
+import { getTaskReminderMinutes, setTaskReminderMinutes } from '../../services/settingsService';
 import { syncPendingChanges } from '../../services/syncService';
 import Modal from '../../components/Modal';
 import { setColorScheme, getPersistedColorScheme } from '../../components/ThemeProvider';
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+    const [reminderMinutes, setReminderMinutes] = useState('5');
 
     useEffect(() => {
         const load = async () => {
@@ -51,6 +53,9 @@ export default function SettingsScreen() {
                 });
                 setGrades(gradeTree.data);
                 setAutoDownload(autoDownloadEnabled);
+                
+                const currentReminderMinutes = await getTaskReminderMinutes();
+                setReminderMinutes(currentReminderMinutes.toString());
 
             } catch {
                 Alert.alert('Unable to load terms', 'Connect to the internet and try again.');
@@ -64,6 +69,14 @@ export default function SettingsScreen() {
     const toggleAutoDownload = async (value: boolean) => {
         setAutoDownload(value);
         await setAutoDownloadEnabled(value);
+    };
+
+    const handleReminderMinutesChange = async (value: string) => {
+        setReminderMinutes(value);
+        const parsed = parseInt(value, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+            await setTaskReminderMinutes(parsed);
+        }
     };
 
     const handleManualSync = async () => {
@@ -151,6 +164,19 @@ export default function SettingsScreen() {
                     onValueChange={(value) => void toggleAutoDownload(value)}
                     trackColor={{ false: '#cbd5e1', true: '#0d9488' }}
                     thumbColor="#ffffff"
+                />
+            </View>
+
+            <View className="mb-6 flex-row items-center justify-between rounded-xl bg-white dark:bg-slate-800 px-4 py-3 shadow-sm">
+                <View className="flex-1 pr-4">
+                    <Text className="text-base font-semibold text-slate-800 dark:text-slate-100">Task Reminder Before (Minutes)</Text>
+                    <Text className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Time to send notification before task starts.</Text>
+                </View>
+                <TextInput
+                    value={reminderMinutes}
+                    onChangeText={handleReminderMinutesChange}
+                    keyboardType="numeric"
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-slate-100 w-16 text-center font-medium"
                 />
             </View>
 

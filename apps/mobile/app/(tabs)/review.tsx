@@ -11,6 +11,7 @@ type FilterType = 'all' | 'wrong' | 'flagged';
 
 export default function ReviewScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
+  const [selectedUnit, setSelectedUnit] = useState<string>('All');
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [questionChoices, setQuestionChoices] = useState<Map<string, any[]>>(new Map());
@@ -39,9 +40,6 @@ export default function ReviewScreen() {
             .from(schema.choices)
             .where(eq(schema.choices.questionId, question.id));
           
-          console.log('Question:', question.id, 'Choices:', choices);
-          console.log('Selected choice ID:', question.attempt?.choiceId);
-          
           if (choices.length > 0) {
             choicesMap.set(question.id, choices);
           }
@@ -56,6 +54,21 @@ export default function ReviewScreen() {
       setLoading(false);
     }
   };
+
+  const availableUnits = React.useMemo(() => {
+    return ['All', ...Array.from(new Set(questions.map(q => q.studyUnitName || q.subjectName || 'General Practice')))];
+  }, [questions]);
+
+  useEffect(() => {
+    if (selectedUnit !== 'All' && !availableUnits.includes(selectedUnit)) {
+      setSelectedUnit('All');
+    }
+  }, [availableUnits, selectedUnit]);
+
+  const displayQuestions = React.useMemo(() => {
+    if (selectedUnit === 'All') return questions;
+    return questions.filter(q => (q.studyUnitName || q.subjectName || 'General Practice') === selectedUnit);
+  }, [questions, selectedUnit]);
 
   if (loading) {
     return (
@@ -91,14 +104,43 @@ export default function ReviewScreen() {
         </View>
       </View>
 
+      {/* Unit Filter */}
+      {availableUnits.length > 2 && (
+        <View className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-2">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+            {availableUnits.map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                className={`px-4 py-1.5 mr-2 rounded-full border ${
+                  selectedUnit === unit
+                    ? 'bg-teal-600 border-teal-600 dark:bg-teal-500 dark:border-teal-500'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600'
+                }`}
+                onPress={() => setSelectedUnit(unit)}
+              >
+                <Text
+                  className={`text-sm font-medium ${
+                    selectedUnit === unit
+                      ? 'text-white'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  {unit}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <ScrollView className="flex-1 p-4">
-        {questions.length === 0 ? (
+        {displayQuestions.length === 0 ? (
           <View className="items-center justify-center py-12">
             <Text className="text-slate-400 dark:text-slate-500 text-lg">No questions to review</Text>
           </View>
         ) : (
           Object.entries(
-            questions.reduce((groups, question) => {
+            displayQuestions.reduce((groups, question) => {
               const unit = question.studyUnitName || question.subjectName || 'General Practice';
               if (!groups[unit]) groups[unit] = [];
               groups[unit].push(question);

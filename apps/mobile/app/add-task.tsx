@@ -9,6 +9,8 @@ import { db } from '../services/database';
 import * as schema from '../db/schema';
 import * as Crypto from 'expo-crypto';
 import { formatTime } from '../utils/format';
+import { getTaskReminderMinutes } from '../services/settingsService';
+import { scheduleSingleTaskReminder, cancelTaskReminder } from '../services/pushNotifications';
 
 export default function AddTaskScreen() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function AddTaskScreen() {
   const [endTime, setEndTime] = useState(new Date(new Date().setHours(6, 0, 0, 0)));
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Wird fields
   const [wirdMode, setWirdMode] = useState<'by_ayat' | 'by_pages'>('by_ayat');
@@ -288,6 +291,12 @@ export default function AddTaskScreen() {
         });
       }
 
+      if (id) {
+        await cancelTaskReminder(taskId);
+      }
+      const reminderMinutes = await getTaskReminderMinutes();
+      await scheduleSingleTaskReminder(taskId, taskType, startTime, reminderMinutes);
+
       Alert.alert('Success', 'Task added successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
@@ -343,6 +352,35 @@ export default function AddTaskScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2 mt-4">Date</Text>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mb-4"
+          >
+            <Text className="text-slate-800 dark:text-slate-200">
+              {startTime.toLocaleDateString()}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={startTime}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (event.type === 'set' && selectedDate) {
+                  const newStart = new Date(startTime);
+                  newStart.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                  setStartTime(newStart);
+                  
+                  const newEnd = new Date(endTime);
+                  newEnd.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                  setEndTime(newEnd);
+                }
+              }}
+            />
+          )}
 
           <View className="flex-row justify-between mb-6">
             <View className="flex-1 mr-2">

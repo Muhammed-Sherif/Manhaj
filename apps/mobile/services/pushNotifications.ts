@@ -64,6 +64,25 @@ export const scheduleTaskReminders = async () => {
     });
 };
 
+export const scheduleSingleTaskReminder = async (taskId: string, taskTitle: string, startTime: Date, reminderMinutes: number) => {
+    const triggerTime = new Date(startTime.getTime() - reminderMinutes * 60000);
+    if (triggerTime <= new Date()) return; // Don't schedule in the past
+
+    await Notifications.scheduleNotificationAsync({
+        identifier: `task-${taskId}`,
+        content: {
+            title: "Task Reminder",
+            body: `Your task "${taskTitle}" is starting in ${reminderMinutes} minutes.`,
+            data: { taskId }
+        },
+        trigger: triggerTime,
+    });
+}
+
+export const cancelTaskReminder = async (taskId: string) => {
+    await Notifications.cancelScheduledNotificationAsync(`task-${taskId}`);
+}
+
 const CONTENT_UPDATE_TASK = 'manhaj-content-update';
 
 TaskManager.defineTask<Notifications.NotificationTaskPayload>(CONTENT_UPDATE_TASK, async ({ data, error }) => {

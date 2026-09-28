@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { getContentStudyUnitsId } from '@manhaj/api-client';
 import { getStudyUnitDetails, saveStudyUnitDetailsToSqlite } from '../services/contentSyncService';
 
@@ -76,9 +77,11 @@ export function useGetStudyUnit(id?: string): UseGetStudyUnitResult {
     }
   }, [id]);
 
-  useEffect(() => {
-    loadStudyUnit();
-  }, [loadStudyUnit]);
+  useFocusEffect(
+    useCallback(() => {
+      loadStudyUnit();
+    }, [loadStudyUnit])
+  );
 
   return {
     studyUnit,

@@ -1,6 +1,6 @@
-import { TelegramClient } from 'telegram';
-import { StringSession } from 'telegram/sessions';
-import { Api } from 'telegram/tl';
+import { TelegramClient } from 'teleproto';
+import { StringSession } from 'teleproto/sessions';
+import { Api } from 'teleproto/tl';
 import dotenv from 'dotenv';
 import { db, questions, choices, mcqQuestions, writtenQuestions, questionImages } from '@manhaj/db';
 import { max } from 'drizzle-orm';
@@ -98,7 +98,8 @@ async function voteOnPoll(client: TelegramClient, channel: any, messageId: numbe
 async function insertQuestion(
   poll: any,
   channelMessageId: number,
-  correctAnswersArray: number[] | undefined
+  correctAnswersArray: number[] | undefined,
+  imageUrl?: string
 ): Promise<boolean> {
   try {
     // Insert question
@@ -144,6 +145,14 @@ async function insertQuestion(
 
     // Insert MCQ subclass row
     await database.insert(mcqQuestions).values({ questionId: question.id });
+
+    if (imageUrl) {
+      await database.insert(questionImages).values({
+        questionId: question.id,
+        imageUrl,
+        isAnswer: false,
+      });
+    }
 
     return true;
   } catch (error) {
@@ -233,6 +242,42 @@ async function insertTextQuestion(
   }
 }
 
+async function uploadMediaToS3(client: TelegramClient, message: any, messageId: number): Promise<string | null> {
+  try {
+    const buffer = await client.downloadMedia(message);
+    if (!buffer) {
+      throw new Error('Failed to download media buffer');
+    }
+
+    const key = `telegram_images/${Date.now()}-${messageId}.jpg`;
+    const bucket = process.env.AWS_S3_BUCKET || 'manhaj';
+    const endpoint = process.env.AWS_ENDPOINT_URL_S3;
+    
+    const s3 = new S3Client({ 
+      forcePathStyle: true,
+      region: process.env.AWS_REGION || 'eu-central-1',
+      endpoint: endpoint,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      }
+    });
+
+    await s3.send(new PutObjectCommand({ 
+      Bucket: bucket, 
+      Key: key, 
+      Body: buffer,
+      ContentType: 'image/jpeg' 
+    }));
+
+    return `${endpoint}/${bucket}/${key}`;
+  } catch (error) {
+    console.error(`Error uploading media for message ${messageId}:`, error);
+    stats.errors.push(`Media upload for ${messageId} error: ${error}`);
+    return null;
+  }
+}
+
 async function processMessage(message, channel): Promise<void> {
   stats.messagesScanned = stats.messagesScanned + 1;
 
@@ -297,8 +342,19 @@ async function processMessage(message, channel): Promise<void> {
       }
     }
 
+    // Check if the poll has an attached media (like a photo)
+    let imageUrl: string | undefined;
+    if (message.media.attachedMedia && message.media.attachedMedia.className === 'MessageMediaPhoto') {
+      console.log(`🖼️ Processing attached photo for poll ${message.id}`);
+      // Pass the media directly to downloadMedia
+      const mediaUrl = await uploadMediaToS3(client, message.media.attachedMedia, message.id);
+      if (mediaUrl) {
+        imageUrl = mediaUrl;
+      }
+    }
+
     // Insert poll question (will skip if already exists)
-    await insertQuestion({ ...poll, question: questionText }, message.id , correctAnswers);
+    await insertQuestion({ ...poll, question: questionText }, message.id , correctAnswers, imageUrl);
     return;
   }
 
@@ -311,34 +367,13 @@ async function processMessage(message, channel): Promise<void> {
     console.log(`🖼️ Processing photo ${message.id} (spoiler=${spoiler}, group=${groupedId}, caption="${caption.slice(0, 40)}")`);
 
     try {
-      const buffer = await client.downloadMedia(message);
-      if (!buffer) {
-        throw new Error('Failed to download media buffer');
+      const publicUrl = await uploadMediaToS3(client, message, message.id);
+      if (publicUrl) {
+        await insertTextQuestion(caption, message.id, message.entities, true, publicUrl, spoiler);
+      } else {
+        // Fallback to text question without image if upload failed
+        await insertTextQuestion(caption, message.id, message.entities, true, undefined, spoiler);
       }
-
-      const key = `telegram_images/${Date.now()}-${message.id}.jpg`;
-      const bucket = process.env.AWS_S3_BUCKET || 'manhaj';
-      const endpoint = process.env.AWS_ENDPOINT_URL_S3;
-      
-      const s3 = new S3Client({ 
-        forcePathStyle: true,
-        region: process.env.AWS_REGION || 'eu-central-1',
-        endpoint: endpoint,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        }
-      });
-
-      await s3.send(new PutObjectCommand({ 
-        Bucket: bucket, 
-        Key: key, 
-        Body: buffer,
-        ContentType: 'image/jpeg' 
-      }));
-
-      const publicUrl = `${endpoint}/${bucket}/${key}`;
-      await insertTextQuestion(caption, message.id, message.entities, true, publicUrl, spoiler);
       return;
     } catch (error) {
       console.error(`Error processing photo ${message.id}:`, error);
@@ -382,7 +417,7 @@ async function main() {
 
     console.log(`Starting message fetch from ID: 3967\n`);
 
-    let offsetId = 3967;
+    let offsetId = 4230;
 
     while (true) {
       console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);
