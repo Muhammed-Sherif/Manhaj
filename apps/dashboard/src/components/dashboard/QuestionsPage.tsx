@@ -720,7 +720,7 @@ export function QuestionsPage() {
           selectedCount={selected.length}
           onClose={() => setAssignModalOpen(false)}
           onConfirm={(studyUnitId, sourceTypes) =>
-            assign.mutate({ data: { questionIds: selected, studyUnitId, sourceTypes } })
+            assign.mutate({ data: { questionIds: selected, studyUnitId, sourceTypes: sourceTypes as any } })
           }
           isPending={assign.isPending}
         />

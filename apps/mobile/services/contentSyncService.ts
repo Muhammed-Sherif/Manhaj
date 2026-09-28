@@ -144,6 +144,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
             studyUnitId: question.studyUnitId || null,
             createdBy: question.createdBy || null,
             questionText: question.questionText,
+            questionType: question.questionType ?? 'mcq',
             explanation: question.explanation ?? '',
             source: question.source ?? 'manual',
             updatedAt: question.updatedAt ?? new Date().toISOString(),
@@ -154,6 +155,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
             set: {
               studyUnitId: question.studyUnitId || null,
               createdBy: question.createdBy || null,
+              questionType: question.questionType ?? 'mcq',
               questionText: question.questionText,
               explanation: question.explanation ?? '',
               source: question.source ?? 'manual',
