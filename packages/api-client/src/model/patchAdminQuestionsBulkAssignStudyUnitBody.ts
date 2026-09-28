@@ -5,9 +5,10 @@
  * Offline-First Student Question Bank API
  * OpenAPI spec version: 1.0.0
  */
+import type { PatchAdminQuestionsBulkAssignStudyUnitBodySourceTypesItem } from './patchAdminQuestionsBulkAssignStudyUnitBodySourceTypesItem';
 
 export type PatchAdminQuestionsBulkAssignStudyUnitBody = {
   questionIds: string[];
   studyUnitId: string;
-  sourceTypes?: string[];
+  sourceTypes?: PatchAdminQuestionsBulkAssignStudyUnitBodySourceTypesItem[];
 };

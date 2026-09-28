@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { CheckIcon, ChevronRightIcon, LogOutIcon, MoonIcon, SunIcon, MonitorIcon, RefreshCwIcon } from 'lucide-react-native';

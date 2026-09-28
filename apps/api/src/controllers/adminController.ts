@@ -166,6 +166,45 @@ export class AdminController {
     }
   };
 
+  uploadQuestionImage = async (req: Request, res: Response) => {
+    try {
+      const body = req.body;
+      const contentType = req.headers['content-type'] ?? '';
+      
+      const allowedTypes: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/webp': '.webp',
+        'image/heic': '.heic',
+      };
+      
+      const extension = allowedTypes[contentType.split(';')[0].trim().toLowerCase()];
+      if (!extension) {
+        res.status(400).json({ error: 'Unsupported image type' });
+        return;
+      }
+      
+      if (!body || !Buffer.isBuffer(body) || body.byteLength === 0) {
+        res.status(400).json({ error: 'Empty image body' });
+        return;
+      }
+
+      if (body.byteLength > 10 * 1024 * 1024) {
+        res.status(400).json({ error: 'Image exceeds the 10MB limit' });
+        return;
+      }
+
+      const { getStorage } = await import('../services/storage/index.js');
+      const crypto = await import('crypto');
+      const key = `questions/temp/${crypto.randomUUID()}${extension}`;
+      const stored = await getStorage().put({ key, body, contentType });
+
+      res.status(200).json({ imageUrl: stored.url, imageKey: stored.key });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  };
+
   getQuestions = async (req: Request, res: Response) => {
     try {
       const { studyUnitId } = req.query;

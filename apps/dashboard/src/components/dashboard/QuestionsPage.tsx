@@ -74,7 +74,6 @@ function StepList({ items, loading, selected, onSelect }: {
     </div>
   );
 }
-
 function AssignModal({
   selectedCount,
   onClose,
@@ -118,138 +117,183 @@ function AssignModal({
     { query: { enabled: !!subjectId } }
   );
 
-  const stepIdx = STEPS.findIndex(s => s.key === step);
-
-  const currentItems = ((
-    step === 'grade' ? (Array.isArray(grades.data?.data) ? grades.data.data : []) :
-      step === 'term' ? (gradeId && Array.isArray(terms.data?.data) ? terms.data.data : []) :
-        step === 'module' ? (termId && Array.isArray(modules.data?.data) ? modules.data.data : []) :
-          step === 'subject' ? (moduleId && Array.isArray(subjects.data?.data) ? subjects.data.data : []) :
-            (subjectId && Array.isArray(studyUnits.data?.data) ? studyUnits.data.data : [])
-  ) || []) as Item[];
-
-  const currentLoading =
-    step === 'grade' ? grades.isLoading :
-      step === 'term' ? terms.isLoading :
-        step === 'module' ? modules.isLoading :
-          step === 'subject' ? subjects.isLoading :
-            studyUnits.isLoading;
-
-  const currentSelected = step === 'grade' ? gradeId : step === 'term' ? termId
-    : step === 'module' ? moduleId : step === 'subject' ? subjectId : studyUnitId;
-
-  const handleSelect = (id: string) => {
-    if (step === 'grade') { setGradeId(id); setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
-    if (step === 'term') { setTermId(id); setModuleId(''); setSubjectId(''); setStudyUnitId(''); }
-    if (step === 'module') { setModuleId(id); setSubjectId(''); setStudyUnitId(''); }
-    if (step === 'subject') { setSubjectId(id); setStudyUnitId(''); }
-    if (step === 'studyUnit') { setStudyUnitId(id); }
-  };
-
-  const goNext = () => { if (stepIdx < STEPS.length - 1) setStep(STEPS[stepIdx + 1].key); };
-  const goBack = () => { if (stepIdx > 0) setStep(STEPS[stepIdx - 1].key); };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
-
-        {/* Header */}
-        <div className="flex items-start justify-between border-b px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Assign to study unit</h2>
-            <p className="text-sm text-slate-500">
-              Assigning <b>{selectedCount}</b> question{selectedCount !== 1 ? 's' : ''} â€” choose a destination.
+            <h2 className="text-lg font-bold text-slate-900">Assign to study unit</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Assigning <b>{selectedCount}</b> question{selectedCount !== 1 ? 's' : ''} — choose a destination.
             </p>
           </div>
-          <button onClick={onClose} className="rounded p-1 hover:bg-slate-100"><X size={16} /></button>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Breadcrumb steps */}
-        <div className="flex items-center gap-1 border-b px-6 py-3">
-          {STEPS.map((s, i) => (
-            <span key={s.key} className="flex items-center gap-1">
+        <div className="p-6">
+          <div className="mb-6 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Source Types</label>
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { id: 'previous_exam', label: 'Previous Exam' },
+                  { id: 'doctor_confirmation', label: 'Doctor Examination' },
+                  { id: 'team_expectation', label: 'Team Expectation' },
+                  { id: 'owner', label: 'Owner' },
+                  { id: 'data', label: 'Data' }
+                ].map((src) => (
+                  <label key={src.id} className={`flex items-center gap-2 cursor-pointer border rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    sourceTypes.includes(src.id) 
+                      ? 'border-teal-500 bg-teal-50 text-teal-700' 
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={sourceTypes.includes(src.id)}
+                      onChange={() => handleToggleSource(src.id)}
+                    />
+                    {src.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-2 text-sm">
               <button
-                onClick={() => { if (i < stepIdx) setStep(s.key); }}
-                disabled={i >= stepIdx}
-                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${i === stepIdx ? 'bg-teal-600 text-white'
-                    : i < stepIdx ? 'text-teal-600 hover:bg-teal-50 cursor-pointer'
-                      : 'text-slate-400 cursor-default'
-                  }`}
-              >
-                {s.label}
-              </button>
-              {i < STEPS.length - 1 && <ChevronRight size={12} className="text-slate-300" />}
-            </span>
-          ))}
-        </div>
-
-        {/* Source Type Filter */}
-        <div className="px-6 pb-3">
-          <p className="mb-2 text-xs font-medium text-slate-500 uppercase tracking-wide">Question Source (optional)</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { id: 'data', label: 'Data' },
-              { id: 'doctor_confirmation', label: 'Doctor' },
-              { id: 'previous_exam', label: 'Previous Exam' },
-              { id: 'team_expectation', label: 'Team Expectation' },
-              { id: 'owner', label: 'Owner' },
-            ].map((src) => (
-              <label
-                key={src.id}
-                className={`flex items-center gap-1.5 cursor-pointer border rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  sourceTypes.includes(src.id)
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
+                  step === 'grade' ? 'bg-slate-900 text-white' : gradeId ? 'bg-slate-100 text-slate-900' : 'bg-slate-50 text-slate-400'
                 }`}
+                onClick={() => setStep('grade')}
               >
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={sourceTypes.includes(src.id)}
-                  onChange={() => handleToggleSource(src.id)}
+                1. Grade
+              </button>
+              <button
+                disabled={!gradeId}
+                className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
+                  step === 'term' ? 'bg-slate-900 text-white' : termId ? 'bg-slate-100 text-slate-900' : 'bg-slate-50 text-slate-400'
+                }`}
+                onClick={() => setStep('term')}
+              >
+                2. Term
+              </button>
+              <button
+                disabled={!termId}
+                className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
+                  step === 'module' ? 'bg-slate-900 text-white' : moduleId ? 'bg-slate-100 text-slate-900' : 'bg-slate-50 text-slate-400'
+                }`}
+                onClick={() => setStep('module')}
+              >
+                3. Module
+              </button>
+              <button
+                disabled={!moduleId}
+                className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
+                  step === 'subject' ? 'bg-slate-900 text-white' : subjectId ? 'bg-slate-100 text-slate-900' : 'bg-slate-50 text-slate-400'
+                }`}
+                onClick={() => setStep('subject')}
+              >
+                4. Subject
+              </button>
+              <button
+                disabled={!subjectId}
+                className={`shrink-0 rounded-full px-3 py-1 font-medium transition-colors ${
+                  step === 'studyUnit' ? 'bg-teal-600 text-white' : studyUnitId ? 'bg-teal-50 text-teal-700' : 'bg-slate-50 text-slate-400'
+                }`}
+                onClick={() => setStep('studyUnit')}
+              >
+                5. Study Unit
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-2">
+              {step === 'grade' && (
+                <StepList
+                  items={grades.data?.data || []}
+                  loading={grades.isLoading}
+                  selected={gradeId}
+                  onSelect={(id) => {
+                    setGradeId(id);
+                    setTermId(''); setModuleId(''); setSubjectId(''); setStudyUnitId('');
+                    setStep('term');
+                  }}
                 />
-                {src.label}
-              </label>
-            ))}
+              )}
+              {step === 'term' && (
+                <StepList
+                  items={terms.data?.data || []}
+                  loading={terms.isLoading}
+                  selected={termId}
+                  onSelect={(id) => {
+                    setTermId(id);
+                    setModuleId(''); setSubjectId(''); setStudyUnitId('');
+                    setStep('module');
+                  }}
+                />
+              )}
+              {step === 'module' && (
+                <StepList
+                  items={modules.data?.data || []}
+                  loading={modules.isLoading}
+                  selected={moduleId}
+                  onSelect={(id) => {
+                    setModuleId(id);
+                    setSubjectId(''); setStudyUnitId('');
+                    setStep('subject');
+                  }}
+                />
+              )}
+              {step === 'subject' && (
+                <StepList
+                  items={subjects.data?.data || []}
+                  loading={subjects.isLoading}
+                  selected={subjectId}
+                  onSelect={(id) => {
+                    setSubjectId(id);
+                    setStudyUnitId('');
+                    setStep('studyUnit');
+                  }}
+                />
+              )}
+              {step === 'studyUnit' && (
+                <StepList
+                  items={studyUnits.data?.data || []}
+                  loading={studyUnits.isLoading}
+                  selected={studyUnitId}
+                  onSelect={setStudyUnitId}
+                />
+              )}
+            </div>
           </div>
-          {sourceTypes.length > 0 && (
-            <p className="mt-1.5 text-xs text-teal-600">
-              Tags selected questions as: {sourceTypes.join(', ')}
-            </p>
-          )}
-        </div>
 
-        {/* List */}
-        <div className="px-6 py-4">
-          <p className="mb-3 text-sm font-medium text-slate-600">
-            Select a {STEPS[stepIdx].label.toLowerCase()}:
-          </p>
-          <StepList
-            items={currentItems as Item[]}
-            loading={currentLoading}
-            selected={currentSelected}
-            onSelect={handleSelect}
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-between border-t px-6 py-4">
-          <Button variant="outline" onClick={goBack} disabled={stepIdx === 0}>Back</Button>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            {step !== 'studyUnit' ? (
-              <Button onClick={goNext} disabled={!currentSelected}>
-                Next <ChevronRight size={14} className="ml-1" />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => onConfirm(studyUnitId, sourceTypes)}
-                disabled={!studyUnitId || isPending}
-              >
-                <BookOpen size={14} className="mr-1" />
-                {isPending ? 'Assigning…' : 'Confirm assign'}
-              </Button>
-            )}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-teal-600 hover:bg-teal-700"
+              disabled={!studyUnitId || isPending}
+              onClick={() => onConfirm(studyUnitId, sourceTypes)}
+            >
+              {isPending ? (
+                'Assigning...'
+              ) : (
+                <>
+                  <Check size={16} className="mr-2" />
+                  Assign to Study Unit
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
@@ -264,6 +308,7 @@ type EditableChoice = {
   id?: string;
   choiceText: string;
   isCorrect: boolean;
+  [key: string]: any;
 };
 
 export function EditQuestionModal({
@@ -282,6 +327,7 @@ export function EditQuestionModal({
   );
   const [choices, setChoices] = useState<EditableChoice[]>(
     (question.choices ?? []).map((c) => ({
+      ...c,
       id: c.id,
       choiceText: c.choiceText ?? '',
       isCorrect: c.isCorrect ?? false,
@@ -326,8 +372,8 @@ export function EditQuestionModal({
       data: {
         questionText,
         explanation,
-        ...(isWritten ? { writtenAnswer } : {}),
-      },
+        ...(isWritten ? { writtenAnswer } : { choices }),
+      } as any,
     });
   };
 
@@ -444,7 +490,6 @@ export function EditQuestionModal({
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-slate-400">Note: Choice edits are saved via the choices API separately. Only question text and explanation are updated here.</p>
             </div>
           )}
         </div>

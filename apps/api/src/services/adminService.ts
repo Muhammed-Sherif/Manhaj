@@ -21,6 +21,7 @@ import {
   refreshTokens,
   mcqQuestions,
   writtenQuestions,
+  questionImages,
 } from '@manhaj/db/schema';
 import { and, eq, inArray, isNull, sql, gte, lte } from '@manhaj/db';
 import { notifyContentUpdated } from './pushService.js';
@@ -298,11 +299,20 @@ export class AdminService {
             ...choice,
             questionId: question.id,
           }))
-          );
-        }
+        );
+      }
+      
+      if (questionFields.imageUrl) {
+        await transaction.insert(questionImages).values({
+          questionId: question.id,
+          imageUrl: questionFields.imageUrl,
+          displayOrder: 0,
+          isAnswer: false,
+        });
+      }
 
-        return question;
-      });
+      return question;
+    });
     }
 
     async getQuestions(studyUnitId?: string) {
@@ -311,6 +321,7 @@ export class AdminService {
         with: {
           choices: true,
           writtenQuestion: true,
+          images: true,
         },
       });
 
@@ -321,6 +332,7 @@ export class AdminService {
           with: {
             choices: true,
             writtenQuestion: true,
+            images: true,
           },
         });
       } else if (studyUnitId) {
@@ -329,6 +341,7 @@ export class AdminService {
           with: {
             choices: true,
             writtenQuestion: true,
+            images: true,
           },
         });
       }

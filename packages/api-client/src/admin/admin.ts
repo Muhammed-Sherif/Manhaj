@@ -46,6 +46,7 @@ import type {
   PatchAdminUsersIdBody,
   PostAdminGradesBody,
   PostAdminModulesBody,
+  PostAdminQuestionsBody,
   PostAdminQuestionsBulkDelete200,
   PostAdminQuestionsBulkDeleteBody,
   PostAdminStudyUnitsBody,
@@ -57,7 +58,8 @@ import type {
   Question,
   StudyUnit,
   Subject,
-  Term
+  Term,
+  UploadQuestionImage200
 } from '.././model';
 
 import { customAxios } from '.././mutator';
@@ -1102,6 +1104,64 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const postAdminQuestions = (
+    postAdminQuestionsBody: PostAdminQuestionsBody,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<Question>(
+      {url: `/admin/questions`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: postAdminQuestionsBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getPostAdminQuestionsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminQuestions>>, TError,{data: PostAdminQuestionsBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof postAdminQuestions>>, TError,{data: PostAdminQuestionsBody}, TContext> => {
+
+const mutationKey = ['postAdminQuestions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAdminQuestions>>, {data: PostAdminQuestionsBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAdminQuestions(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAdminQuestionsMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminQuestions>>>
+    export type PostAdminQuestionsMutationBody = PostAdminQuestionsBody
+    export type PostAdminQuestionsMutationError = unknown
+
+    export const usePostAdminQuestions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminQuestions>>, TError,{data: PostAdminQuestionsBody}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postAdminQuestions>>,
+        TError,
+        {data: PostAdminQuestionsBody},
+        TContext
+      > => {
+
+      const mutationOptions = getPostAdminQuestionsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const getAdminQuestions = (
     params?: GetAdminQuestionsParams,
  options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
@@ -1189,7 +1249,72 @@ export function useGetAdminQuestions<TData = Awaited<ReturnType<typeof getAdminQ
 
 
 
-export const patchAdminQuestionsBulkAssignStudyUnit = (
+/**
+ * Upload an image to be associated with a question. Pass binary image data in request body.
+ * @summary Upload question image
+ */
+export const uploadQuestionImage = (
+    uploadQuestionImageBody: Blob,
+ options?: SecondParameter<typeof customAxios>,signal?: AbortSignal
+) => {
+      
+      
+      return customAxios<UploadQuestionImage200>(
+      {url: `/admin/questions/upload-image`, method: 'POST',
+      headers: {'Content-Type': 'image/*', },
+      data: uploadQuestionImageBody, signal
+    },
+      options);
+    }
+  
+
+
+export const getUploadQuestionImageMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadQuestionImage>>, TError,{data: Blob}, TContext>, request?: SecondParameter<typeof customAxios>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadQuestionImage>>, TError,{data: Blob}, TContext> => {
+
+const mutationKey = ['uploadQuestionImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadQuestionImage>>, {data: Blob}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadQuestionImage(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadQuestionImageMutationResult = NonNullable<Awaited<ReturnType<typeof uploadQuestionImage>>>
+    export type UploadQuestionImageMutationBody = Blob
+    export type UploadQuestionImageMutationError = unknown
+
+    /**
+ * @summary Upload question image
+ */
+export const useUploadQuestionImage = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadQuestionImage>>, TError,{data: Blob}, TContext>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof uploadQuestionImage>>,
+        TError,
+        {data: Blob},
+        TContext
+      > => {
+
+      const mutationOptions = getUploadQuestionImageMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const patchAdminQuestionsBulkAssignStudyUnit = (
     patchAdminQuestionsBulkAssignStudyUnitBody: PatchAdminQuestionsBulkAssignStudyUnitBody,
  options?: SecondParameter<typeof customAxios>,) => {
       

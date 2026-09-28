@@ -1,4 +1,4 @@
-import { Router, type Router as ExpressRouter } from 'express';
+import express, { Router, type Router as ExpressRouter } from 'express';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { AdminController } from '../controllers/adminController.js';
 
@@ -273,6 +273,40 @@ router.delete('/subjects/:id', adminController.deleteSubject);
 /**
  * @swagger
  * /admin/questions:
+ *   post:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               questionText: { type: string }
+ *               explanation: { type: string }
+ *               questionType: { type: string, enum: [mcq, written] }
+ *               source: { type: string }
+ *               sourceId: { type: string }
+ *               subjectId: { type: string, format: uuid, nullable: true }
+ *               telegramMessageId: { type: integer, nullable: true }
+ *               writtenAnswer: { type: string }
+ *               choices:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     choiceText: { type: string }
+ *                     isCorrect: { type: boolean }
+ *                     imageUrl: { type: string, nullable: true }
+ *               imageUrl: { type: string, nullable: true }
+ *     responses:
+ *       200:
+ *         description: Question created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Question'
  *   get:
  *     tags: [Admin]
  *     security: [{ bearerAuth: [] }, { authToken: [] }]
@@ -289,8 +323,38 @@ router.delete('/subjects/:id', adminController.deleteSubject);
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Question'
+ *
+ * /admin/questions/upload-image:
+ *   post:
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }, { authToken: [] }]
+ *     summary: Upload question image
+ *     operationId: uploadQuestionImage
+ *     description: Upload an image to be associated with a question. Pass binary image data in request body.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         image/*:
+ *           schema:
+ *             type: string
+ *             format: binary
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 imageUrl: { type: string }
+ *                 imageKey: { type: string }
  */
 router.post('/questions', adminController.createQuestion);
+router.post(
+  '/questions/upload-image',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'image/heic'], limit: '10mb' }),
+  adminController.uploadQuestionImage
+);
 router.get('/questions', adminController.getQuestions);
 /**
  * @swagger

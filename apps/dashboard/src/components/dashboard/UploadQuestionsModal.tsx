@@ -24,9 +24,12 @@ export function UploadQuestionsModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Manual Form State
+  const [questionType, setQuestionType] = useState<'mcq' | 'written'>('mcq');
   const [questionText, setQuestionText] = useState('');
   const [explanation, setExplanation] = useState('');
   const [source, setSource] = useState('manual');
+  const [writtenAnswer, setWrittenAnswer] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [choices, setChoices] = useState<ChoiceForm[]>([
     { choiceText: '', isCorrect: true },
     { choiceText: '', isCorrect: false },
@@ -78,31 +81,58 @@ export function UploadQuestionsModal({
       return;
     }
 
-    const validChoices = choices.filter((c) => c.choiceText.trim().length > 0);
-    if (validChoices.length < 2) {
-      toast.error('Please provide at least 2 non-empty choices');
-      return;
-    }
+    if (questionType === 'mcq') {
+      const validChoices = choices.filter((c) => c.choiceText.trim().length > 0);
+      if (validChoices.length < 2) {
+        toast.error('Please provide at least 2 non-empty choices');
+        return;
+      }
 
-    if (!validChoices.some((c) => c.isCorrect)) {
-      toast.error('Please select which choice is the correct answer');
+      if (!validChoices.some((c) => c.isCorrect)) {
+        toast.error('Please select which choice is the correct answer');
+        return;
+      }
+    } else if (questionType === 'written' && !writtenAnswer.trim()) {
+      toast.error('Please provide the written answer');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await axios.post('/admin/questions', {
+      let imageUrl: string | undefined = undefined;
+
+      if (questionType === 'mcq' && imageFile) {
+        const uploadRes = await axios.post('/admin/questions/upload-image', imageFile, {
+          headers: { 'Content-Type': imageFile.type },
+        });
+        imageUrl = uploadRes.data.imageUrl;
+      }
+
+      const payload: any = {
         questionText: questionText.trim(),
         explanation: explanation.trim(),
         source: source || 'manual',
-        choices: validChoices,
-      });
+        questionType,
+      };
+
+      if (questionType === 'mcq') {
+        payload.choices = choices.filter((c) => c.choiceText.trim().length > 0);
+        if (imageUrl) {
+          payload.imageUrl = imageUrl;
+        }
+      } else {
+        payload.writtenAnswer = writtenAnswer.trim();
+      }
+
+      await axios.post('/admin/questions', payload);
 
       toast.success('Question created successfully!');
       onQuestionsAdded();
       // Reset form
       setQuestionText('');
       setExplanation('');
+      setWrittenAnswer('');
+      setImageFile(null);
       setChoices([
         { choiceText: '', isCorrect: true },
         { choiceText: '', isCorrect: false },
@@ -224,6 +254,35 @@ export function UploadQuestionsModal({
         {activeTab === 'manual' ? (
           <form onSubmit={handleManualSubmit} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Question Type */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
+                  Question Type *
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="questionType"
+                      checked={questionType === 'mcq'}
+                      onChange={() => setQuestionType('mcq')}
+                      className="size-4 accent-teal-600"
+                    />
+                    <span className="text-sm text-slate-700">Multiple Choice (MCQ)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="questionType"
+                      checked={questionType === 'written'}
+                      onChange={() => setQuestionType('written')}
+                      className="size-4 accent-teal-600"
+                    />
+                    <span className="text-sm text-slate-700">Written</span>
+                  </label>
+                </div>
+              </div>
+
               {/* Question Text */}
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1">
@@ -239,64 +298,100 @@ export function UploadQuestionsModal({
                 />
               </div>
 
-              {/* Choices */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-slate-800">
-                    Choices & Options *
+              {/* Image Upload for MCQ */}
+              {questionType === 'mcq' && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                    Question Image (Optional)
                   </label>
-                  <span className="text-xs text-slate-400">
-                    Select the radio button for the correct answer
-                  </span>
-                </div>
-
-                <div className="space-y-2.5">
-                  {choices.map((choice, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-3 rounded-xl border p-2.5 transition-colors ${
-                        choice.isCorrect
-                          ? 'border-teal-500 bg-teal-50/40'
-                          : 'border-slate-200 bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="correct-choice"
-                        checked={choice.isCorrect}
-                        onChange={() => handleSetCorrect(index)}
-                        className="size-4 accent-teal-600 cursor-pointer"
-                        title="Mark as correct answer"
-                      />
-                      <input
-                        type="text"
-                        value={choice.choiceText}
-                        onChange={(e) => handleChoiceTextChange(index, e.target.value)}
-                        placeholder={`Choice ${index + 1}`}
-                        className="flex-1 bg-transparent text-sm text-slate-800 focus:outline-none"
-                      />
-                      {choices.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveChoice(index)}
-                          className="text-slate-400 hover:text-red-500 p-1 transition-colors"
-                          title="Remove option"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                  />
+                  {imageFile && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      Selected: {imageFile.name}
                     </div>
-                  ))}
+                  )}
                 </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={handleAddChoice}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700"
-                >
-                  <Plus size={14} /> Add Another Choice
-                </button>
-              </div>
+              {/* Choices for MCQ / Written Answer for Written */}
+              {questionType === 'mcq' ? (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-slate-800">
+                      Choices & Options *
+                    </label>
+                    <span className="text-xs text-slate-400">
+                      Select the radio button for the correct answer
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {choices.map((choice, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-3 rounded-xl border p-2.5 transition-colors ${
+                          choice.isCorrect
+                            ? 'border-teal-500 bg-teal-50/40'
+                            : 'border-slate-200 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="correct-choice"
+                          checked={choice.isCorrect}
+                          onChange={() => handleSetCorrect(index)}
+                          className="size-4 accent-teal-600 cursor-pointer"
+                          title="Mark as correct answer"
+                        />
+                        <input
+                          type="text"
+                          value={choice.choiceText}
+                          onChange={(e) => handleChoiceTextChange(index, e.target.value)}
+                          placeholder={`Choice ${index + 1}`}
+                          className="flex-1 bg-transparent text-sm text-slate-800 focus:outline-none"
+                        />
+                        {choices.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveChoice(index)}
+                            className="text-slate-400 hover:text-red-500 p-1 transition-colors"
+                            title="Remove option"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddChoice}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700"
+                  >
+                    <Plus size={14} /> Add Another Choice
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-800 mb-1">
+                    Written Answer *
+                  </label>
+                  <textarea
+                    value={writtenAnswer}
+                    onChange={(e) => setWrittenAnswer(e.target.value)}
+                    placeholder="Enter the model answer here..."
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 p-3 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    required={questionType === 'written'}
+                  />
+                </div>
+              )}
 
               {/* Explanation */}
               <div>

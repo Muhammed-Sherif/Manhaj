@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { useAuthStore } from '../store/authStore';
-import { syncContentFromServer } from './contentSyncService';
+import { syncContentFromServer, syncZekrCatalog, syncQuranData } from './contentSyncService';
 import {
   postStudentAttemptsSync,
   postStudentFlags,
@@ -435,7 +435,6 @@ export const syncPendingChanges = async (): Promise<SyncResult> => {
   const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
   await syncContentFromServer();
   try {
-    const { syncZekrCatalog, syncQuranData } = await import('./contentSyncService');
     await syncZekrCatalog();
     await syncQuranData();
   } catch (err) {
