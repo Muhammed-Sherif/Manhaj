@@ -3,6 +3,7 @@ import { usePostAdminQuestions } from '@manhaj/api-client';
 import { X, Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { axios } from '@/api/client';
 
 type EditableChoice = {
   choiceText: string;
@@ -20,6 +21,7 @@ export function AddQuestionModal({
   const [questionText, setQuestionText] = useState('');
   const [explanation, setExplanation] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [choices, setChoices] = useState<EditableChoice[]>([
     { choiceText: '', isCorrect: true },
     { choiceText: '', isCorrect: false },
@@ -54,14 +56,29 @@ export function AddQuestionModal({
   const removeChoice = (index: number) =>
     setChoices((prev) => prev.filter((_, i) => i !== index));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const isWritten = questionType === 'written';
+    let imageUrl: string | undefined = undefined;
+
+    if (imageFile) {
+      try {
+        const uploadRes = await axios.post('/admin/questions/upload-image', imageFile, {
+          headers: { 'Content-Type': imageFile.type },
+        });
+        imageUrl = uploadRes.data.imageUrl;
+      } catch (err: any) {
+        toast.error('Failed to upload image');
+        return;
+      }
+    }
+
     createMutation.mutate({
       data: {
         questionText,
         explanation,
         questionType,
-        source: 'dashboard',
+        source: 'admin_manual',
+        imageUrl,
         ...(isWritten ? { writtenAnswer } : { choices }),
       },
     });
@@ -129,6 +146,20 @@ export function AddQuestionModal({
               onChange={(e) => setExplanation(e.target.value)}
               placeholder="Enter explanation…"
             />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Image <span className="text-slate-400 font-normal">(optional)</span></label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+              className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+            />
+            {imageFile && (
+              <p className="mt-2 text-xs text-slate-500 truncate">Selected: {imageFile.name}</p>
+            )}
           </div>
 
           {/* Written Answer / Choices */}

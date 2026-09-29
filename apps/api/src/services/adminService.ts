@@ -5,7 +5,6 @@ import {
   questionSources,
   choices,
   attempts,
-  flags,
   studyUnits,
   lectureVideos,
   lectureFiles,
