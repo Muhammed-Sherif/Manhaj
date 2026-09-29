@@ -6,16 +6,19 @@ import { customAxios } from '@manhaj/api-client';
 export interface StudentSyncData {
   reviewItems: any[];
   tasks: any[];
+  attempts?: any[];
+  flags?: any[];
+  videoProgress?: any[];
   nextCursor?: string;
 }
 
 // Sync student-owned items (bidirectional with tombstones)
 export const syncStudentItemsFromServer = async (clientChanges?: any): Promise<StudentSyncData> => {
   console.log('[StudentSync] syncStudentItemsFromServer: starting');
-  
+
   const cursor = await getLastStudentSyncCursor();
   console.log(`[StudentSync] using cursor: ${cursor ?? 'none (full sync)'}`);
-  
+
   const response = await customAxios<any>(
     {
       url: '/student/sync',
@@ -24,20 +27,27 @@ export const syncStudentItemsFromServer = async (clientChanges?: any): Promise<S
       data: clientChanges || {},
     }
   );
-  
+
   const studentData: StudentSyncData = {
     reviewItems: response.data.serverChanges?.reviewItems || [],
     tasks: response.data.serverChanges?.tasks || [],
+    attempts: response.data.serverChanges?.attempts || [],
+    flags: response.data.serverChanges?.flags || [],
+    videoProgress: response.data.serverChanges?.videoProgress || [],
     nextCursor: response.data.nextCursor,
   };
-  
+
   console.log(
-    `[StudentSync] fetched from server: ${studentData.reviewItems.length} review items, ${studentData.tasks.length} tasks, nextCursor: ${studentData.nextCursor ?? 'none'}`
+    `[StudentSync] fetched from server: ${studentData.reviewItems.length} review items, ${studentData.tasks.length} tasks, ${studentData.attempts?.length ?? 0} attempts, ${studentData.flags?.length ?? 0} flags, ${studentData.videoProgress?.length ?? 0} video progress, nextCursor: ${studentData.nextCursor ?? 'none'}`
   );
-  
+  if (!studentData.attempts || studentData.attempts.length === 0) {
+    console.log('[StudentSync] Debug: No attempts returned. Cursor used:', cursor);
+    console.log('[StudentSync] Debug: serverChanges attempts array:', response.data.serverChanges?.attempts);
+  }
+
   await syncStudentItems(studentData);
   console.log('[StudentSync] syncStudentItemsFromServer: finished successfully');
-  
+
   return studentData;
 };
 
@@ -87,6 +97,87 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
               deletedAt: item.deletedAt,
             },
           });
+
+        // Sync question subclass
+        if (item.questionReviewItem) {
+          await tx
+            .insert(schema.questionReviewable)
+            .values({
+              reviewableId: item.id,
+              questionId: item.questionReviewItem.questionId,
+            })
+            .onConflictDoNothing();
+        }
+
+        // Sync case subclass
+        if (item.caseItem) {
+          const caseId = item.caseItem.id || item.caseItem.reviewItemId || item.id;
+          await tx
+            .insert(schema.caseItems)
+            .values({
+              id: caseId,
+              studyUnitId: item.caseItem.studyUnitId || '',
+              category: item.caseItem.category || 'general',
+              title: item.caseItem.title || '',
+              content: item.caseItem.content || '',
+              answer: item.caseItem.answer,
+              imageUploadStatus: item.caseItem.imageUploadStatus || 'none',
+              createdAt: item.caseItem.createdAt || new Date().toISOString(),
+            })
+            .onConflictDoUpdate({
+              target: schema.caseItems.id,
+              set: {
+                studyUnitId: item.caseItem.studyUnitId || '',
+                category: item.caseItem.category || 'general',
+                title: item.caseItem.title || '',
+                content: item.caseItem.content || '',
+                answer: item.caseItem.answer,
+                imageUploadStatus: item.caseItem.imageUploadStatus || 'none',
+              },
+            });
+
+          await tx
+            .insert(schema.caseReviewable)
+            .values({
+              reviewableId: item.id,
+              caseId: caseId,
+            })
+            .onConflictDoNothing();
+        }
+
+        // Sync note subclass
+        if (item.noteItem) {
+          const noteId = item.noteItem.id || item.noteItem.reviewItemId || item.id;
+          await tx
+            .insert(schema.noteItems)
+            .values({
+              id: noteId,
+              studyUnitId: item.noteItem.studyUnitId || '',
+              type: item.noteItem.type || 'general',
+              content: item.noteItem.content || '',
+              sourceQuestionId: item.noteItem.sourceQuestionId,
+              imageUploadStatus: item.noteItem.imageUploadStatus || 'none',
+              createdAt: item.noteItem.createdAt || new Date().toISOString(),
+            })
+            .onConflictDoUpdate({
+              target: schema.noteItems.id,
+              set: {
+                studyUnitId: item.noteItem.studyUnitId || '',
+                type: item.noteItem.type || 'general',
+                content: item.noteItem.content || '',
+                sourceQuestionId: item.noteItem.sourceQuestionId,
+                imageUploadStatus: item.noteItem.imageUploadStatus || 'none',
+              },
+            });
+
+          await tx
+            .insert(schema.noteReviewable)
+            .values({
+              reviewableId: item.id,
+              noteId: noteId,
+            })
+            .onConflictDoNothing();
+        }
       }
     }
 
@@ -130,6 +221,65 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
               achievedFrom: task.achievedFrom,
               updatedAt: task.updatedAt,
               deletedAt: task.deletedAt,
+            },
+          });
+      }
+    }
+
+    // Sync attempts
+    if (studentData.attempts) {
+      for (const attempt of studentData.attempts) {
+        await tx
+          .insert(schema.attempts)
+          .values({
+            id: attempt.id,
+            userId: attempt.userId,
+            questionId: attempt.questionId,
+            choiceId: attempt.choiceId,
+            isCorrect: attempt.isCorrect ? 1 : 0,
+            synced: 1, // already synced
+            createdAt: new Date().toISOString(), // Server doesn't send this, we generate
+          })
+          .onConflictDoNothing(); // Immutable
+      }
+    }
+
+    // Sync flags
+    if (studentData.flags) {
+      for (const flag of studentData.flags) {
+        await tx
+          .insert(schema.flags)
+          .values({
+            id: flag.id,
+            userId: flag.userId,
+            questionId: flag.questionId,
+            synced: 1,
+            operation: 'add',
+            createdAt: new Date().toISOString(),
+          })
+          .onConflictDoNothing();
+      }
+    }
+
+    // Sync video progress
+    if (studentData.videoProgress) {
+      for (const vp of studentData.videoProgress) {
+        await tx
+          .insert(schema.videoProgress)
+          .values({
+            id: vp.id,
+            userId: vp.userId,
+            studyUnitVideoId: vp.lectureVideoId, // Note: server uses lectureVideoId
+            positionSeconds: vp.positionSeconds,
+            updatedAt: vp.updatedAt || new Date().toISOString(),
+            synced: 1,
+          })
+          .onConflictDoUpdate({
+            target: schema.videoProgress.id,
+            set: {
+              positionSeconds: vp.positionSeconds,
+              updatedAt: vp.updatedAt || new Date().toISOString(),
+              synced: 1,
             },
           });
       }

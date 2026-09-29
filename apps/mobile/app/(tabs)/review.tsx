@@ -1,12 +1,15 @@
 import { ScreenContainer } from '../../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { XCircleIcon, FlagIcon, CheckCircleIcon, BookOpenIcon, FilterIcon } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { XCircleIcon, FlagIcon, CheckCircleIcon, BookOpenIcon, FilterIcon, CheckSquareIcon, SquareIcon, PlusIcon, ListChecksIcon } from 'lucide-react-native';
 import { getWrongOrFlaggedQuestions } from '../../services/syncService';
 import { db } from '../../services/database';
 import * as schema from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import Modal from '../../components/Modal';
+import * as Crypto from 'expo-crypto';
+import { newCard } from '@manhaj/srs/src/anki';
+import { useAuthStore } from '../../store/authStore';
 
 type FilterType = 'all' | 'wrong' | 'flagged';
 
@@ -18,6 +21,8 @@ export default function ReviewScreen() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [questionChoices, setQuestionChoices] = useState<Map<string, any[]>>(new Map());
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set());
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   useEffect(() => {
     loadQuestions();
@@ -113,6 +118,61 @@ export default function ReviewScreen() {
     </TouchableOpacity>
   );
 
+  const toggleSelectAll = () => {
+    if (selectedQuestionIds.size === displayQuestions.length) {
+      setSelectedQuestionIds(new Set());
+    } else {
+      setSelectedQuestionIds(new Set(displayQuestions.map(q => q.id)));
+    }
+  };
+
+  const handleAddToSRS = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    
+    try {
+      const nowStr = new Date().toISOString();
+      const userId = useAuthStore.getState().user?.id ?? 'temp_user_id';
+      let addedCount = 0;
+      
+      for (const qId of ids) {
+        const existing = await db.select().from(schema.questionReviewable).where(eq(schema.questionReviewable.questionId, qId));
+        if (existing.length > 0) continue;
+        
+        const reviewableId = Crypto.randomUUID();
+        const card = newCard();
+        
+        await db.insert(schema.reviewableItems).values({
+          id: reviewableId,
+          userId,
+          itemType: 'question',
+          state: card.state,
+          currentStepIndex: card.currentStepIndex,
+          interval: card.interval,
+          easeFactor: card.easeFactor,
+          repetitionCount: card.repetitionCount,
+          lapses: card.lapses,
+          nextReviewDate: nowStr,
+          createdAt: nowStr,
+          updatedAt: nowStr,
+        });
+        
+        await db.insert(schema.questionReviewable).values({
+          reviewableId,
+          questionId: qId,
+        });
+        
+        addedCount++;
+      }
+      
+      Alert.alert('Success', `Added ${addedCount} question(s) to reviewable items (SRS).`);
+      setSelectedQuestionIds(new Set());
+      setIsSelectMode(false);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Failed to add to SRS');
+    }
+  };
+
   if (loading) {
     return (
       <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900 items-center justify-center">
@@ -123,11 +183,44 @@ export default function ReviewScreen() {
 
   return (
     <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <View className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex-row justify-between items-center">
-        <Text className="text-lg font-semibold text-slate-800 dark:text-slate-100">Review Questions</Text>
-        <TouchableOpacity onPress={() => setFilterModalVisible(true)} className="p-1">
-          <FilterIcon size={20} color="#64748b" />
-        </TouchableOpacity>
+      <View className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+        <View className="flex-row justify-between items-center">
+          <Text className="text-lg font-semibold text-slate-800 dark:text-slate-100">Review Questions</Text>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity onPress={() => setIsSelectMode(!isSelectMode)} className="p-1">
+              <ListChecksIcon size={20} color={isSelectMode ? "#0d9488" : "#64748b"} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setFilterModalVisible(true)} className="p-1">
+              <FilterIcon size={20} color="#64748b" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {isSelectMode && (
+          <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <TouchableOpacity onPress={toggleSelectAll} className="flex-row items-center">
+              {selectedQuestionIds.size === displayQuestions.length && displayQuestions.length > 0 ? (
+                <CheckSquareIcon size={18} color="#0d9488" />
+              ) : (
+                <SquareIcon size={18} color="#64748b" />
+              )}
+              <Text className="ml-2 text-sm text-slate-600 dark:text-slate-400">
+                {selectedQuestionIds.size} selected
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              onPress={() => handleAddToSRS(Array.from(selectedQuestionIds))}
+              disabled={selectedQuestionIds.size === 0}
+              className={`flex-row items-center px-3 py-1.5 rounded-lg ${selectedQuestionIds.size > 0 ? 'bg-teal-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+            >
+              <PlusIcon size={16} color={selectedQuestionIds.size > 0 ? "white" : "#94a3b8"} />
+              <Text className={`ml-1 text-sm font-medium ${selectedQuestionIds.size > 0 ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+                Add to SRS
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView className="flex-1 p-4">
@@ -155,6 +248,26 @@ export default function ReviewScreen() {
                 className="bg-white dark:bg-slate-800 rounded-xl p-4 mb-3 shadow-sm">
                 
                     <View className="flex-row items-start mb-3">
+                      {isSelectMode && (
+                        <TouchableOpacity 
+                          className="mr-3 mt-2" 
+                          onPress={() => {
+                            const newSet = new Set(selectedQuestionIds);
+                            if (newSet.has(question.id)) {
+                              newSet.delete(question.id);
+                            } else {
+                              newSet.add(question.id);
+                            }
+                            setSelectedQuestionIds(newSet);
+                          }}
+                        >
+                          {selectedQuestionIds.has(question.id) ? (
+                            <CheckSquareIcon size={20} color="#0d9488" />
+                          ) : (
+                            <SquareIcon size={20} color="#94a3b8" />
+                          )}
+                        </TouchableOpacity>
+                      )}
                       <View className="mr-3 mt-0.5">
                         <View className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-900 items-center justify-center">
                           <BookOpenIcon size={18} color="#0d9488" />

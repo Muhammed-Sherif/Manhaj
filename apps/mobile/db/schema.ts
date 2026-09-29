@@ -104,6 +104,7 @@ export const questions = sqliteTable('questions', {
   questionText: text('question_text').notNull(),
   explanation: text('explanation').notNull(),
   source: text('source').notNull(),
+  telegramMessageId: integer('telegram_message_id'),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),
 });

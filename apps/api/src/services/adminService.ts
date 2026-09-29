@@ -237,14 +237,7 @@ export class AdminService {
       .innerJoin(terms, eq(modules.termId, terms.id))
       .where(eq(studyUnits.id, id));
 
-    const [questionDependencies] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(questions)
-      .where(eq(questions.studyUnitId, id));
-
-    if (Number(questionDependencies?.count ?? 0) > 0) {
-      throw new AdminConflictError('Cannot delete a study unit with dependent questions');
-    }
+    await db.delete(questions).where(eq(questions.studyUnitId, id));
 
     await db.delete(lectureVideos).where(eq(lectureVideos.studyUnitId, id));
     await db.delete(lectureFiles).where(eq(lectureFiles.studyUnitId, id));

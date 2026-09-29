@@ -1,5 +1,5 @@
 import NetInfo from '@react-native-community/netinfo';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { useAuthStore } from '../store/authStore';
@@ -431,22 +431,53 @@ export const syncVideoProgress = async (): Promise<SyncResult> => {
 
 export const syncPendingChanges = async (): Promise<SyncResult> => {
   const netInfo = await NetInfo.fetch();
-  if (!netInfo.isConnected) return { success: false, synced: 0, failed: 0 };
+  if (!netInfo.isConnected) {
+    console.log('[Sync] syncPendingChanges: offline, skipping');
+    return { success: false, synced: 0, failed: 0 };
+  }
 
+  console.log('[Sync] syncPendingChanges: ---- START ----');
+
+  console.log('[Sync] step 1/5: uploading attempts, flags, video progress...');
   const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
+  console.log(`[Sync] step 1/5 done: attempts=${results[0].synced}, flags=${results[1].synced}, videoProgress=${results[2].synced}`);
+
+  console.log('[Sync] step 2/5: syncing content (questions/studyUnits) from server...');
   await syncContentFromServer();
+  console.log('[Sync] step 2/5 done');
+
+  console.log('[Sync] step 3/5: syncing student items (reviewables/tasks) from server...');
   try {
     await syncStudentItemsFromServer();
-    await syncZekrCatalog();
-    await syncQuranData();
-  } catch (err) {
-    console.error('Failed to sync extra catalogs', err);
+    console.log('[Sync] step 3/5 done');
+  } catch (err: any) {
+    console.error('[Sync] step 3/5 FAILED (student sync):', err?.message ?? err);
   }
-  return {
+
+  try {
+    console.log('[Sync] step 4/5: syncing zekr catalog...');
+    await syncZekrCatalog();
+    console.log('[Sync] step 4/5 done');
+
+    console.log('[Sync] step 5/5: syncing quran data...');
+    await syncQuranData();
+    console.log('[Sync] step 5/5 done');
+  } catch (err) {
+    console.error('[Sync] Failed to sync zekr/quran catalogs', err);
+  }
+
+  const summary = {
     success: results.every((result) => result.success),
     synced: results.reduce((total, result) => total + result.synced, 0),
     failed: results.reduce((total, result) => total + result.failed, 0),
   };
+  console.log(`[Sync] syncPendingChanges: ---- DONE ---- synced=${summary.synced} failed=${summary.failed}`);
+  return summary;
+};
+
+export const resetCursors = async (): Promise<void> => {
+  await db.delete(schema.syncState).where(eq(schema.syncState.key, 'last_sync_cursor'));
+  await db.delete(schema.syncState).where(eq(schema.syncState.key, 'last_student_sync_cursor'));
 };
 
 // Get wrong or flagged questions for review via Drizzle ORM
@@ -468,7 +499,7 @@ export const getWrongOrFlaggedQuestions = async () => {
     .innerJoin(schema.attempts, eq(schema.questions.id, schema.attempts.questionId))
     .leftJoin(schema.studyUnits, eq(schema.questions.studyUnitId, schema.studyUnits.id))
     .leftJoin(schema.subjects, eq(schema.studyUnits.subjectId, schema.subjects.id))
-    .where(and(eq(schema.attempts.userId, userId), eq(schema.attempts.isCorrect, 0)));
+    .where(and(eq(schema.attempts.userId, userId), eq(schema.attempts.isCorrect, 0), isNull(schema.questions.deletedAt)));
 
   const flaggedQuestions = await db
     .select({
@@ -488,7 +519,7 @@ export const getWrongOrFlaggedQuestions = async () => {
     )
     .leftJoin(schema.studyUnits, eq(schema.questions.studyUnitId, schema.studyUnits.id))
     .leftJoin(schema.subjects, eq(schema.studyUnits.subjectId, schema.subjects.id))
-    .where(and(eq(schema.flags.userId, userId), eq(schema.flags.operation, 'add')));
+    .where(and(eq(schema.flags.userId, userId), eq(schema.flags.operation, 'add'), isNull(schema.questions.deletedAt)));
 
   // Combine and deduplicate
   const questionMap = new Map<string, any>();
@@ -533,7 +564,7 @@ export const getSolvedQuestionIds = async (): Promise<Set<string>> => {
 // Get unsolved questions for a studyUnit
 export const getUnsolvedQuestions = async (studyUnitId: string) => {
   const allQuestions = await db.query.questions.findMany({
-    where: eq(schema.questions.studyUnitId, studyUnitId),
+    where: and(eq(schema.questions.studyUnitId, studyUnitId), isNull(schema.questions.deletedAt)),
     with: {
       choices: true,
       writtenQuestion: true,
@@ -564,7 +595,7 @@ export const resetStudyUnitAttempts = async (studyUnitId: string) => {
   const studyUnitQuestions = await db
     .select({ id: schema.questions.id })
     .from(schema.questions)
-    .where(eq(schema.questions.studyUnitId, studyUnitId));
+    .where(and(eq(schema.questions.studyUnitId, studyUnitId), isNull(schema.questions.deletedAt)));
 
   const questionIds = studyUnitQuestions.map((q) => q.id);
 

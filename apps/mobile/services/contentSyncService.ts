@@ -1,4 +1,4 @@
-import { eq, asc, notInArray, isNull } from 'drizzle-orm';
+import { eq, asc, notInArray, isNull, and } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { getContentSync } from '@manhaj/api-client';
@@ -19,6 +19,7 @@ export interface ContentSyncData {
 
 // Sync content from API to local SQLite using Drizzle ORM
 export const syncContent = async (contentData: ContentSyncData): Promise<void> => {
+  console.log('[ContentSync] syncContent: starting transaction');
   await db.transaction(async (tx) => {
     // Sync grades
     for (const grade of contentData.grades) {
@@ -96,14 +97,12 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
         });
     }
 
+    console.log(`[ContentSync] syncing ${contentData.studyUnits.length} studyUnits`);
     // Sync studyUnits (handle tombstones)
     for (const studyUnit of contentData.studyUnits) {
       if (studyUnit.deletedAt) {
-        // Soft delete locally
-        await tx
-          .update(schema.studyUnits)
-          .set({ deletedAt: studyUnit.deletedAt })
-          .where(eq(schema.studyUnits.id, studyUnit.id));
+        console.log(`[ContentSync]   studyUnit HARD-DELETE: ${studyUnit.id} ("${studyUnit.name ?? '?'}")`)
+        await tx.delete(schema.studyUnits).where(eq(schema.studyUnits.id, studyUnit.id));
       } else {
         await tx
           .insert(schema.studyUnits)
@@ -128,14 +127,20 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
+    const liveQs = contentData.questions.filter((q: any) => !q.deletedAt);
+    const deadQs = contentData.questions.filter((q: any) => !!q.deletedAt);
+    console.log(`[ContentSync] syncing ${contentData.questions.length} questions: ${liveQs.length} upsert, ${deadQs.length} tombstone/delete`);
     // Sync questions (handle tombstones)
     for (const question of contentData.questions) {
       if (question.deletedAt) {
-        // Soft delete locally
-        await tx
-          .update(schema.questions)
-          .set({ deletedAt: question.deletedAt })
-          .where(eq(schema.questions.id, question.id));
+        console.log(`[ContentSync]   question HARD-DELETE: ${question.id} ("${question.questionText?.slice(0, 60) ?? '?'}")`)
+        // Hard-delete the question and all its child rows from SQLite
+        // so it immediately disappears from counts and session lists.
+        await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
+        await tx.delete(schema.writtenQuestions).where(eq(schema.writtenQuestions.questionId, question.id));
+        await tx.delete(schema.mcqQuestions).where(eq(schema.mcqQuestions.questionId, question.id));
+        await tx.delete(schema.choices).where(eq(schema.choices.questionId, question.id));
+        await tx.delete(schema.questions).where(eq(schema.questions.id, question.id));
       } else {
         await tx
           .insert(schema.questions)
@@ -147,6 +152,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
             questionType: question.writtenQuestion ? 'written' : (question.questionType ?? 'mcq'),
             explanation: question.explanation ?? '',
             source: question.source ?? 'manual',
+            telegramMessageId: question.telegramMessageId || null,
             updatedAt: question.updatedAt ?? new Date().toISOString(),
             deletedAt: question.deletedAt,
           })
@@ -159,6 +165,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
               questionText: question.questionText,
               explanation: question.explanation ?? '',
               source: question.source ?? 'manual',
+              telegramMessageId: question.telegramMessageId || null,
               updatedAt: question.updatedAt ?? new Date().toISOString(),
               deletedAt: question.deletedAt,
             },
@@ -197,6 +204,7 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
+    console.log(`[ContentSync] syncing ${contentData.choices?.length ?? 0} choices`);
     // Sync choices (aggregate sync - replace all choices for updated questions)
     // First, get the question IDs from the choices we received
     if (contentData.choices && contentData.choices.length > 0) {
@@ -250,6 +258,9 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
+    const liveVids = contentData.studyUnitVideos.filter((v: any) => !v.deletedAt);
+    const deadVids = contentData.studyUnitVideos.filter((v: any) => !!v.deletedAt);
+    console.log(`[ContentSync] syncing ${contentData.studyUnitVideos.length} videos: ${liveVids.length} upsert, ${deadVids.length} tombstone`);
     // Sync studyUnit videos (handle tombstones)
     for (const video of contentData.studyUnitVideos) {
       if (video.deletedAt) {
@@ -286,6 +297,9 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
       }
     }
 
+    const liveFiles = contentData.studyUnitFiles.filter((f: any) => !f.deletedAt);
+    const deadFiles = contentData.studyUnitFiles.filter((f: any) => !!f.deletedAt);
+    console.log(`[ContentSync] syncing ${contentData.studyUnitFiles.length} files: ${liveFiles.length} upsert, ${deadFiles.length} tombstone`);
     // Sync studyUnit files (handle tombstones)
     for (const file of contentData.studyUnitFiles) {
       if (file.deletedAt) {
@@ -333,12 +347,20 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
           set: { value: contentData.nextCursor },
         });
     }
+    console.log('[ContentSync] syncContent: transaction complete');
   });
 };
 
 export const syncContentFromServer = async (): Promise<void> => {
   console.log('[ContentSync] syncContentFromServer: starting');
-  const cursor = await getLastSyncCursor();
+  const rawCursor = await getLastSyncCursor();
+  // Apply a 5-second lookback so rows written in the window between when the
+  // server captured the cursor and when its DB queries ran are never missed.
+  let cursor: string | null = null;
+  if (rawCursor) {
+    const buffered = new Date(new Date(rawCursor).getTime() - 5000);
+    cursor = buffered.toISOString();
+  }
   console.log(`[ContentSync] using cursor: ${cursor ?? 'none (full sync)'}`);
   const response = await getContentSync(cursor ? { since: cursor } : {});
   const contentData: ContentSyncData = {
@@ -619,11 +641,16 @@ export const getStudyUnitsBySubject = async (subjectId: string) => {
 
 export const getStudyUnitDetails = async (studyUnitId: string) => {
   const studyUnit = await db.query.studyUnits.findFirst({
-    where: eq(schema.studyUnits.id, studyUnitId),
+    where: and(eq(schema.studyUnits.id, studyUnitId), isNull(schema.studyUnits.deletedAt)),
     with: {
-      studyUnitVideos: true,
-      studyUnitFiles: true,
+      studyUnitVideos: {
+        where: isNull(schema.studyUnitVideos.deletedAt),
+      },
+      studyUnitFiles: {
+        where: isNull(schema.studyUnitFiles.deletedAt),
+      },
       questions: {
+        where: isNull(schema.questions.deletedAt),
         with: {
           choices: true,
         },
@@ -648,7 +675,7 @@ export const getStudyUnitDetails = async (studyUnitId: string) => {
 
 export const getQuestionWithChoices = async (questionId: string) => {
   const question = await db.query.questions.findFirst({
-    where: eq(schema.questions.id, questionId),
+    where: and(eq(schema.questions.id, questionId), isNull(schema.questions.deletedAt)),
     with: {
       choices: true,
       questionImages: true,
@@ -669,7 +696,7 @@ export const getQuestionWithChoices = async (questionId: string) => {
 
 export const getQuestionsByStudyUnit = async (studyUnitId: string) => {
   return db.query.questions.findMany({
-    where: eq(schema.questions.studyUnitId, studyUnitId),
+    where: and(eq(schema.questions.studyUnitId, studyUnitId), isNull(schema.questions.deletedAt)),
     with: {
       choices: true,
       questionImages: true,
@@ -918,6 +945,7 @@ export const saveStudyUnitDetailsToSqlite = async (studyUnit: any): Promise<void
             questionText: q.questionText ?? q.question_text ?? '',
             explanation: q.explanation ?? '',
             source: q.source ?? 'manual',
+            telegramMessageId: q.telegramMessageId || null,
             updatedAt: new Date().toISOString(),
             deletedAt: null,
           })
@@ -929,6 +957,7 @@ export const saveStudyUnitDetailsToSqlite = async (studyUnit: any): Promise<void
               questionText: q.questionText ?? q.question_text ?? '',
               explanation: q.explanation ?? '',
               source: q.source ?? 'manual',
+              telegramMessageId: q.telegramMessageId || null,
               updatedAt: new Date().toISOString(),
               deletedAt: null,
             },

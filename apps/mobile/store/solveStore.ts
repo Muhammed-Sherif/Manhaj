@@ -19,6 +19,7 @@ export interface Question {
   studyUnitId?: string | null;
   createdBy?: string | null;
   source?: string | null;
+  telegramMessageId?: number | null;
   studyUnit?: {
     id?: string;
     subjectId?: string;
@@ -54,6 +55,7 @@ interface SolveState {
   submitWrittenAnswer: (isCorrect: boolean, isOnline: boolean) => Promise<void>;
   revealAnswer: () => void;
   nextQuestion: () => void;
+  previousQuestion: () => void;
   resetSession: () => void;
 }
 
@@ -176,6 +178,19 @@ export const useSolveStore = create<SolveState>((set, get) => ({
       explanation: '',
       hasEvaluatedWritten: false,
     });
+  },
+
+  previousQuestion: () => {
+    const { currentIndex } = get();
+    if (currentIndex > 0) {
+      set({
+        currentIndex: currentIndex - 1,
+        selectedChoice: null,
+        showAnswer: false,
+        explanation: '',
+        hasEvaluatedWritten: false,
+      });
+    }
   },
 
   resetSession: () =>

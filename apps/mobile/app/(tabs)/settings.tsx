@@ -8,7 +8,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuthStore } from '../../store/authStore';
 import { getAutoDownloadEnabled, setAutoDownloadEnabled } from '../../services/contentSyncService';
 import { getTaskReminderMinutes, setTaskReminderMinutes } from '../../services/settingsService';
-import { syncPendingChanges } from '../../services/syncService';
+import { syncPendingChanges, resetCursors } from '../../services/syncService';
 import Modal from '../../components/Modal';
 import { setColorScheme, getPersistedColorScheme } from '../../components/ThemeProvider';
 import { formatTime } from '@/utils';
@@ -104,6 +104,24 @@ export default function SettingsScreen() {
         } finally {
             setIsSyncing(false);
         }
+    };
+
+    const handleResetCursors = async () => {
+        Alert.alert('Reset Sync Cursors', 'Are you sure? This will force a full sync next time.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Reset',
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await resetCursors();
+                        Alert.alert('Success', 'Sync cursors have been reset.');
+                    } catch (e) {
+                        Alert.alert('Error', 'Failed to reset sync cursors.');
+                    }
+                },
+            },
+        ]);
     };
 
     const handleThemeChange = (scheme: 'light' | 'dark' | 'system') => {
@@ -296,8 +314,23 @@ export default function SettingsScreen() {
                 ))}
             </Modal>
 
+            <Text className="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">Developer Tools</Text>
+            
+            <View className="mb-6 rounded-xl bg-white dark:bg-slate-800 shadow-sm px-4 py-3">
+                <TouchableOpacity
+                    className="flex-row items-center justify-between"
+                    onPress={handleResetCursors}
+                >
+                    <View className="flex-1">
+                        <Text className="text-base font-semibold text-slate-800 dark:text-slate-100">Reset Sync Cursors</Text>
+                        <Text className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Force full sync next time.</Text>
+                    </View>
+                    <RefreshCwIcon size={20} color="#0d9488" />
+                </TouchableOpacity>
+            </View>
+
             {/* Log Out Button */}
-            <View className="mt-6 mb-12">
+            <View className="mt-2 mb-12">
                 <TouchableOpacity
                     onPress={handleLogout}
                     activeOpacity={0.7}

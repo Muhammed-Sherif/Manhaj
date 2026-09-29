@@ -72,6 +72,11 @@ export default function SolveScreen() {
           list = await fetchAllQuestions(studyUnitId);
         }
         if (list.length > 0) {
+          list.sort((a, b) => {
+            const aId = a.telegramMessageId ?? 0;
+            const bId = b.telegramMessageId ?? 0;
+            return aId - bId;
+          });
           setQuestions(list);
           return;
         }
