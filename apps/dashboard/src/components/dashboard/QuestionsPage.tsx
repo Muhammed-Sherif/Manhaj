@@ -22,6 +22,7 @@ import { Heading } from './Heading';
 import { Toolbar } from './Toolbar';
 import { UploadQuestionsModal } from './UploadQuestionsModal';
 import { AssignByRangeModal } from './AssignByRangeModal';
+import { AddQuestionModal } from './AddQuestionModal';
 
 type Step = 'grade' | 'term' | 'module' | 'subject' | 'studyUnit';
 interface Item { id?: string; name?: string; description?: string }
@@ -515,6 +516,7 @@ export function QuestionsPage() {
 
   const [selected, setSelected] = useState<string[]>([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [addQuestionModalOpen, setAddQuestionModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignRangeModalOpen, setAssignRangeModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -584,7 +586,12 @@ export function QuestionsPage() {
         eyebrow="Content review"
         title="Unclassified questions"
         description={query.isError ? 'Unable to load questions from the API.' : 'Live questions from the admin API.'}
-        action={<Button onClick={() => toast.info('Use the API import endpoint to add questions')}><Upload size={16} />Import questions</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button onClick={() => setAddQuestionModalOpen(true)}><Plus size={16} className="mr-2" />Add Question</Button>
+            <Button variant="outline" onClick={() => toast.info('Use the API import endpoint to add questions')}><Upload size={16} className="mr-2" />Import questions</Button>
+          </div>
+        }
       />
       <Toolbar onFilter={() => toast.info('Advanced filters opened')} />
 
@@ -711,6 +718,13 @@ export function QuestionsPage() {
         <EditQuestionModal
           question={editingQuestion}
           onClose={() => setEditingQuestion(null)}
+          onSaved={refresh}
+        />
+      )}
+
+      {addQuestionModalOpen && (
+        <AddQuestionModal
+          onClose={() => setAddQuestionModalOpen(false)}
           onSaved={refresh}
         />
       )}

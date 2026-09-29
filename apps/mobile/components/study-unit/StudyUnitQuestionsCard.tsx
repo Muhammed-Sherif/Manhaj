@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { CheckCircleIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { type StudyUnit } from '@manhaj/api-client';
+import { fetchUnsolvedQuestions } from '../../services/questionService';
 
 export interface StudyUnitQuestionsCardProps {
   studyUnit;
@@ -14,6 +15,15 @@ export const StudyUnitQuestionsCard: React.FC<StudyUnitQuestionsCardProps> = ({
   onStartSolving,
 }) => {
   const router = useRouter();
+  const [unsolvedCount, setUnsolvedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (studyUnit?.id) {
+      fetchUnsolvedQuestions(studyUnit.id)
+        .then((list) => setUnsolvedCount(list.length))
+        .catch(() => {});
+    }
+  }, [studyUnit?.id]);
 
   const handleSolveAll = () => {
     if (onStartSolving) {
@@ -54,7 +64,7 @@ export const StudyUnitQuestionsCard: React.FC<StudyUnitQuestionsCardProps> = ({
           style={{ opacity: studyUnit.questions?.length === 0 ? 0.6 : 1 }}
         >
           <Text className="text-white font-semibold text-sm text-center">
-            Solve Unsolved
+            {unsolvedCount !== null ? `Solve Unsolved (${unsolvedCount})` : 'Solve Unsolved'}
           </Text>
         </TouchableOpacity>
       </View>

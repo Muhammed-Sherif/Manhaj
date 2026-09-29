@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -313,7 +314,7 @@ export default function AddTaskScreen() {
   const endVerse = endChapterVerses.find((v) => v.id === endVerseId);
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
         title={id ? "Edit Task" : "Add Task"}
         subtitle={id ? "Update your existing task" : "Create a new daily or weekly task"}
@@ -892,6 +893,6 @@ export default function AddTaskScreen() {
           ))
         }
       </Modal >
-    </View >
+    </ScreenContainer>
   );
 }

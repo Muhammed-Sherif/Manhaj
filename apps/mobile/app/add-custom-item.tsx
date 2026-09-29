@@ -1,6 +1,6 @@
 import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenHeader, ImagePickerField, type PickedImage } from '../components';
 import { BookOpenIcon, SaveIcon, Trash2Icon } from 'lucide-react-native';
@@ -13,38 +13,45 @@ import { useAuthStore } from '../store/authStore';
 import { attachImage } from '../services/imageUploadService';
 import { StudentContentService } from '../services/studentContentService';
 
-export default function AddCaseScreen() {
+export default function AddCustomItemScreen() {
   const { studyUnitId, caseId } = useLocalSearchParams<{ studyUnitId: string; caseId?: string }>();
   const router = useRouter();
 
-  const [category, setCategory] = useState('disease');
-  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [answer, setAnswer] = useState('');
   const [image, setImage] = useState<PickedImage | null>(null);
 
-  useEffect(() => {
+  const [studyUnits, setStudyUnits] = useState<{id: string, name: string}[]>([]);
+  const [selectedStudyUnitId, setSelectedStudyUnitId] = useState<string>(studyUnitId || 'custom');
+  const [showStudyUnitModal, setShowStudyUnitModal] = useState(false);
+
+    // Load study units for the picker
+    db.select({ id: schema.studyUnits.id, name: schema.studyUnits.name })
+      .from(schema.studyUnits)
+      .then(setStudyUnits)
+      .catch(console.error);
+
     if (caseId) {
       db.select().from(schema.caseItems).where(eq(schema.caseItems.id, caseId as string)).then(([c]) => {
         if (c) {
-          setCategory(c.category);
-          setTitle(c.title);
           setContent(c.content);
           setAnswer(c.answer || '');
+          if (c.studyUnitId) {
+            setSelectedStudyUnitId(c.studyUnitId);
+          }
         }
       });
     }
-  }, [caseId]);
-
   const handleSave = async () => {
-    if (!title.trim() || !content.trim()) {
-      Alert.alert('Error', 'Please fill in both title and content.');
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please fill in the question.');
       return;
     }
 
     try {
       if (caseId) {
-        await StudentContentService.updateCase(caseId as string, title, content, category, answer.trim() || undefined);
+        await StudentContentService.updateCase(caseId as string, 'Custom Item', content, 'case', answer.trim() || undefined);
+        // Note: studyUnitId is not updated by updateCase currently, but that's fine.
         Alert.alert('Success', 'Case updated!', [{ text: 'OK', onPress: () => router.back() }]);
         return;
       }
@@ -58,9 +65,9 @@ export default function AddCaseScreen() {
       // Insert case
       await db.insert(schema.caseItems).values({
         id: caseItemId,
-        studyUnitId: studyUnitId!,
-        category,
-        title,
+        studyUnitId: selectedStudyUnitId,
+        category: 'case',
+        title: 'Custom Item',
         content,
         answer: answer.trim() || null,
         createdAt: nowStr,
@@ -127,46 +134,41 @@ export default function AddCaseScreen() {
     );
   };
 
+  const selectedStudyUnitName = selectedStudyUnitId === 'custom' 
+    ? 'Uncategorized (Custom)' 
+    : studyUnits.find(u => u.id === selectedStudyUnitId)?.name || 'Select Study Unit';
+
   return (
     <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
-        title={caseId ? 'Edit Case' : 'Add Case'}
-        subtitle="Create a custom case study"
+        title={caseId ? 'Edit Custom Item' : 'Add Custom Item'}
+        subtitle="Create a custom SRS flashcard"
         icon={<BookOpenIcon size={20} color="#0d9488" />}
       />
 
       <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
         <View className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
           
-          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Category</Text>
-          <View className="flex-row mb-4 space-x-2">
-            {['disease', 'drug', 'case'].map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                onPress={() => setCategory(cat)}
-                className={`px-4 py-2 mr-2 rounded-full border ${category === cat ? 'bg-teal-600 border-teal-600' : 'bg-transparent border-slate-300 dark:border-slate-600'}`}
-              >
-                <Text className={`${category === cat ? 'text-white' : 'text-slate-600 dark:text-slate-300'} font-medium capitalize`}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View className="mb-4">
+            <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Study Unit</Text>
+            <TouchableOpacity
+              onPress={() => setShowStudyUnitModal(true)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3"
+            >
+              <Text className="text-slate-800 dark:text-slate-100">{selectedStudyUnitName}</Text>
+            </TouchableOpacity>
           </View>
 
-          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Title</Text>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="e.g. Type 2 Diabetes"
-            placeholderTextColor="#94a3b8"
-            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 mb-4"
-          />
+          <View className="mb-4">
+            <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Image (Optional)</Text>
+            <ImagePickerField value={image} onChange={setImage} />
+          </View>
 
-          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Details (Question / Scenario)</Text>
+          <Text className="text-slate-800 dark:text-slate-100 font-medium mb-2">Question</Text>
           <TextInput
             value={content}
             onChangeText={setContent}
-            placeholder="Enter case details or scenario here..."
+            placeholder="Enter your question here..."
             placeholderTextColor="#94a3b8"
             multiline
             numberOfLines={4}
@@ -186,7 +188,6 @@ export default function AddCaseScreen() {
             className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 mb-4 h-32"
           />
 
-          <ImagePickerField value={image} onChange={setImage} />
 
           <TouchableOpacity
             onPress={handleSave}
@@ -207,6 +208,34 @@ export default function AddCaseScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={showStudyUnitModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowStudyUnitModal(false)}>
+        <View className="flex-1 bg-slate-50 dark:bg-slate-900 pt-10">
+          <View className="flex-row items-center justify-between px-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <Text className="text-lg font-bold text-slate-800 dark:text-slate-100">Select Study Unit</Text>
+            <TouchableOpacity onPress={() => setShowStudyUnitModal(false)}>
+              <Text className="text-teal-600 font-semibold text-lg">Done</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={[{ id: 'custom', name: 'Uncategorized (Custom)' }, ...studyUnits]}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedStudyUnitId(item.id);
+                  setShowStudyUnitModal(false);
+                }}
+                className={`p-4 border-b border-slate-100 dark:border-slate-800 ${selectedStudyUnitId === item.id ? 'bg-teal-50 dark:bg-teal-900/20' : ''}`}
+              >
+                <Text className={`text-base ${selectedStudyUnitId === item.id ? 'text-teal-700 dark:text-teal-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }

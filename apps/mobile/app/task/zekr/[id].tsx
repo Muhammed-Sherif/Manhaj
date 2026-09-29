@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../../../components/ScreenContainer';
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -68,17 +69,17 @@ export default function ZekrSessionScreen() {
 
     // Animate button
     Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 50,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.timing(scaleAnim, {
+      toValue: 0.95,
+      duration: 50,
+      useNativeDriver: true
+    }),
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: 50,
+      useNativeDriver: true
+    })]
+    ).start();
 
     if (currentIndex + 1 < duas.length) {
       // Move to next dua
@@ -92,13 +93,13 @@ export default function ZekrSessionScreen() {
   const completeTask = async () => {
     if (!id || typeof id !== 'string') return;
     try {
-      await db.update(schema.tasks)
-        .set({ status: 'done' })
-        .where(eq(schema.tasks.id, id));
-        
+      await db.update(schema.tasks).
+      set({ status: 'done' }).
+      where(eq(schema.tasks.id, id));
+
       Alert.alert('Mashallah!', 'You have completed this Adhkar session.', [
-        { text: 'Alhamdulillah', onPress: () => router.back() }
-      ]);
+      { text: 'Alhamdulillah', onPress: () => router.back() }]
+      );
     } catch (err) {
       console.error('Failed to complete task:', err);
     }
@@ -106,10 +107,10 @@ export default function ZekrSessionScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-slate-50 dark:bg-slate-900 items-center justify-center">
+      <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900 items-center justify-center">
         <ActivityIndicator size="large" color="#0d9488" />
-      </View>
-    );
+      </ScreenContainer>);
+
   }
 
   if (duas.length === 0) return null;
@@ -118,7 +119,7 @@ export default function ZekrSessionScreen() {
   const isLastDua = currentIndex + 1 >= duas.length;
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <View className="px-4 py-4 border-b border-slate-200 dark:border-slate-800 flex-row items-center pt-12">
         <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2 rounded-full active:bg-slate-200 dark:active:bg-slate-800">
@@ -129,10 +130,10 @@ export default function ZekrSessionScreen() {
 
       {/* Progress Bar */}
       <View className="h-1 bg-slate-200 dark:bg-slate-800 w-full">
-        <View 
-          className="h-full bg-teal-600" 
-          style={{ width: `${((currentIndex + 1) / duas.length) * 100}%` }} 
-        />
+        <View
+          className="h-full bg-teal-600"
+          style={{ width: `${(currentIndex + 1) / duas.length * 100}%` }} />
+        
       </View>
 
       <View className="flex-1 p-6 items-center">
@@ -142,10 +143,10 @@ export default function ZekrSessionScreen() {
 
         {/* Text Container */}
         <View className="flex-1 w-full mb-8 bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={{ padding: 24 }}
-            showsVerticalScrollIndicator={true}
-          >
+            showsVerticalScrollIndicator={true}>
+            
             <Text className="text-slate-800 dark:text-slate-100 text-2xl text-center leading-loose mb-6" style={{ fontFamily: 'sans-serif' }}>
               {currentDua?.textAr}
             </Text>
@@ -156,15 +157,15 @@ export default function ZekrSessionScreen() {
         </View>
 
         {/* Tap Area */}
-        <TouchableOpacity 
-          activeOpacity={1} 
+        <TouchableOpacity
+          activeOpacity={1}
           onPress={handleTap}
-          className="items-center justify-center"
-        >
-          <Animated.View 
+          className="items-center justify-center">
+          
+          <Animated.View
             style={{ transform: [{ scale: scaleAnim }] }}
-            className="w-40 h-40 rounded-full bg-teal-50 dark:bg-teal-900/30 border-4 border-teal-500 items-center justify-center shadow-lg"
-          >
+            className="w-40 h-40 rounded-full bg-teal-50 dark:bg-teal-900/30 border-4 border-teal-500 items-center justify-center shadow-lg">
+            
             <CheckCircle2Icon size={48} color="#0d9488" />
             <Text className="text-teal-600/70 dark:text-teal-400/70 font-medium mt-2">
               {isLastDua ? 'Complete' : 'Next Dua'}
@@ -176,6 +177,6 @@ export default function ZekrSessionScreen() {
           {isLastDua ? 'Tap to finish the session' : 'Tap the circle to continue'}
         </Text>
       </View>
-    </View>
-  );
+    </ScreenContainer>);
+
 }

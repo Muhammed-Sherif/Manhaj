@@ -81,12 +81,11 @@ function AppLayout() {
   }, [isAuthenticated]);
 
   return (
-    <View className={`flex-1 ${isDark ? 'dark' : 'light'}`}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+    <View className={`flex-1 ${isDark ? 'dark' : 'light'} dark:bg-slate-900`}>
+      <StatusBar style={'auto'} animated  />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { paddingTop: insets.top },
         }}
       >
         <Stack.Screen name="index" />

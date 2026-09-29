@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -121,7 +122,7 @@ export default function AddNoteScreen() {
   };
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
         title={noteId ? (type === 'summary' ? 'Edit Summary' : 'Edit Note') : (type === 'summary' ? 'Add Summary' : 'Add Note')}
         subtitle={type === 'summary' ? 'A personal study summary for this studyUnit' : 'Write a personal note or recurring question'}
@@ -164,6 +165,6 @@ export default function AddNoteScreen() {
           )}
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

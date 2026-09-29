@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { LoadingView, ErrorView } from '../../components';
 import { BrowseHeader, BrowseContent } from '../../components/browse';
 import { useBrowseStore } from '../../store/browseStore';
+import { ScreenContainer } from '../../components/ScreenContainer';
 
 export default function BrowseScreen() {
   const { grades, isLoading, error, loadHierarchy } = useBrowseStore();
@@ -29,11 +30,11 @@ export default function BrowseScreen() {
   }
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <BrowseHeader />
       <ScrollView className="flex-1 p-4">
         <BrowseContent />
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../../components/ScreenContainer';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -70,7 +71,7 @@ function TaskRow({ task, onPress, onToggleStatus, onOpenMenu }: { task: any; onP
         delayLongPress={300}
         className={`p-4 mb-3 rounded-xl border ${isDone
           ? 'bg-slate-100 dark:bg-slate-800/50 border-transparent'
-          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+          : 'bg-white dark:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700'
           }`}
       >
         <View className="flex-row items-center">
@@ -210,6 +211,7 @@ export default function TasksScreen() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isFilterModalVisible, setFilterModalVisible] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'done'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'zekr' | 'wird' | 'work' | 'study'>('all');
@@ -350,7 +352,7 @@ export default function TasksScreen() {
   const FilterPill = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
     <TouchableOpacity
       onPress={onPress}
-      className={`px-4 py-1.5 rounded-full border mr-2 ${
+      className={`px-4 py-1.5 rounded-full border mb-2 mr-2 ${
         active 
           ? 'bg-teal-100 dark:bg-teal-900/40 border-teal-200 dark:border-teal-800' 
           : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -365,41 +367,17 @@ export default function TasksScreen() {
   );
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
-      <ScreenHeader title="My Tasks" icon={<CheckSquareIcon size={20} color="#0d9488" />} />
-
-      <View className="py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
-          <View className="flex-row items-center mr-3">
-            <FilterIcon size={14} color="#94a3b8" className="mr-1" />
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</Text>
-          </View>
-          <FilterPill label="All" active={statusFilter === 'all'} onPress={() => setStatusFilter('all')} />
-          <FilterPill label="Pending" active={statusFilter === 'pending'} onPress={() => setStatusFilter('pending')} />
-          <FilterPill label="Done" active={statusFilter === 'done'} onPress={() => setStatusFilter('done')} />
-
-          <View className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
-
-          <View className="flex-row items-center mr-3">
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Day</Text>
-          </View>
-          <FilterPill label="All Time" active={dateFilter === 'all'} onPress={() => setDateFilter('all')} />
-          <FilterPill label="Today" active={dateFilter === 'today'} onPress={() => setDateFilter('today')} />
-          <FilterPill label="Upcoming" active={dateFilter === 'upcoming'} onPress={() => setDateFilter('upcoming')} />
-
-          <View className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700 mx-2" />
-
-          <View className="flex-row items-center mr-3">
-            <Text className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</Text>
-          </View>
-          <FilterPill label="All Types" active={typeFilter === 'all'} onPress={() => setTypeFilter('all')} />
-          <FilterPill label="Zekr" active={typeFilter === 'zekr'} onPress={() => setTypeFilter('zekr')} />
-          <FilterPill label="Wird" active={typeFilter === 'wird'} onPress={() => setTypeFilter('wird')} />
-          <FilterPill label="Study" active={typeFilter === 'study'} onPress={() => setTypeFilter('study')} />
-          <FilterPill label="Work" active={typeFilter === 'work'} onPress={() => setTypeFilter('work')} />
-          <View className="w-8" />
-        </ScrollView>
-      </View>
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <ScreenHeader 
+        title="My Tasks" 
+        icon={<CheckSquareIcon size={20} color="#0d9488" />}
+        showBack={false}
+        rightAccessory={
+          <TouchableOpacity onPress={() => setFilterModalVisible(true)} className="p-2">
+            <FilterIcon size={20} color="#0d9488" />
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView
         className="flex-1 p-4"
@@ -477,6 +455,43 @@ export default function TasksScreen() {
           <Text className="text-base text-red-500">Delete Task</Text>
         </TouchableOpacity>
       </Modal>
-    </View>
+
+      <Modal
+        visible={isFilterModalVisible}
+        title="Filter Tasks"
+        onClose={() => setFilterModalVisible(false)}
+      >
+        <ScrollView className="mb-4" showsVerticalScrollIndicator={false}>
+          <Text className="font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-2">Status</Text>
+          <View className="flex-row flex-wrap">
+            <FilterPill label="All" active={statusFilter === 'all'} onPress={() => setStatusFilter('all')} />
+            <FilterPill label="Pending" active={statusFilter === 'pending'} onPress={() => setStatusFilter('pending')} />
+            <FilterPill label="Done" active={statusFilter === 'done'} onPress={() => setStatusFilter('done')} />
+          </View>
+
+          <Text className="font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4">Date</Text>
+          <View className="flex-row flex-wrap">
+            <FilterPill label="All Time" active={dateFilter === 'all'} onPress={() => setDateFilter('all')} />
+            <FilterPill label="Today" active={dateFilter === 'today'} onPress={() => setDateFilter('today')} />
+            <FilterPill label="Upcoming" active={dateFilter === 'upcoming'} onPress={() => setDateFilter('upcoming')} />
+          </View>
+
+          <Text className="font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-4">Type</Text>
+          <View className="flex-row flex-wrap">
+            <FilterPill label="All Types" active={typeFilter === 'all'} onPress={() => setTypeFilter('all')} />
+            <FilterPill label="Zekr" active={typeFilter === 'zekr'} onPress={() => setTypeFilter('zekr')} />
+            <FilterPill label="Wird" active={typeFilter === 'wird'} onPress={() => setTypeFilter('wird')} />
+            <FilterPill label="Study" active={typeFilter === 'study'} onPress={() => setTypeFilter('study')} />
+            <FilterPill label="Work" active={typeFilter === 'work'} onPress={() => setTypeFilter('work')} />
+          </View>
+        </ScrollView>
+        <TouchableOpacity
+          className="bg-teal-600 p-4 rounded-xl items-center mt-2"
+          onPress={() => setFilterModalVisible(false)}
+        >
+          <Text className="text-white font-semibold">Apply Filters</Text>
+        </TouchableOpacity>
+      </Modal>
+    </ScreenContainer>
   );
 }

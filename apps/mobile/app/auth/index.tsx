@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../../components/ScreenContainer';
 import React, { useState } from 'react';
 import {
   View,
@@ -34,6 +35,7 @@ export default function AuthScreen() {
   });
 
   return (
+    <ScreenContainer className="flex-1 bg-white dark:bg-slate-900">
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-white dark:bg-slate-900"
@@ -122,5 +124,6 @@ export default function AuthScreen() {
         />
       </ScrollView>
     </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }

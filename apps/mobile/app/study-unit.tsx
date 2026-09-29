@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -153,7 +154,7 @@ function StudyUnitNotesCasesSection({ studyUnitId }: { studyUnitId: string }) {
             <TouchableOpacity
               key={note.id}
               onPress={() => router.push(`/add-note?noteId=${note.id}` as any)}
-              className="bg-white dark:bg-slate-800 p-4 rounded-xl mb-2 border border-slate-100 dark:border-slate-700"
+              className="bg-white dark:bg-slate-800 p-4 rounded-xl mb-2 shadow-sm border border-slate-100 dark:border-slate-700"
             >
               <Text className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed" numberOfLines={3}>
                 {note.content}
@@ -195,7 +196,7 @@ function StudyUnitNotesCasesSection({ studyUnitId }: { studyUnitId: string }) {
             <TouchableOpacity
               key={c.id}
               onPress={() => router.push(`/add-case?caseId=${c.id}` as any)}
-              className="bg-white dark:bg-slate-800 p-4 rounded-xl mb-2 border border-slate-100 dark:border-slate-700"
+              className="bg-white dark:bg-slate-800 p-4 rounded-xl mb-2 shadow-sm border border-slate-100 dark:border-slate-700"
             >
               <View className="flex-row items-start justify-between">
                 <Text className="font-semibold text-slate-800 dark:text-slate-100 flex-1 mr-2" numberOfLines={1}>
@@ -357,7 +358,7 @@ export default function StudyUnitScreen() {
   const files = studyUnit.studyUnitFiles ?? studyUnit.files ?? [];
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <ScreenHeader
         title={studyUnit.subject?.name}
@@ -429,6 +430,6 @@ export default function StudyUnitScreen() {
         {/* Notes & Cases */}
         <StudyUnitNotesCasesSection studyUnitId={studyUnit.id} />
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

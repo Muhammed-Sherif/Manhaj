@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { CheckIcon, ChevronRightIcon, LogOutIcon, MoonIcon, SunIcon, MonitorIcon, RefreshCwIcon } from 'lucide-react-native';
 import { getStudentProfile, patchStudentProfile, getStudentGradesWithTerms } from '@manhaj/api-client';
+import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuthStore } from '../../store/authStore';
 import { getAutoDownloadEnabled, setAutoDownloadEnabled } from '../../services/contentSyncService';
 import { getTaskReminderMinutes, setTaskReminderMinutes } from '../../services/settingsService';
@@ -143,8 +144,9 @@ export default function SettingsScreen() {
     };
 
     return (
-        <ScrollView className="flex-1 bg-slate-50 dark:bg-slate-900 p-6">
-            <Text className="text-2xl font-bold text-slate-800 dark:text-slate-100">Settings</Text>
+        <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
+            <ScrollView className="flex-1 p-6">
+                <Text className="text-2xl font-bold text-slate-800 dark:text-slate-100">Settings</Text>
             <Text className="mt-2 mb-6 text-slate-500 dark:text-slate-400">Manage your account and preferences.</Text>
 
             {user ? (
@@ -306,5 +308,6 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
             </View>
         </ScrollView>
+        </ScreenContainer>
     );
 }

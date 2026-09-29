@@ -12,6 +12,7 @@ import {
 } from '@manhaj/api-client';
 import { newCard } from '@manhaj/srs/src/anki';
 import * as Crypto from 'expo-crypto';
+import { syncStudentItemsFromServer } from './studentSyncService';
 
 export interface Attempt {
   id: string;
@@ -435,10 +436,11 @@ export const syncPendingChanges = async (): Promise<SyncResult> => {
   const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
   await syncContentFromServer();
   try {
+    await syncStudentItemsFromServer();
     await syncZekrCatalog();
     await syncQuranData();
   } catch (err) {
-    console.error('Failed to sync zekr catalog', err);
+    console.error('Failed to sync extra catalogs', err);
   }
   return {
     success: results.every((result) => result.success),

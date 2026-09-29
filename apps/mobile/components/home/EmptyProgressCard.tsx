@@ -12,7 +12,7 @@ export function EmptyProgressCard({ onPress }: EmptyProgressCardProps) {
 
   return (
     <TouchableOpacity
-      className="bg-slate-200 dark:bg-slate-800 rounded-2xl p-6 items-center justify-center border-2 border-teal-500 active:bg-slate-300"
+      className="bg-slate-200 dark:bg-slate-800 rounded-2xl p-6 shadow-sm items-center justify-center border-2 border-teal-500 active:bg-slate-300"
       onPress={onPress ?? (() => router.push('/browse'))}
       activeOpacity={0.8}
     >

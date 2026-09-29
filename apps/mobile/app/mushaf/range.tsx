@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -31,7 +32,7 @@ export default function MushafRangeScreen() {
       setVerses(v);
 
       if (v.length > 0) {
-        const chapterIds = [...new Set(v.map(verse => verse.chapterId))];
+        const chapterIds = [...new Set(v.map((verse) => verse.chapterId))];
         const ch = await db.select().from(schema.quranChapters).where(inArray(schema.quranChapters.id, chapterIds));
         const chapterMap = ch.reduce((acc, curr) => ({ ...acc, [curr.id]: curr }), {});
         setChapters(chapterMap);
@@ -48,14 +49,14 @@ export default function MushafRangeScreen() {
       const boundaryVerses = await db.select().from(schema.quranVerses).where(
         inArray(schema.quranVerses.id, [start as string, end as string])
       );
-      
+
       if (boundaryVerses.length !== 2) return;
-      
+
       const sortedBoundaries = boundaryVerses.sort((a, b) => {
         if (a.chapterId !== b.chapterId) return a.chapterId - b.chapterId;
         return a.ayaNumber - b.ayaNumber;
       });
-      
+
       const startV = sortedBoundaries[0];
       const endV = sortedBoundaries[1];
 
@@ -63,7 +64,7 @@ export default function MushafRangeScreen() {
         between(schema.quranVerses.chapterId, startV.chapterId, endV.chapterId)
       ).orderBy(asc(schema.quranVerses.chapterId), asc(schema.quranVerses.ayaNumber));
 
-      const filteredVerses = allVerses.filter(v => {
+      const filteredVerses = allVerses.filter((v) => {
         if (v.chapterId === startV.chapterId && v.chapterId === endV.chapterId) {
           return v.ayaNumber >= startV.ayaNumber && v.ayaNumber <= endV.ayaNumber;
         }
@@ -73,13 +74,13 @@ export default function MushafRangeScreen() {
         if (v.chapterId === endV.chapterId) {
           return v.ayaNumber <= endV.ayaNumber;
         }
-        return true; 
+        return true;
       });
 
       setVerses(filteredVerses);
 
       if (filteredVerses.length > 0) {
-        const chapterIds = [...new Set(filteredVerses.map(verse => verse.chapterId))];
+        const chapterIds = [...new Set(filteredVerses.map((verse) => verse.chapterId))];
         const ch = await db.select().from(schema.quranChapters).where(inArray(schema.quranChapters.id, chapterIds));
         const chapterMap = ch.reduce((acc, curr) => ({ ...acc, [curr.id]: curr }), {});
         setChapters(chapterMap);
@@ -103,58 +104,58 @@ export default function MushafRangeScreen() {
   };
 
   return (
-    <View className="flex-1 bg-amber-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-amber-50 dark:bg-slate-900">
       <ScreenHeader
         title="Wird Task Viewer"
         subtitle="Read your assigned portion"
-        icon={<CheckSquareIcon size={20} color="#0d9488" />}
-      />
+        icon={<CheckSquareIcon size={20} color="#0d9488" />} />
+      
 
-      {loading ? (
-        <View className="flex-1 justify-center items-center">
+      {loading ?
+      <ScreenContainer className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0d9488" />
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        </ScreenContainer> :
+
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
           {Object.values(
-            verses.reduce((acc, verse) => {
-              if (!acc[verse.chapterId]) acc[verse.chapterId] = [];
-              acc[verse.chapterId].push(verse);
-              return acc;
-            }, {} as Record<number, any[]>)
-          ).map((chapterVerses: any[]) => {
-            const chapterId = chapterVerses[0].chapterId;
-            const chapter = chapters[chapterId];
-            return (
-              <View key={chapterId}>
-                {chapter && (
-                  <View className="items-center my-6 py-4 border-b border-t border-amber-200 dark:border-amber-800">
+          verses.reduce((acc, verse) => {
+            if (!acc[verse.chapterId]) acc[verse.chapterId] = [];
+            acc[verse.chapterId].push(verse);
+            return acc;
+          }, {} as Record<number, any[]>)
+        ).map((chapterVerses: any[]) => {
+          const chapterId = chapterVerses[0].chapterId;
+          const chapter = chapters[chapterId];
+          return (
+            <View key={chapterId}>
+                {chapter &&
+              <View className="items-center my-6 py-4 border-b border-t border-amber-200 dark:border-amber-800">
                     <Text className="text-xl font-bold text-slate-800 dark:text-slate-200">{chapter.nameEn}</Text>
                     <Text className="text-2xl font-bold text-teal-700 dark:text-teal-500 mt-1">{chapter.nameAr}</Text>
                   </View>
-                )}
+              }
                 <View className="mb-6 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-amber-100 dark:border-slate-700">
                   <Text className="text-right text-2xl leading-[48px] text-slate-800 dark:text-slate-100" style={{ fontFamily: 'sans-serif' }}>
-                    {chapterVerses.map(item => (
-                      <Text key={item.id.toString()}>
+                    {chapterVerses.map((item) =>
+                  <Text key={item.id.toString()}>
                         {item.textAr} <Text className="text-teal-600 text-lg">﴿{item.ayaNumber}﴾</Text>{' '}
                       </Text>
-                    ))}
+                  )}
                   </Text>
                 </View>
-              </View>
-            );
-          })}
+              </View>);
+
+        })}
           
           <TouchableOpacity
-            className="bg-teal-600 gap-2 p-4 rounded-xl items-center mt-4 mb-8 flex-row justify-center"
-            onPress={handleFinish}
-          >
+          className="bg-teal-600 gap-2 p-4 rounded-xl items-center mt-4 mb-8 flex-row justify-center"
+          onPress={handleFinish}>
+          
             <CheckCircle2Icon size={24} color="#ffffff" className="mr-2" />
             <Text className="text-white font-bold text-lg">Finish Reading</Text>
           </TouchableOpacity>
         </ScrollView>
-      )}
-    </View>
-  );
+      }
+    </ScreenContainer>);
+
 }

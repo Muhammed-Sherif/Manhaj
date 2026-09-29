@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import { ScreenContainer } from '../../components/ScreenContainer';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
@@ -15,6 +16,10 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const { lastProgress, loadProgress } = useProgressStore();
   const [dueCount, setDueCount] = useState(0);
+  const [solvedCount, setSolvedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [overallSolvedCount, setOverallSolvedCount] = useState(0);
+  const [overallTotalCount, setOverallTotalCount] = useState(0);
 
   const loadDueCount = async () => {
     try {
@@ -37,9 +42,82 @@ export default function HomeScreen() {
     useCallback(() => {
       loadProgress();
       loadDueCount();
+      loadProgressStats();
+      loadOverallStats();
       scheduleTaskReminders().catch(console.error);
-    }, [])
+    }, [lastProgress])
   );
+
+  const loadOverallStats = async () => {
+    try {
+      const totalQuestionsRes = await db.select({ id: schema.questions.id }).from(schema.questions);
+      const total = totalQuestionsRes.length;
+
+      const userId = useAuthStore.getState().user?.id;
+      if (!userId) {
+        setOverallTotalCount(total);
+        return;
+      }
+
+      const solvedRes = await db
+        .select({ questionId: schema.attempts.questionId })
+        .from(schema.attempts)
+        .where(eq(schema.attempts.userId, userId));
+      
+      const solvedIds = new Set(solvedRes.map((row) => row.questionId));
+      let solved = 0;
+      for (const q of totalQuestionsRes) {
+        if (solvedIds.has(q.id)) solved++;
+      }
+
+      setOverallSolvedCount(solved);
+      setOverallTotalCount(total);
+    } catch (err) {
+      console.error('Failed to load overall stats:', err);
+    }
+  };
+
+  const loadProgressStats = async () => {
+    if (lastProgress?.studyUnitId) {
+      try {
+        const totalQuestionsRes = await db
+          .select({ id: schema.questions.id })
+          .from(schema.questions)
+          .where(eq(schema.questions.studyUnitId, lastProgress.studyUnitId));
+        
+        const total = totalQuestionsRes.length;
+        
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) {
+          setTotalCount(total);
+          return;
+        }
+
+        const solvedRes = await db
+          .select({ questionId: schema.attempts.questionId })
+          .from(schema.attempts)
+          .where(eq(schema.attempts.userId, userId));
+        
+        const solvedIds = new Set(solvedRes.map((row) => row.questionId));
+        
+        let solved = 0;
+        for (const q of totalQuestionsRes) {
+          if (solvedIds.has(q.id)) {
+            solved++;
+          }
+        }
+        
+        setSolvedCount(solved);
+        setTotalCount(total);
+      } catch (err) {
+        console.error('Failed to load progress stats:', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadProgressStats();
+  }, [lastProgress]);
 
   const formatLastStudied = (timestamp: string | null) => {
     if (!timestamp) return 'Recently';
@@ -62,14 +140,14 @@ export default function HomeScreen() {
       id: lastProgress.studyUnitId || '1',
       subject: lastProgress.subjectName || 'Unknown Subject',
       studyUnit: lastProgress.studyUnitName || 'Unknown StudyUnit',
-      progress: lastProgress.questionIndex + 1,
-      total: lastProgress.totalQuestions,
+      progress: totalCount > 0 ? solvedCount : (lastProgress.questionIndex + 1),
+      total: totalCount > 0 ? totalCount : lastProgress.totalQuestions,
       lastStudied: formatLastStudied(lastProgress.lastStudied),
     },
   ] : [];
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScrollView className="flex-1 p-6">
         {/* Header */}
         <View className="mb-6">
@@ -77,6 +155,25 @@ export default function HomeScreen() {
             Welcome back, {user?.name || 'Student'}!
           </Text>
           <Text className="text-slate-500 dark:text-slate-400 mt-1">Ready to continue learning?</Text>
+        </View>
+
+        {/* Overall Progress */}
+        <View className="mb-6 bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+          <Text className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">Overall Progress</Text>
+          <View className="flex-row justify-between items-end mb-3">
+            <Text className="text-3xl font-bold text-teal-600 dark:text-teal-400">
+              {overallSolvedCount} <Text className="text-sm text-slate-400 font-normal">/ {overallTotalCount} solved</Text>
+            </Text>
+            <Text className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+              {overallTotalCount > 0 ? Math.round((overallSolvedCount / overallTotalCount) * 100) : 0}%
+            </Text>
+          </View>
+          <View className="h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+            <View 
+              className="h-full bg-teal-500 rounded-full" 
+              style={{ width: `${overallTotalCount > 0 ? (overallSolvedCount / overallTotalCount) * 100 : 0}%` }} 
+            />
+          </View>
         </View>
 
         {/* Continue Solving - Prominent Section */}
@@ -158,6 +255,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

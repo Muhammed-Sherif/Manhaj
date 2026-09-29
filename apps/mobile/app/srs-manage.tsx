@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -127,19 +128,11 @@ export default function SrsManageScreen() {
   };
 
   const handleAddCustom = () => {
-    Alert.alert(
-      'Create Custom Item',
-      'What would you like to create? (You can attach images to both).',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Custom Case', onPress: () => router.push('/add-case?studyUnitId=custom') },
-        { text: 'Custom Note', onPress: () => router.push('/add-note?studyUnitId=custom&type=note') }
-      ]
-    );
+    router.push('/add-custom-item');
   };
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
       <ScreenHeader
         title="SRS Manager"
         subtitle="Manage all your reviewable items"
@@ -181,6 +174,6 @@ export default function SrsManageScreen() {
           )}
         </ScrollView>
       )}
-    </View>
+    </ScreenContainer>
   );
 }

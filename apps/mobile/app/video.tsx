@@ -1,3 +1,4 @@
+import { ScreenContainer } from '../components/ScreenContainer';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -81,7 +82,7 @@ export default function VideoScreen() {
   });
 
   return (
-    <View className="flex-1 bg-slate-900">
+    <ScreenContainer className="flex-1 bg-slate-900">
       <ScreenHeader
         title={params.subjectName || params.studyUnitName || 'Video Player'}
         subtitle={params.title || 'StudyUnit Video'}
@@ -166,6 +167,6 @@ export default function VideoScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
