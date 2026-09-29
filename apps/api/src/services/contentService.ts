@@ -109,11 +109,10 @@ export class ContentService {
   }
 
   private async studyUnits(since?: Date) {
+    // Delta sync: include deleted tombstones so mobile can remove them from SQLite.
+    // Full sync: only send live rows (mobile has nothing to delete yet).
     const where = since
-      ? and(
-          gt(studyUnits.updatedAt, since),
-          isNull(studyUnits.deletedAt)
-        )
+      ? gt(studyUnits.updatedAt, since)          // includes deletedAt rows
       : isNull(studyUnits.deletedAt);
 
     return db.query.studyUnits.findMany({
@@ -122,11 +121,10 @@ export class ContentService {
   }
 
   private async questions(since?: Date) {
+    // Delta sync: include deleted tombstones so mobile can remove them from SQLite.
+    // Full sync: only send live rows.
     const where = since
-      ? and(
-          gt(questions.updatedAt, since),
-          isNull(questions.deletedAt)
-        )
+      ? gt(questions.updatedAt, since)           // includes deletedAt rows
       : isNull(questions.deletedAt);
 
     return db.query.questions.findMany({

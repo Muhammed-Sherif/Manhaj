@@ -583,7 +583,8 @@ export class AdminService {
   }
 
   async deleteQuestion(id: string) {
-    await db.update(questions).set({ deletedAt: new Date() }).where(eq(questions.id, id));
+    const now = new Date();
+    await db.update(questions).set({ deletedAt: now, updatedAt: now }).where(eq(questions.id, id));
   }
 
   // Soft-deletes every not-yet-deleted question in `ids`. Ids that are unknown or
@@ -594,9 +595,10 @@ export class AdminService {
       throw new Error('At least one question ID is required');
     }
 
+    const now = new Date();
     const deleted = await db
       .update(questions)
-      .set({ deletedAt: new Date() })
+      .set({ deletedAt: now, updatedAt: now })
       .where(and(inArray(questions.id, ids), isNull(questions.deletedAt)))
       .returning({ id: questions.id });
 
