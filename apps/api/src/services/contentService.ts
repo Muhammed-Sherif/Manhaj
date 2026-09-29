@@ -110,25 +110,26 @@ export class ContentService {
 
   private async studyUnits(since?: Date) {
     // Delta sync: include deleted tombstones so mobile can remove them from SQLite.
-    // Full sync: only send live rows (mobile has nothing to delete yet).
+    // Full sync: also include tombstones so mobile apps that missed a delta sync
+    // or are doing a fresh full sync over an existing local DB can clean up deleted items.
     const where = since
-      ? gt(studyUnits.updatedAt, since)          // includes deletedAt rows
-      : isNull(studyUnits.deletedAt);
+      ? gt(studyUnits.updatedAt, since)
+      : undefined;
 
     return db.query.studyUnits.findMany({
-      where: where || undefined,
+      where: where,
     });
   }
 
   private async questions(since?: Date) {
     // Delta sync: include deleted tombstones so mobile can remove them from SQLite.
-    // Full sync: only send live rows.
+    // Full sync: also include tombstones to ensure local DBs clean up deleted questions.
     const where = since
-      ? gt(questions.updatedAt, since)           // includes deletedAt rows
-      : isNull(questions.deletedAt);
+      ? gt(questions.updatedAt, since)
+      : undefined;
 
     return db.query.questions.findMany({
-      where: where || undefined,
+      where: where,
       with: {
         choices: true,
         writtenQuestion: true,
@@ -143,14 +144,11 @@ export class ContentService {
     // We use aggregate sync: when a question is updated, all its choices are included
     // So we only return choices whose parent questions were updated since the cursor
     if (since) {
-      // Delta sync: get question IDs that were updated
+      // Delta sync: get question IDs that were updated (including deleted ones)
       const updatedQuestions = await db
         .select({ id: questions.id })
         .from(questions)
-        .where(and(
-          gt(questions.updatedAt, since),
-          isNull(questions.deletedAt)
-        ));
+        .where(gt(questions.updatedAt, since));
 
       const questionIds = updatedQuestions.map(q => q.id);
 
@@ -175,10 +173,7 @@ export class ContentService {
       const updatedQuestions = await db
         .select({ id: questions.id })
         .from(questions)
-        .where(and(
-          gt(questions.updatedAt, since),
-          isNull(questions.deletedAt)
-        ));
+        .where(gt(questions.updatedAt, since));
 
       const questionIds = updatedQuestions.map(q => q.id);
 
@@ -196,27 +191,21 @@ export class ContentService {
 
   private async lectureVideos(since?: Date) {
     const where = since
-      ? and(
-          gt(lectureVideos.updatedAt, since),
-          isNull(lectureVideos.deletedAt)
-        )
-      : isNull(lectureVideos.deletedAt);
+      ? gt(lectureVideos.updatedAt, since)
+      : undefined;
 
     return db.query.lectureVideos.findMany({
-      where: where || undefined,
+      where: where,
     });
   }
 
   private async lectureFiles(since?: Date) {
     const where = since
-      ? and(
-          gt(lectureFiles.updatedAt, since),
-          isNull(lectureFiles.deletedAt)
-        )
-      : isNull(lectureFiles.deletedAt);
+      ? gt(lectureFiles.updatedAt, since)
+      : undefined;
 
     return db.query.lectureFiles.findMany({
-      where: where || undefined,
+      where: where,
     });
   }
 }
