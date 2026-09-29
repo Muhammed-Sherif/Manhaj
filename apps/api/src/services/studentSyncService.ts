@@ -1,7 +1,8 @@
 import { db } from '../config/database.js';
 import {
   reviewItems, caseItems, noteItems, tasks,
-  questionReviewItems, drugItems
+  questionReviewItems, drugItems,
+  attempts, flags, videoProgress
 } from '@manhaj/db/schema';
 import { eq, and, isNull, gt, or } from '@manhaj/db';
 
@@ -317,9 +318,9 @@ export class StudentSyncService {
   private async getServerChanges(userId: string, since?: Date) {
     let reviewItemsData;
     let tasksData;
-    let attemptsData;
-    let flagsData;
-    let videoProgressData;
+    let attemptsData: any[] = [];
+    let flagsData: any[] = [];
+    let videoProgressData: any[] = [];
 
     if (since) {
       // Delta sync: get items updated or created since the cursor
@@ -353,9 +354,6 @@ export class StudentSyncService {
         ),
       });
 
-      attemptsData = [];
-      flagsData = [];
-      videoProgressData = [];
     } else {
       // Full sync: get all non-deleted items
       reviewItemsData = await db.query.reviewItems.findMany({
