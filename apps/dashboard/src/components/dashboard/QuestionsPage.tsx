@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight, Plus, Check } from 'lucide-react';
+import { Pencil, Trash2, Upload, X, BookOpen, ChevronRight, Plus, Check, ArrowUpDown } from 'lucide-react';
 import {
   useGetAdminQuestions,
   usePatchAdminQuestionsBulkAssignStudyUnit,
@@ -523,9 +523,15 @@ export function QuestionsPage() {
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
   // Question currently being edited; null when the dialog is closed.
   const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const rows = (query.data?.data ?? []) as QuestionRow[];
-  const all = rows.length > 0 && selected.length === rows.length;
+  const sortedRows = [...rows].sort((a, b) => {
+    const aId = a.telegramMessageId || 0;
+    const bId = b.telegramMessageId || 0;
+    return sortOrder === 'asc' ? aId - bId : bId - aId;
+  });
+  const all = sortedRows.length > 0 && selected.length === sortedRows.length;
 
   // Auto-select questions that already have choices attached
   useEffect(() => {
@@ -630,7 +636,14 @@ export function QuestionsPage() {
                 <TableHead>
                   <input type="checkbox" checked={all} onChange={() => setSelected(all ? [] : rows.map((q) => q.id || '').filter(Boolean))} />
                 </TableHead>
-                <TableHead>ID</TableHead>
+                <TableHead>
+                  <button 
+                    className="flex items-center gap-1.5 hover:text-slate-900 transition-colors"
+                    onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+                  >
+                    ID <ArrowUpDown size={14} className={sortOrder === 'asc' ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                  </button>
+                </TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Question text</TableHead>
                 <TableHead>Answer</TableHead>
@@ -640,7 +653,7 @@ export function QuestionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((question) => (
+              {sortedRows.map((question) => (
                 <TableRow key={question.id}>
                   <TableCell>
                     <input
