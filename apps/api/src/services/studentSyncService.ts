@@ -1,7 +1,7 @@
 import { db } from '../config/database.js';
 import {
   reviewItems, caseItems, noteItems, tasks,
-  questionReviewItems
+  questionReviewItems, drugItems
 } from '@manhaj/db/schema';
 import { eq, and, isNull, gt, or } from '@manhaj/db';
 
@@ -337,7 +337,6 @@ export class StudentSyncService {
           caseItem: true,
           noteItem: true,
           drugItem: true,
-          factItem: true,
         },
       });
 
@@ -366,7 +365,6 @@ export class StudentSyncService {
           caseItem: true,
           noteItem: true,
           drugItem: true,
-          factItem: true,
         },
       });
 
