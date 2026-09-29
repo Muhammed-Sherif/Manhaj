@@ -317,6 +317,9 @@ export class StudentSyncService {
   private async getServerChanges(userId: string, since?: Date) {
     let reviewItemsData;
     let tasksData;
+    let attemptsData;
+    let flagsData;
+    let videoProgressData;
 
     if (since) {
       // Delta sync: get items updated or created since the cursor
@@ -349,6 +352,10 @@ export class StudentSyncService {
           )
         ),
       });
+
+      attemptsData = [];
+      flagsData = [];
+      videoProgressData = [];
     } else {
       // Full sync: get all non-deleted items
       reviewItemsData = await db.query.reviewItems.findMany({
@@ -374,11 +381,26 @@ export class StudentSyncService {
           isNull(tasks.deletedAt)
         ),
       });
+
+      attemptsData = await db.query.attempts.findMany({
+        where: eq(attempts.userId, userId),
+      });
+
+      flagsData = await db.query.flags.findMany({
+        where: eq(flags.userId, userId),
+      });
+
+      videoProgressData = await db.query.videoProgress.findMany({
+        where: eq(videoProgress.userId, userId),
+      });
     }
 
     return {
       reviewItems: reviewItemsData,
       tasks: tasksData,
+      attempts: attemptsData,
+      flags: flagsData,
+      videoProgress: videoProgressData,
     };
   }
 }
