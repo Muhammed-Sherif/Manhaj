@@ -21,8 +21,9 @@ export class StudentSyncController {
       );
 
       res.json(result);
-    } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+    } catch (error: any) {
+      console.error('[StudentSyncController] error:', error?.message, 'cause:', error?.cause?.message ?? error?.cause);
+      res.status(400).json({ error: error?.cause?.message ?? error?.message });
     }
   };
 }
