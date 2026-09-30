@@ -87,6 +87,7 @@ export const initializeDatabase = () => {
       question_text TEXT NOT NULL,
       explanation TEXT NOT NULL,
       source TEXT NOT NULL,
+      telegram_message_id INTEGER,
       updated_at TEXT NOT NULL,
       deleted_at TEXT,
       FOREIGN KEY (study_unit_id) REFERENCES study_units(id) ON DELETE SET NULL
@@ -477,6 +478,9 @@ export const initializeDatabase = () => {
     addColumnIfMissing(table, 'updated_at', 'TEXT');
     addColumnIfMissing(table, 'deleted_at', 'TEXT');
   }
+
+  // ── Migration: add telegram_message_id to questions
+  addColumnIfMissing('questions', 'telegram_message_id', 'INTEGER');
 
   // ── Migration: image attachment columns on user-authored cards.
   // These tables shipped without them, so existing installs pick them up here; the CREATE

@@ -429,50 +429,65 @@ export const syncVideoProgress = async (): Promise<SyncResult> => {
   };
 };
 
+let _isSyncing = false;
+
 export const syncPendingChanges = async (): Promise<SyncResult> => {
-  const netInfo = await NetInfo.fetch();
-  if (!netInfo.isConnected) {
-    console.log('[Sync] syncPendingChanges: offline, skipping');
+  // Mutex: only one sync may run at a time to prevent race conditions where
+  // two concurrent full syncs re-upsert stale data after the other already
+  // completed its soft-delete phase.
+  if (_isSyncing) {
+    console.log('[Sync] syncPendingChanges: already running, skipping duplicate call');
     return { success: false, synced: 0, failed: 0 };
   }
-
-  console.log('[Sync] syncPendingChanges: ---- START ----');
-
-  console.log('[Sync] step 1/5: uploading attempts, flags, video progress...');
-  const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
-  console.log(`[Sync] step 1/5 done: attempts=${results[0].synced}, flags=${results[1].synced}, videoProgress=${results[2].synced}`);
-
-  console.log('[Sync] step 2/5: syncing content (questions/studyUnits) from server...');
-  await syncContentFromServer();
-  console.log('[Sync] step 2/5 done');
-
-  console.log('[Sync] step 3/5: syncing student items (reviewables/tasks) from server...');
-  try {
-    await syncStudentItemsFromServer();
-    console.log('[Sync] step 3/5 done');
-  } catch (err: any) {
-    console.error('[Sync] step 3/5 FAILED (student sync):', err?.message ?? err);
-  }
+  _isSyncing = true;
 
   try {
-    console.log('[Sync] step 4/5: syncing zekr catalog...');
-    await syncZekrCatalog();
-    console.log('[Sync] step 4/5 done');
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      console.log('[Sync] syncPendingChanges: offline, skipping');
+      return { success: false, synced: 0, failed: 0 };
+    }
 
-    console.log('[Sync] step 5/5: syncing quran data...');
-    await syncQuranData();
-    console.log('[Sync] step 5/5 done');
-  } catch (err) {
-    console.error('[Sync] Failed to sync zekr/quran catalogs', err);
+    console.log('[Sync] syncPendingChanges: ---- START ----');
+
+    console.log('[Sync] step 1/5: uploading attempts, flags, video progress...');
+    const results = await Promise.all([syncAttempts(), syncFlags(), syncVideoProgress()]);
+    console.log(`[Sync] step 1/5 done: attempts=${results[0].synced}, flags=${results[1].synced}, videoProgress=${results[2].synced}`);
+
+    console.log('[Sync] step 2/5: syncing content (questions/studyUnits) from server...');
+    await syncContentFromServer();
+    console.log('[Sync] step 2/5 done');
+
+    console.log('[Sync] step 3/5: syncing student items (reviewables/tasks) from server...');
+    try {
+      await syncStudentItemsFromServer();
+      console.log('[Sync] step 3/5 done');
+    } catch (err: any) {
+      console.error('[Sync] step 3/5 FAILED (student sync):', err?.message ?? err);
+    }
+
+    try {
+      console.log('[Sync] step 4/5: syncing zekr catalog...');
+      await syncZekrCatalog();
+      console.log('[Sync] step 4/5 done');
+
+      console.log('[Sync] step 5/5: syncing quran data...');
+      await syncQuranData();
+      console.log('[Sync] step 5/5 done');
+    } catch (err) {
+      console.error('[Sync] Failed to sync zekr/quran catalogs', err);
+    }
+
+    const summary = {
+      success: results.every((result) => result.success),
+      synced: results.reduce((total, result) => total + result.synced, 0),
+      failed: results.reduce((total, result) => total + result.failed, 0),
+    };
+    console.log(`[Sync] syncPendingChanges: ---- DONE ---- synced=${summary.synced} failed=${summary.failed}`);
+    return summary;
+  } finally {
+    _isSyncing = false;
   }
-
-  const summary = {
-    success: results.every((result) => result.success),
-    synced: results.reduce((total, result) => total + result.synced, 0),
-    failed: results.reduce((total, result) => total + result.failed, 0),
-  };
-  console.log(`[Sync] syncPendingChanges: ---- DONE ---- synced=${summary.synced} failed=${summary.failed}`);
-  return summary;
 };
 
 export const resetCursors = async (): Promise<void> => {

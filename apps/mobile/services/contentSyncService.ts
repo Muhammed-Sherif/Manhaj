@@ -1,4 +1,4 @@
-import { eq, asc, notInArray, isNull, and } from 'drizzle-orm';
+import { eq, asc, notInArray, isNull, and, inArray } from 'drizzle-orm';
 import { db } from './database';
 import * as schema from '../db/schema';
 import { getContentSync } from '@manhaj/api-client';
@@ -130,78 +130,131 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
     const liveQs = contentData.questions.filter((q: any) => !q.deletedAt);
     const deadQs = contentData.questions.filter((q: any) => !!q.deletedAt);
     console.log(`[ContentSync] syncing ${contentData.questions.length} questions: ${liveQs.length} upsert, ${deadQs.length} tombstone/delete`);
-    // Sync questions (handle tombstones)
-    for (const question of contentData.questions) {
-      if (question.deletedAt) {
-        console.log(`[ContentSync]   question HARD-DELETE: ${question.id} ("${question.questionText?.slice(0, 60) ?? '?'}")`)
-        // Hard-delete the question and all its child rows from SQLite
-        // so it immediately disappears from counts and session lists.
-        await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
-        await tx.delete(schema.writtenQuestions).where(eq(schema.writtenQuestions.questionId, question.id));
-        await tx.delete(schema.mcqQuestions).where(eq(schema.mcqQuestions.questionId, question.id));
-        await tx.delete(schema.choices).where(eq(schema.choices.questionId, question.id));
-        await tx.delete(schema.questions).where(eq(schema.questions.id, question.id));
-      } else {
-        await tx
-          .insert(schema.questions)
-          .values({
-            id: question.id,
+
+    // Log how many live questions each study unit contributes
+    const liveByUnit: Record<string, number> = {};
+    for (const q of liveQs) {
+      const key = q.studyUnitId ?? '(no unit)';
+      liveByUnit[key] = (liveByUnit[key] ?? 0) + 1;
+    }
+    console.log(`[ContentSync] live questions per studyUnit: ${JSON.stringify(liveByUnit)}`);
+
+    // Also log how many tombstones belonged to each study unit on the server
+    const deadByUnit: Record<string, number> = {};
+    for (const q of deadQs) {
+      const key = q.studyUnitId ?? '(no unit)';
+      deadByUnit[key] = (deadByUnit[key] ?? 0) + 1;
+    }
+    console.log(`[ContentSync] tombstone questions per studyUnit: ${JSON.stringify(deadByUnit)}`);
+
+    // ── Phase 1: Upsert live questions ──────────────────────────────────────
+    for (const question of liveQs) {
+      await tx
+        .insert(schema.questions)
+        .values({
+          id: question.id,
+          studyUnitId: question.studyUnitId || null,
+          createdBy: question.createdBy || null,
+          questionText: question.questionText,
+          questionType: question.writtenQuestion ? 'written' : (question.questionType ?? 'mcq'),
+          explanation: question.explanation ?? '',
+          source: question.source ?? 'manual',
+          telegramMessageId: question.telegramMessageId || null,
+          updatedAt: question.updatedAt ?? new Date().toISOString(),
+          deletedAt: question.deletedAt,
+        })
+        .onConflictDoUpdate({
+          target: schema.questions.id,
+          set: {
             studyUnitId: question.studyUnitId || null,
             createdBy: question.createdBy || null,
-            questionText: question.questionText,
             questionType: question.writtenQuestion ? 'written' : (question.questionType ?? 'mcq'),
+            questionText: question.questionText,
             explanation: question.explanation ?? '',
             source: question.source ?? 'manual',
             telegramMessageId: question.telegramMessageId || null,
             updatedAt: question.updatedAt ?? new Date().toISOString(),
             deletedAt: question.deletedAt,
-          })
-          .onConflictDoUpdate({
-            target: schema.questions.id,
-            set: {
-              studyUnitId: question.studyUnitId || null,
-              createdBy: question.createdBy || null,
-              questionType: question.writtenQuestion ? 'written' : (question.questionType ?? 'mcq'),
-              questionText: question.questionText,
-              explanation: question.explanation ?? '',
-              source: question.source ?? 'manual',
-              telegramMessageId: question.telegramMessageId || null,
-              updatedAt: question.updatedAt ?? new Date().toISOString(),
-              deletedAt: question.deletedAt,
-            },
-          });
+          },
+        });
 
-        // Sync question images
-        await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
-        if (question.images && question.images.length > 0) {
-          for (const img of question.images) {
-            await tx.insert(schema.questionImages).values({
-              id: img.id,
-              questionId: question.id,
-              imageUrl: img.imageUrl,
-              displayOrder: img.displayOrder || 0,
-              isAnswer: img.isAnswer ? 1 : 0,
-            });
-          }
-        }
-
-        // Sync written question
-        await tx.delete(schema.writtenQuestions).where(eq(schema.writtenQuestions.questionId, question.id));
-        if (question.writtenQuestion) {
-          await tx.insert(schema.writtenQuestions).values({
+      // Sync question images
+      await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
+      if (question.images && question.images.length > 0) {
+        for (const img of question.images) {
+          await tx.insert(schema.questionImages).values({
+            id: img.id,
             questionId: question.id,
-            writtenAnswer: question.writtenQuestion.writtenAnswer || '',
-          });
-        }
-
-        // Sync mcq question
-        await tx.delete(schema.mcqQuestions).where(eq(schema.mcqQuestions.questionId, question.id));
-        if (question.mcqQuestion) {
-          await tx.insert(schema.mcqQuestions).values({
-            questionId: question.id,
+            imageUrl: img.imageUrl,
+            displayOrder: img.displayOrder || 0,
+            isAnswer: img.isAnswer ? 1 : 0,
           });
         }
       }
+
+      // Sync written question
+      await tx.delete(schema.writtenQuestions).where(eq(schema.writtenQuestions.questionId, question.id));
+      if (question.writtenQuestion) {
+        await tx.insert(schema.writtenQuestions).values({
+          questionId: question.id,
+          writtenAnswer: question.writtenQuestion.writtenAnswer || '',
+        });
+      }
+
+      // Sync mcq question
+      await tx.delete(schema.mcqQuestions).where(eq(schema.mcqQuestions.questionId, question.id));
+      if (question.mcqQuestion) {
+        await tx.insert(schema.mcqQuestions).values({
+          questionId: question.id,
+        });
+      }
+    }
+
+    // ── Phase 2: Batch soft-delete all tombstones in ONE UPDATE ─────────────
+    // Using a single inArray UPDATE (proven to work in this codebase) rather
+    // than per-row updates which are silently ignored in some expo-sqlite versions.
+    if (deadQs.length > 0) {
+      const tombstoneIds = deadQs.map((q: any) => q.id);
+      const nowIso = new Date().toISOString();
+
+      // Ensure any tombstones we have never seen before exist as rows first,
+      // so the UPDATE below can find them.
+      for (const q of deadQs) {
+        console.log(`[ContentSync]   question SOFT-DELETE (nullify): ${q.id} ("${q.questionText?.slice(0, 60) ?? '?'}")`);
+        await tx
+          .insert(schema.questions)
+          .values({
+            id: q.id,
+            studyUnitId: null,
+            createdBy: q.createdBy || null,
+            questionText: q.questionText ?? '',
+            questionType: q.questionType ?? 'mcq',
+            explanation: q.explanation ?? '',
+            source: q.source ?? 'manual',
+            telegramMessageId: q.telegramMessageId || null,
+            updatedAt: nowIso,
+            deletedAt: nowIso,
+          })
+          .onConflictDoNothing();
+      }
+
+      // Single batch UPDATE — sets studyUnitId=null + stamps deletedAt for all
+      // tombstones at once. This is the same inArray pattern used in the
+      // stale-question cleanup which is confirmed to work.
+      await tx
+        .update(schema.questions)
+        .set({ studyUnitId: null, deletedAt: nowIso, updatedAt: nowIso })
+        .where(inArray(schema.questions.id, tombstoneIds));
+
+      console.log(`[ContentSync] batch soft-delete done: nullified ${tombstoneIds.length} questions`);
+
+      // ── Verification: confirm the batch UPDATE actually nullified studyUnitId ──
+      // Read back a sample of the soft-deleted rows to verify studyUnitId is null.
+      const sample = tombstoneIds.slice(0, 3);
+      const verifyRows = await tx.select({ id: schema.questions.id, studyUnitId: schema.questions.studyUnitId, deletedAt: schema.questions.deletedAt })
+        .from(schema.questions)
+        .where(inArray(schema.questions.id, sample));
+      console.log(`[ContentSync] soft-delete verification (sample):`, JSON.stringify(verifyRows));
     }
 
     console.log(`[ContentSync] syncing ${contentData.choices?.length ?? 0} choices`);
@@ -934,6 +987,25 @@ export const saveStudyUnitDetailsToSqlite = async (studyUnit: any): Promise<void
     }
 
     if (Array.isArray(studyUnit.questions)) {
+      const newQuestionIds = studyUnit.questions.map((q: any) => q.id).filter(Boolean);
+      const staleCondition = newQuestionIds.length > 0
+        ? and(eq(schema.questions.studyUnitId, studyUnit.id), notInArray(schema.questions.id, newQuestionIds))
+        : eq(schema.questions.studyUnitId, studyUnit.id);
+        
+      const staleQuestions = await tx.select({ id: schema.questions.id }).from(schema.questions).where(staleCondition);
+      
+      if (staleQuestions.length > 0) {
+        const staleIds = staleQuestions.map(q => q.id);
+        
+        // Instead of hard-deleting, we simply unassign them from this studyUnit.
+        // This preserves user attempts/SRS data if the question was moved to another unit.
+        // True deletions are handled by the full sync (tombstones).
+        await tx
+          .update(schema.questions)
+          .set({ studyUnitId: null })
+          .where(inArray(schema.questions.id, staleIds));
+      }
+
       for (const q of studyUnit.questions) {
         if (!q.id) continue;
         await tx

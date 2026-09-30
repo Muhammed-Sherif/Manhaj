@@ -163,6 +163,7 @@ export const useSolveStore = create<SolveState>((set, get) => ({
     const { showAnswer, questions, currentIndex } = get();
     if (showAnswer) return;
     const currentQuestion = questions[currentIndex];
+    
     set({
       showAnswer: true,
       explanation: currentQuestion?.explanation || '',

@@ -430,11 +430,17 @@ export async function buildCustomStudyQueue(
     cards.push(...(await noteCards(filters.dueScope, userId, studyUnitIds, nowStr, noteTypes)));
   }
 
-  return cards.sort((a, b) =>
-    (a.nextReviewDate ?? NEVER_REVIEWED_SORT_KEY).localeCompare(
+  return cards.sort((a, b) => {
+    const dateCompare = (a.nextReviewDate ?? NEVER_REVIEWED_SORT_KEY).localeCompare(
       b.nextReviewDate ?? NEVER_REVIEWED_SORT_KEY,
-    ),
-  );
+    );
+    if (dateCompare !== 0) return dateCompare;
+
+    // Fall back to telegramMessageId to arrange new questions in logical order
+    const aId = a.data?.telegramMessageId ?? Number.MAX_SAFE_INTEGER;
+    const bId = b.data?.telegramMessageId ?? Number.MAX_SAFE_INTEGER;
+    return aId - bId;
+  });
 }
 
 // ─── Grading ──────────────────────────────────────────────────────────────────

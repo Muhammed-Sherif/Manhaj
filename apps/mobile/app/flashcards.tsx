@@ -238,6 +238,28 @@ export default function FlashcardsScreen() {
           )}
           </View>
         }
+        {/* Navigation Buttons */}
+        <View className="mt-4 flex-row justify-between mb-8">
+          <TouchableOpacity
+            className={`px-6 py-3 rounded-xl bg-slate-200 dark:bg-slate-700 ${currentIndex === 0 ? 'opacity-50' : ''}`}
+            disabled={currentIndex === 0}
+            onPress={() => {
+              setShowAnswer(false);
+              setCurrentIndex(prev => prev - 1);
+            }}>
+            <Text className="text-slate-700 dark:text-slate-300 font-bold">Previous</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className={`px-6 py-3 rounded-xl bg-slate-200 dark:bg-slate-700 ${currentIndex === items.length - 1 ? 'opacity-50' : ''}`}
+            disabled={currentIndex === items.length - 1}
+            onPress={() => {
+              setShowAnswer(false);
+              setCurrentIndex(prev => prev + 1);
+            }}>
+            <Text className="text-slate-700 dark:text-slate-300 font-bold">Next</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </ScreenContainer>);
 

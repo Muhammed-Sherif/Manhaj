@@ -62,6 +62,43 @@ export default function SolveScreen() {
         }
       }
 
+      // DIAGNOSTICS:
+      if (studyUnitId) {
+        try {
+          const { getStudyUnitDetails, getQuestionsByStudyUnit } = require('../services/contentSyncService');
+          const { db } = require('../services/database');
+          const { questions: qSchema } = require('../db/schema');
+          const { eq, isNull, isNotNull, and } = require('drizzle-orm');
+
+          // Fresh DB read — total questions for this studyUnit regardless of deletedAt
+          const allForUnit = await db.select({ id: qSchema.id, deletedAt: qSchema.deletedAt, studyUnitId: qSchema.studyUnitId })
+            .from(qSchema)
+            .where(eq(qSchema.studyUnitId, studyUnitId));
+
+          const totalInUnit = allForUnit.length;
+          const liveInUnit = allForUnit.filter((q: any) => !q.deletedAt).length;
+          const deletedInUnit = allForUnit.filter((q: any) => !!q.deletedAt).length;
+
+          console.log(`[DIAGNOSTICS] studyUnit ${studyUnitId}: total=${totalInUnit}, live(deletedAt=null)=${liveInUnit}, soft-deleted(deletedAt set)=${deletedInUnit}`);
+
+          // Check if any tombstones STILL have this studyUnitId (would mean batch UPDATE failed)
+          if (deletedInUnit > 0) {
+            const leakedIds = allForUnit.filter((q: any) => !!q.deletedAt).map((q: any) => q.id);
+            console.warn(`[DIAGNOSTICS] ⚠️  ${deletedInUnit} soft-deleted questions still have studyUnitId="${studyUnitId}" — batch UPDATE may not have worked! IDs: ${leakedIds.slice(0, 5).join(', ')}...`);
+          }
+
+          // The count users see in the UI (the isNull filter)
+          const su = await getStudyUnitDetails(studyUnitId);
+          console.log(`[DIAGNOSTICS] getStudyUnitDetails (isNull filter) returned ${su?.questions?.length ?? 'undefined'} questions`);
+
+          const allQs = await getQuestionsByStudyUnit(studyUnitId);
+          console.log(`[DIAGNOSTICS] getQuestionsByStudyUnit (isNull filter) returned ${allQs?.length ?? 'undefined'} questions`);
+        } catch (err: any) {
+          console.log(`[DIAGNOSTICS] error:`, err.message);
+        }
+      }
+
+
       // Scenario 2: studyUnitId passed (from StudyUnitQuestionsCard)
       if (studyUnitId) {
         let list: Question[] = [];
@@ -77,6 +114,10 @@ export default function SolveScreen() {
             const bId = b.telegramMessageId ?? 0;
             return aId - bId;
           });
+          
+          console.log(`[SolveScreen] Loaded ${list.length} questions for studyUnit: ${studyUnitId}`);
+          console.log(`[SolveScreen] Question IDs loaded: ${list.map(q => q.id).join(', ')}`);
+          
           setQuestions(list);
           return;
         }

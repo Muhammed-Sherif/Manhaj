@@ -55,6 +55,7 @@ export class ContentService {
         lectureVideos: true,
         lectureFiles: true,
         questions: {
+          where: isNull(questions.deletedAt),
           with: {
             choices: true,
             questionSources: true,

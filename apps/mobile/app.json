@@ -3,7 +3,7 @@
     "name": "Manhaj",
     "slug": "manhaj",
     "scheme": "manhaj",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -63,7 +63,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c70d9ae5-6eae-4b84-a8ea-50a7826f1154"
+        "projectId": "163709dd-eabf-4338-a629-65d9a6247d9f"
       },
       "apiUrl": "https://manhaj-api-five.vercel.app"
     },
@@ -71,7 +71,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/c70d9ae5-6eae-4b84-a8ea-50a7826f1154"
+      "url": "https://u.expo.dev/163709dd-eabf-4338-a629-65d9a6247d9f"
     }
   }
 }

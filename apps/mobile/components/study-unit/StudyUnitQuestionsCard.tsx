@@ -19,8 +19,16 @@ export const StudyUnitQuestionsCard: React.FC<StudyUnitQuestionsCardProps> = ({
 
   useEffect(() => {
     if (studyUnit?.id) {
+      console.log(`[StudyUnit Lecture] Details:`, { id: studyUnit.id, name: studyUnit.name, totalQuestions: studyUnit.questions?.length });
+      if (studyUnit.questions) {
+        console.log(`[StudyUnit Lecture] Attached question IDs:`, studyUnit.questions.map((q: any) => q.id).join(', '));
+      }
+
       fetchUnsolvedQuestions(studyUnit.id)
-        .then((list) => setUnsolvedCount(list.length))
+        .then((list) => {
+          console.log(`[StudyUnit Lecture] Fetched ${list.length} unsolved questions.`);
+          setUnsolvedCount(list.length);
+        })
         .catch(() => {});
     }
   }, [studyUnit?.id]);

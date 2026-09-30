@@ -461,7 +461,7 @@ export class AdminService {
     const result = await db.transaction(async (transaction) => {
       const updatedQuestions = await transaction
         .update(questions)
-        .set({ studyUnitId: null })
+        .set({ studyUnitId: null, updatedAt: new Date() })
         .where(inArray(questions.id, questionIds))
         .returning();
 
