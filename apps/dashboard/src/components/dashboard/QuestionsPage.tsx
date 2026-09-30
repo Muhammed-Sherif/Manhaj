@@ -326,6 +326,9 @@ export function EditQuestionModal({
   const [writtenAnswer, setWrittenAnswer] = useState(
     question.writtenQuestion?.writtenAnswer ?? ''
   );
+  const [telegramMessageId, setTelegramMessageId] = useState<string>(
+    question.telegramMessageId ? question.telegramMessageId.toString() : ''
+  );
   const [choices, setChoices] = useState<EditableChoice[]>(
     (question.choices ?? []).map((c) => ({
       ...c,
@@ -373,6 +376,7 @@ export function EditQuestionModal({
       data: {
         questionText,
         explanation,
+        telegramMessageId: telegramMessageId ? parseInt(telegramMessageId, 10) : null,
         ...(isWritten ? { writtenAnswer } : { choices }),
       } as any,
     });
@@ -426,6 +430,18 @@ export function EditQuestionModal({
               value={explanation}
               onChange={(e) => setExplanation(e.target.value)}
               placeholder="Enter explanation…"
+            />
+          </div>
+
+          {/* Telegram Message ID */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Telegram Message ID <span className="text-slate-400 font-normal">(optional)</span></label>
+            <input
+              type="number"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              value={telegramMessageId}
+              onChange={(e) => setTelegramMessageId(e.target.value)}
+              placeholder="e.g. 12345"
             />
           </div>
 

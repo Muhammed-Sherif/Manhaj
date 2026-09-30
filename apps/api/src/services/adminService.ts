@@ -54,7 +54,7 @@ export class AdminValidationError extends Error {
  * `questionType` and `writtenAnswer` are deliberately absent: they live in the subclass tables
  * and are handled separately.
  */
-const UPDATABLE_QUESTION_FIELDS = ['studyUnitId', 'questionText', 'explanation', 'source'] as const;
+const UPDATABLE_QUESTION_FIELDS = ['studyUnitId', 'questionText', 'explanation', 'source', 'telegramMessageId'] as const;
 
 export class AdminService {
   async getGrades() {
