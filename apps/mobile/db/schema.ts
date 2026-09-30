@@ -145,16 +145,6 @@ export const writtenQuestions = sqliteTable('written_questions', {
   writtenAnswer: text('written_answer').notNull(),
 });
 
-export const questionImages = sqliteTable('question_images', {
-  id: text('id').primaryKey(),
-  questionId: text('question_id')
-    .notNull()
-    .references(() => questions.id, { onDelete: 'cascade' }),
-  imageUrl: text('image_url').notNull(),
-  displayOrder: integer('display_order').notNull().default(0),
-  telegramFileId: text('telegram_file_id'),
-  isAnswer: integer('is_answer').notNull().default(0), // 1 = true, 0 = false
-});
 
 export const choices = sqliteTable('choices', {
   id: text('id').primaryKey(),
