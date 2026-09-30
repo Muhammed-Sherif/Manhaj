@@ -17,7 +17,7 @@ const db = drizzle(sql);
 
 async function applyMigration() {
   try {
-    const migrationPath = join(dirname(fileURLToPath(import.meta.url)), 'drizzle/0005_workable_king_bedlam.sql');
+    const migrationPath = join(dirname(fileURLToPath(import.meta.url)), 'drizzle/0009_flimsy_multiple_man.sql');
     const migrationSQL = readFileSync(migrationPath, 'utf-8');
     
     console.log('Applying migration...');

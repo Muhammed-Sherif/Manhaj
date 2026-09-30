@@ -121,7 +121,7 @@ export const questions = pgTable('questions', {
   questionText: text('question_text').notNull(),
   explanation: text('explanation'), // nullable — written questions often have none
   source: questionSourceEnum('source').notNull(),
-  telegramMessageId: integer('telegram_message_id').unique(),
+  telegramMessageId: integer('telegram_message_id'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });

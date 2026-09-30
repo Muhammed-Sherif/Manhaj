@@ -1,0 +1,1 @@
+ALTER TABLE "questions" DROP CONSTRAINT "questions_telegram_message_id_key";
