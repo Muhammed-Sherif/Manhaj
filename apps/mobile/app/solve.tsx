@@ -182,7 +182,8 @@ export default function SolveScreen() {
               <Image
                 key={img.id}
                 source={{ uri: img.imageUrl }}
-                className="w-full h-48 rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
+                style={{ width: '100%', height: 192 }}
+                className="rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
                 resizeMode="contain" />
 
               );

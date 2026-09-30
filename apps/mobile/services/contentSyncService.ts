@@ -180,8 +180,8 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
 
       // Sync question images
       await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
-      if (question.images && question.images.length > 0) {
-        for (const img of question.images) {
+      if (question.questionImages && question.questionImages.length > 0) {
+        for (const img of question.questionImages) {
           await tx.insert(schema.questionImages).values({
             id: img.id,
             questionId: question.id,

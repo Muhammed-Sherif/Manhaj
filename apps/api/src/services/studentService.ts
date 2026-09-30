@@ -135,6 +135,7 @@ export class StudentService {
       where: eq(questions.studyUnitId, studyUnitId),
       with: {
         choices: true,
+        questionImages: true,
       },
     });
 

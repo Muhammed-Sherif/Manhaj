@@ -59,6 +59,7 @@ export class ContentService {
           with: {
             choices: true,
             questionSources: true,
+            questionImages: true,
           },
         },
       },

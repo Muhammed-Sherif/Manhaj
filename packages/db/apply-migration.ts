@@ -17,11 +17,15 @@ const db = drizzle(sql);
 
 async function applyMigration() {
   try {
-    const migrationPath = join(dirname(fileURLToPath(import.meta.url)), 'drizzle/0009_flimsy_multiple_man.sql');
-    const migrationSQL = readFileSync(migrationPath, 'utf-8');
-    
-    console.log('Applying migration...');
-    await sql.unsafe(migrationSQL);
+
+    const qResult = await sql`
+      SELECT id, question_text FROM questions WHERE question_text ILIKE '%diagnosis is most consistent with these findings%';
+    `;
+    console.log(qResult);
+    if (qResult.length > 0) {
+      const qImgs = await sql`SELECT * FROM question_images WHERE question_id = ${qResult[0].id}`;
+      console.log("Images for question:", qImgs);
+    }
     console.log('Migration applied successfully!');
   } catch (error) {
     console.error('Migration failed:', error);
