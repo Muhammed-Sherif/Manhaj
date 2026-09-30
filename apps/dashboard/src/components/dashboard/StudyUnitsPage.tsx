@@ -70,6 +70,7 @@ export function StudyUnitsPage() {
   const [studyUnitQuestionsMap, setStudyUnitQuestionsMap] = useState<Record<string, any[]>>({});
   const [editingQuestion, setEditingQuestion] = useState<QuestionRow | null>(null);
   const [pendingDeleteQuestion, setPendingDeleteQuestion] = useState<string | null>(null);
+  const [sortQuestionsByTelegramId, setSortQuestionsByTelegramId] = useState<boolean>(false);
 
   // Fetch questions for expanded lecture
   const questionsQuery = useGetAdminQuestions(
@@ -408,35 +409,46 @@ export function StudyUnitsPage() {
                               <h4 className="font-semibold text-sm text-slate-700">
                                 Assigned Questions ({studyUnitQuestionsMap[studyUnit.id]?.length || 0})
                               </h4>
-                              <div className="flex gap-2">
-                                {selectedQuestionIds.length > 0 && (
+                                <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    variant="destructive"
-                                    onClick={handleUnassignQuestions}
-                                    disabled={unassignMutation.isPending}
+                                    variant="outline"
+                                    onClick={() => setSortQuestionsByTelegramId(!sortQuestionsByTelegramId)}
+                                    title="Sort by Telegram ID"
                                   >
-                                    <Trash2 size={14} className="mr-1" />
-                                    Unassign ({selectedQuestionIds.length})
+                                    Sort by Telegram ID {sortQuestionsByTelegramId ? '(Asc)' : ''}
                                   </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setExpandedStudyUnitId(null)}
-                                >
-                                  <X size={14} className="mr-1" />
-                                  Close
-                                </Button>
+                                  {selectedQuestionIds.length > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={handleUnassignQuestions}
+                                      disabled={unassignMutation.isPending}
+                                    >
+                                      <Trash2 size={14} className="mr-1" />
+                                      Unassign ({selectedQuestionIds.length})
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setExpandedStudyUnitId(null)}
+                                  >
+                                    <X size={14} className="mr-1" />
+                                    Close
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
                             {questionsQuery.isLoading ? (
                               <p className="text-sm text-slate-500">Loading questions...</p>
                             ) : !studyUnitQuestionsMap[studyUnit.id] || studyUnitQuestionsMap[studyUnit.id].length === 0 ? (
                               <p className="text-sm text-slate-500">No questions assigned to this studyUnit.</p>
                             ) : (
                               <div className="space-y-2">
-                                {studyUnitQuestionsMap[studyUnit.id].map((question: any) => (
+                                {(sortQuestionsByTelegramId 
+                                  ? [...studyUnitQuestionsMap[studyUnit.id]].sort((a, b) => (a.telegramMessageId ?? 0) - (b.telegramMessageId ?? 0))
+                                  : studyUnitQuestionsMap[studyUnit.id]
+                                ).map((question: any) => (
                                   <div
                                     key={question.id}
                                     className="flex items-start justify-between gap-3 p-3 bg-white rounded border border-slate-200"
@@ -455,9 +467,16 @@ export function StudyUnitsPage() {
                                         className="mt-1 accent-teal-600"
                                       />
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-800 line-clamp-2">
-                                          {question.questionText || question.text || 'No text'}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                          {question.telegramMessageId && (
+                                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                              ID: {question.telegramMessageId}
+                                            </span>
+                                          )}
+                                          <p className="text-sm font-medium text-slate-800 line-clamp-2">
+                                            {question.questionText || question.text || 'No text'}
+                                          </p>
+                                        </div>
                                         <p className="text-xs text-slate-500 mt-1">
                                           {question.choices?.find((c: any) => c.isCorrect)?.choiceText || 'No correct answer'}
                                         </p>
