@@ -281,6 +281,7 @@ export const tasks = sqliteTable('tasks', {
   estimatedTime: integer('estimated_time'),
   status: text('status').notNull().default('pending'),
   achievedFrom: text('achieved_from'),
+  synced: integer('synced').notNull().default(0),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   deletedAt: text('deleted_at'),

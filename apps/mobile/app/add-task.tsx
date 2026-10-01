@@ -205,6 +205,7 @@ export default function AddTaskScreen() {
         endTime: endTime.toISOString(),
         status: 'pending' as const,
         updatedAt: nowStr,
+        synced: 0,
       };
 
       if (id) {

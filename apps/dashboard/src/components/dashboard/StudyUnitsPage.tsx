@@ -478,7 +478,7 @@ export function StudyUnitsPage() {
                                           </p>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-1">
-                                          {question.choices?.find((c: any) => c.isCorrect)?.choiceText || 'No correct answer'}
+                                          {question.choices?.find((c: any) => c.isCorrect)?.choiceText || question.writtenQuestion?.writtenAnswer || 'No correct answer'}
                                         </p>
                                       </div>
                                     </div>
