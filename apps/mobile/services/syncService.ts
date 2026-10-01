@@ -460,8 +460,27 @@ export const syncPendingChanges = async (): Promise<SyncResult> => {
 
     console.log('[Sync] step 3/5: syncing student items (reviewables/tasks) from server...');
     try {
-      await syncStudentItemsFromServer();
-      console.log('[Sync] step 3/5 done');
+      const unsyncedTasks = await db.query.tasks.findMany({
+        where: eq(schema.tasks.synced, 0),
+        with: {
+          wirdTask: true,
+          zekrTasks: true,
+          studyTask: true,
+          workTask: true,
+        }
+      });
+      const clientChanges = {
+        tasks: unsyncedTasks,
+      };
+      await syncStudentItemsFromServer(clientChanges);
+      
+      // Mark as synced
+      if (unsyncedTasks.length > 0) {
+        for (const t of unsyncedTasks) {
+          await db.update(schema.tasks).set({ synced: 1 }).where(eq(schema.tasks.id, t.id));
+        }
+      }
+      console.log(`[Sync] step 3/5 done (uploaded ${unsyncedTasks.length} tasks)`);
     } catch (err: any) {
       console.error('[Sync] step 3/5 FAILED (student sync):', err?.message ?? err);
     }

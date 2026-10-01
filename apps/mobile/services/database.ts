@@ -221,7 +221,10 @@ export const initializeDatabase = () => {
       estimated_time INTEGER,
       status TEXT NOT NULL DEFAULT 'pending',
       achieved_from TEXT,
+      synced INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
       UNIQUE(task_type, start_time, end_time, created_at)
     );
 
@@ -536,6 +539,7 @@ export const initializeDatabase = () => {
   // instance and continue. Runs after the rebuilds above so it also covers installs that
   // came through either of them with the old column set.
   addColumnIfMissing('tasks', 'recurrence_status', "TEXT NOT NULL DEFAULT 'active'");
+  addColumnIfMissing('tasks', 'synced', 'INTEGER NOT NULL DEFAULT 0');
 
   // ── Migration: add created_at, updated_at, deleted_at to reviewable_items table
   const reviewableItemsColumns = expoDb.getAllSync(

@@ -121,7 +121,7 @@ export const questions = pgTable('questions', {
   questionText: text('question_text').notNull(),
   explanation: text('explanation'), // nullable — written questions often have none
   source: questionSourceEnum('source').notNull(),
-  telegramMessageId: integer('telegram_message_id'),
+  telegramMessageId: integer('telegram_message_id').unique(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
 });
@@ -708,6 +708,14 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   wirdTask: one(wirdTasks, {
     fields: [tasks.id],
     references: [wirdTasks.taskId],
+  }),
+  studyTask: one(studyTasks, {
+    fields: [tasks.id],
+    references: [studyTasks.taskId],
+  }),
+  workTask: one(workTasks, {
+    fields: [tasks.id],
+    references: [workTasks.taskId],
   }),
 }));
 

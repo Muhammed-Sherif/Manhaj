@@ -246,57 +246,128 @@ export class StudentSyncService {
       return;
     }
 
-    const [existingTask] = await db
-      .select()
-      .from(tasks)
-      .where(and(
-        eq(tasks.id, task.id),
-        eq(tasks.userId, userId)
-      ));
+    await db.transaction(async (tx) => {
+      const [existingTask] = await tx
+        .select()
+        .from(tasks)
+        .where(and(
+          eq(tasks.id, task.id),
+          eq(tasks.userId, userId)
+        ));
 
-    if (existingTask) {
-      // Update existing task (LWW: use the more recent updatedAt)
-      const newUpdatedAt = task.updatedAt ? new Date(task.updatedAt) : new Date();
-      const existingUpdatedAt = existingTask.updatedAt ? new Date(existingTask.updatedAt) : new Date();
-      
-      if (newUpdatedAt > existingUpdatedAt) {
-        await db
-          .update(tasks)
-          .set({
-            taskType: task.taskType!,
-            recurrence: task.recurrence || 'once',
-            recurrenceStatus: task.recurrenceStatus || 'active',
-            startTime: task.startTime ? new Date(task.startTime) : null,
-            endTime: task.endTime ? new Date(task.endTime) : null,
-            consumedTime: task.consumedTime,
-            estimatedTime: task.estimatedTime,
-            status: task.status || 'pending',
-            achievedFrom: task.achievedFrom || null,
-            createdAt: task.createdAt ? new Date(task.createdAt) : existingTask.createdAt,
-            updatedAt: new Date(),
-            deletedAt: task.deletedAt ? new Date(task.deletedAt) : null,
-            userId, // Ensure userId matches
-          })
-          .where(eq(tasks.id, task.id));
+      if (existingTask) {
+        const newUpdatedAt = task.updatedAt ? new Date(task.updatedAt) : new Date();
+        const existingUpdatedAt = existingTask.updatedAt ? new Date(existingTask.updatedAt) : new Date();
+        
+        if (newUpdatedAt > existingUpdatedAt) {
+          await tx
+            .update(tasks)
+            .set({
+              taskType: task.taskType!,
+              recurrence: task.recurrence || 'once',
+              recurrenceStatus: task.recurrenceStatus || 'active',
+              startTime: task.startTime ? new Date(task.startTime) : null,
+              endTime: task.endTime ? new Date(task.endTime) : null,
+              consumedTime: task.consumedTime,
+              estimatedTime: task.estimatedTime,
+              status: task.status || 'pending',
+              achievedFrom: task.achievedFrom || null,
+              createdAt: task.createdAt ? new Date(task.createdAt) : existingTask.createdAt,
+              updatedAt: new Date(),
+              deletedAt: task.deletedAt ? new Date(task.deletedAt) : null,
+              userId,
+            })
+            .where(eq(tasks.id, task.id));
+        } else {
+          return; // Server is newer, skip subclasses
+        }
+      } else {
+        await tx.insert(tasks).values({
+          id: task.id,
+          taskType: task.taskType!,
+          recurrence: task.recurrence || 'once',
+          recurrenceStatus: task.recurrenceStatus || 'active',
+          startTime: task.startTime ? new Date(task.startTime) : null,
+          endTime: task.endTime ? new Date(task.endTime) : null,
+          consumedTime: task.consumedTime,
+          estimatedTime: task.estimatedTime,
+          status: task.status || 'pending',
+          achievedFrom: task.achievedFrom || null,
+          createdAt: task.createdAt ? new Date(task.createdAt) : new Date(),
+          updatedAt: new Date(),
+          deletedAt: task.deletedAt ? new Date(task.deletedAt) : null,
+          userId,
+        });
       }
-    } else {
-      await db.insert(tasks).values({
-        id: task.id,
-        taskType: task.taskType!,
-        recurrence: task.recurrence || 'once',
-        recurrenceStatus: task.recurrenceStatus || 'active',
-        startTime: task.startTime ? new Date(task.startTime) : null,
-        endTime: task.endTime ? new Date(task.endTime) : null,
-        consumedTime: task.consumedTime,
-        estimatedTime: task.estimatedTime,
-        status: task.status || 'pending',
-        achievedFrom: task.achievedFrom || null,
-        createdAt: task.createdAt ? new Date(task.createdAt) : new Date(),
-        updatedAt: new Date(),
-        deletedAt: task.deletedAt ? new Date(task.deletedAt) : null,
-        userId,
-      });
-    }
+
+      // Upsert subclasses
+      const schema = await import('@manhaj/db/schema');
+      if (task.taskType === 'wird' && task.wirdTask) {
+        await tx.insert(schema.wirdTasks).values({
+          taskId: task.id,
+          wirdMode: task.wirdTask.wirdMode as any,
+          startVerseId: task.wirdTask.startVerseId || null,
+          endVerseId: task.wirdTask.endVerseId || null,
+          startPage: task.wirdTask.startPage || null,
+          endPage: task.wirdTask.endPage || null,
+          lastAchievedPage: task.wirdTask.lastAchievedPage || null,
+        }).onConflictDoUpdate({
+          target: [(schema.wirdTasks as any).taskId],
+          set: {
+            wirdMode: task.wirdTask.wirdMode as any,
+            startVerseId: task.wirdTask.startVerseId || null,
+            endVerseId: task.wirdTask.endVerseId || null,
+            startPage: task.wirdTask.startPage || null,
+            endPage: task.wirdTask.endPage || null,
+            lastAchievedPage: task.wirdTask.lastAchievedPage || null,
+          }
+        });
+      } else if (task.taskType === 'zekr' && task.zekrTasks) {
+        await tx.delete(schema.zekrTasks).where(eq((schema.zekrTasks as any).taskId, task.id));
+        if (task.zekrTasks.length > 0) {
+          await tx.insert(schema.zekrTasks).values(
+            task.zekrTasks.map(zt => ({
+              taskId: task.id,
+              categoryId: zt.categoryId || null,
+              zekrId: zt.zekrId || null,
+              customZekrText: zt.customZekrText || null,
+              zekrCount: zt.zekrCount,
+              zekrAchievedCount: zt.zekrAchievedCount,
+            }))
+          );
+        }
+      } else if (task.taskType === 'study' && task.studyTask) {
+        await tx.insert(schema.studyTasks).values({
+          taskId: task.id,
+          studyUnitId: task.studyTask.studyUnitId,
+          activityType: task.studyTask.activityType as any,
+        }).onConflictDoUpdate({
+          target: [(schema.studyTasks as any).taskId],
+          set: {
+            studyUnitId: task.studyTask.studyUnitId,
+            activityType: task.studyTask.activityType as any,
+          }
+        });
+      } else if (task.taskType === 'work' && task.workTask) {
+        await tx.insert(schema.workTasks).values({
+          taskId: task.id,
+          category: task.workTask.category as any,
+          projectName: task.workTask.projectName,
+          description: task.workTask.description || null,
+          link: task.workTask.link || null,
+          cost: task.workTask.cost,
+        }).onConflictDoUpdate({
+          target: [(schema.workTasks as any).taskId],
+          set: {
+            category: task.workTask.category as any,
+            projectName: task.workTask.projectName,
+            description: task.workTask.description || null,
+            link: task.workTask.link || null,
+            cost: task.workTask.cost,
+          }
+        });
+      }
+    });
   }
 
   /**
@@ -352,6 +423,12 @@ export class StudentSyncService {
             gt(tasks.createdAt, since)
           )
         ),
+        with: {
+          wirdTask: true,
+          zekrTasks: true,
+          studyTask: true,
+          workTask: true,
+        },
       });
 
     } else {
@@ -378,6 +455,12 @@ export class StudentSyncService {
           eq(tasks.userId, userId),
           isNull(tasks.deletedAt)
         ),
+        with: {
+          wirdTask: true,
+          zekrTasks: true,
+          studyTask: true,
+          workTask: true,
+        },
       });
 
       attemptsData = await db.query.attempts.findMany({
@@ -472,4 +555,32 @@ export interface TaskChange {
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
+
+  // Subclass fields
+  wirdTask?: {
+    wirdMode: 'by_ayat' | 'by_pages';
+    startVerseId?: string | null;
+    endVerseId?: string | null;
+    startPage?: number | null;
+    endPage?: number | null;
+    lastAchievedPage?: number | null;
+  };
+  zekrTasks?: Array<{
+    categoryId?: string | null;
+    zekrId?: string | null;
+    customZekrText?: string | null;
+    zekrCount: number;
+    zekrAchievedCount: number;
+  }>;
+  studyTask?: {
+    studyUnitId: string;
+    activityType: 'watch' | 'solve' | 'revision';
+  };
+  workTask?: {
+    category: 'programming' | 'video_editing';
+    projectName: string;
+    description?: string | null;
+    link?: string | null;
+    cost: number;
+  };
 }

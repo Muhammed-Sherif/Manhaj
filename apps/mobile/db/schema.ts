@@ -404,6 +404,22 @@ export const studyUnitVideosRelations = relations(studyUnitVideos, ({ one }) => 
   }),
 }));
 
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  zekrTasks: many(zekrTasks),
+  wirdTask: one(wirdTasks, {
+    fields: [tasks.id],
+    references: [wirdTasks.taskId],
+  }),
+  studyTask: one(studyTasks, {
+    fields: [tasks.id],
+    references: [studyTasks.taskId],
+  }),
+  workTask: one(workTasks, {
+    fields: [tasks.id],
+    references: [workTasks.taskId],
+  }),
+}));
+
 export const studyUnitFilesRelations = relations(studyUnitFiles, ({ one }) => ({
   studyUnit: one(studyUnits, {
     fields: [studyUnitFiles.studyUnitId],

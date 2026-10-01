@@ -206,6 +206,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
             createdAt: task.createdAt,
             updatedAt: task.updatedAt,
             deletedAt: task.deletedAt,
+            synced: 1, // Set to 1 because we just got it from the server
           })
           .onConflictDoUpdate({
             target: schema.tasks.id,
@@ -221,8 +222,76 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
               achievedFrom: task.achievedFrom,
               updatedAt: task.updatedAt,
               deletedAt: task.deletedAt,
+              synced: 1, // Set to 1 because we just got it from the server
             },
           });
+
+        // Handle subclasses
+        if (task.taskType === 'wird' && task.wirdTask) {
+          await tx.insert(schema.wirdTasks).values({
+            taskId: task.id,
+            wirdMode: task.wirdTask.wirdMode,
+            startVerseId: task.wirdTask.startVerseId || null,
+            endVerseId: task.wirdTask.endVerseId || null,
+            startPage: task.wirdTask.startPage || null,
+            endPage: task.wirdTask.endPage || null,
+            lastAchievedPage: task.wirdTask.lastAchievedPage || null,
+          }).onConflictDoUpdate({
+            target: schema.wirdTasks.taskId,
+            set: {
+              wirdMode: task.wirdTask.wirdMode,
+              startVerseId: task.wirdTask.startVerseId || null,
+              endVerseId: task.wirdTask.endVerseId || null,
+              startPage: task.wirdTask.startPage || null,
+              endPage: task.wirdTask.endPage || null,
+              lastAchievedPage: task.wirdTask.lastAchievedPage || null,
+            }
+          });
+        } else if (task.taskType === 'zekr' && task.zekrTasks) {
+          await tx.delete(schema.zekrTasks).where(eq(schema.zekrTasks.taskId, task.id));
+          if (task.zekrTasks.length > 0) {
+            await tx.insert(schema.zekrTasks).values(
+              task.zekrTasks.map((zt: any) => ({
+                taskId: task.id,
+                categoryId: zt.categoryId || null,
+                zekrId: zt.zekrId || null,
+                customZekrText: zt.customZekrText || null,
+                zekrCount: zt.zekrCount,
+                zekrAchievedCount: zt.zekrAchievedCount,
+              }))
+            );
+          }
+        } else if (task.taskType === 'study' && task.studyTask) {
+          await tx.insert(schema.studyTasks).values({
+            taskId: task.id,
+            studyUnitId: task.studyTask.studyUnitId,
+            activityType: task.studyTask.activityType,
+          }).onConflictDoUpdate({
+            target: schema.studyTasks.taskId,
+            set: {
+              studyUnitId: task.studyTask.studyUnitId,
+              activityType: task.studyTask.activityType,
+            }
+          });
+        } else if (task.taskType === 'work' && task.workTask) {
+          await tx.insert(schema.workTasks).values({
+            taskId: task.id,
+            category: task.workTask.category,
+            projectName: task.workTask.projectName,
+            description: task.workTask.description || null,
+            link: task.workTask.link || null,
+            cost: task.workTask.cost,
+          }).onConflictDoUpdate({
+            target: schema.workTasks.taskId,
+            set: {
+              category: task.workTask.category,
+              projectName: task.workTask.projectName,
+              description: task.workTask.description || null,
+              link: task.workTask.link || null,
+              cost: task.workTask.cost,
+            }
+          });
+        }
       }
     }
 
