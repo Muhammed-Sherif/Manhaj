@@ -194,12 +194,10 @@ export class AdminController {
         return;
       }
 
-      const { getStorage } = await import('../services/storage/index.js');
-      const crypto = await import('crypto');
-      const key = `questions/temp/${crypto.randomUUID()}${extension}`;
-      const stored = await getStorage().put({ key, body, contentType });
+      const { id } = req.params;
+      const imageUrl = await this.adminService.uploadQuestionImage(id, body, contentType);
 
-      res.status(200).json({ imageUrl: stored.url, imageKey: stored.key });
+      res.status(200).json({ imageUrl });
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

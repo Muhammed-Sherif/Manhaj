@@ -445,6 +445,33 @@ export function EditQuestionModal({
             />
           </div>
 
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Question Image</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !question.id) return;
+                  try {
+                    const { axios } = await import('@/api/client');
+                    const toast = (await import('@/components/ui/sonner')).toast;
+                    await axios.post(`/admin/questions/${question.id}/image`, file, {
+                      headers: { 'Content-Type': file.type }
+                    });
+                    toast.success('Image uploaded successfully! (Save to refresh)');
+                  } catch (error) {
+                    const toast = (await import('@/components/ui/sonner')).toast;
+                    toast.error('Failed to upload image');
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           {/* Written Answer / Choices */}
           {(question as any).questionType === 'written' ? (
             <div>

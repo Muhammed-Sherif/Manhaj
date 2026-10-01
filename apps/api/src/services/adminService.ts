@@ -598,6 +598,35 @@ export class AdminService {
     return { success: true, deletedCount: deleted.length };
   }
 
+  async uploadQuestionImage(questionId: string, fileBuffer: Buffer, contentType: string) {
+    const { getStorage } = await import('./storage/index.js');
+    const crypto = await import('crypto');
+    
+    // Check if question exists
+    const [q] = await db.select().from(questions).where(eq(questions.id, questionId));
+    if (!q) throw new AdminNotFoundError('Question not found');
+    
+    // Save image to storage
+    const extension = contentType.includes('png') ? '.png' : contentType.includes('webp') ? '.webp' : '.jpg';
+    const key = `questions/${questionId}/${crypto.randomUUID()}${extension}`;
+    const stored = await getStorage().put({ key, body: fileBuffer, contentType });
+    
+    // Insert into question_images table
+    await db.insert(questionImages).values({
+      id: crypto.randomUUID(),
+      questionId,
+      imageUrl: stored.url,
+      displayOrder: 0,
+      isAnswer: 0
+    });
+    
+    // Update the question's updatedAt so sync picks it up
+    await db.update(questions).set({ updatedAt: new Date() }).where(eq(questions.id, questionId));
+    
+    return stored.url;
+  }
+
+
   // Study Units
   async createStudyUnit(studyUnitData: any) {
     const [studyUnit] = await db.insert(studyUnits).values(studyUnitData).returning();

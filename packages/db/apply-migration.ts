@@ -18,14 +18,8 @@ const db = drizzle(sql);
 async function applyMigration() {
   try {
 
-    const qResult = await sql`
-      SELECT id, question_text FROM questions WHERE question_text ILIKE '%diagnosis is most consistent with these findings%';
-    `;
-    console.log(qResult);
-    if (qResult.length > 0) {
-      const qImgs = await sql`SELECT * FROM question_images WHERE question_id = ${qResult[0].id}`;
-      console.log("Images for question:", qImgs);
-    }
+    const total = await sql`SELECT count(*) FROM question_images`;
+    console.log('Total images:', total);
     console.log('Migration applied successfully!');
   } catch (error) {
     console.error('Migration failed:', error);

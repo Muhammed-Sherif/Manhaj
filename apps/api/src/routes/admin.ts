@@ -426,6 +426,9 @@ router.patch('/questions/bulk-assign-telegram-range', adminController.bulkAssign
  *       200: { description: Questions unassigned }
  */
 router.patch('/questions/bulk-unassign-study-unit', adminController.bulkUnassignStudyUnit);
+const imageBodyParser = express.raw({ type: 'image/*', limit: '10mb' });
+router.post('/questions/:id/image', imageBodyParser, adminController.uploadQuestionImage);
+
 /**
  * @swagger
  * /admin/questions/bulk-delete:

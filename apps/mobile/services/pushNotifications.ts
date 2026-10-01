@@ -75,7 +75,10 @@ export const scheduleSingleTaskReminder = async (taskId: string, taskTitle: stri
             body: `Your task "${taskTitle}" is starting in ${reminderMinutes} minutes.`,
             data: { taskId }
         },
-        trigger: triggerTime,
+        trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerTime,
+        },
     });
 }
 
