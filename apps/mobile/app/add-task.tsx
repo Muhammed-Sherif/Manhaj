@@ -368,9 +368,9 @@ export default function AddTaskScreen() {
               value={startTime}
               mode="date"
               display="default"
-              onChange={(event, selectedDate) => {
+              onValueChange={(_, selectedDate) => {
                 setShowDatePicker(false);
-                if (event.type === 'set' && selectedDate) {
+                if (selectedDate) {
                   const newStart = new Date(startTime);
                   newStart.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
                   setStartTime(newStart);
@@ -380,6 +380,7 @@ export default function AddTaskScreen() {
                   setEndTime(newEnd);
                 }
               }}
+              onDismiss={() => setShowDatePicker(false)}
             />
           )}
 
@@ -400,10 +401,11 @@ export default function AddTaskScreen() {
                   mode="time"
                   is24Hour={false}
                   display="default"
-                  onChange={(event, selectedDate) => {
+                  onValueChange={(_, selectedDate) => {
                     setShowStartTimePicker(false);
-                    if (event.type === 'set' && selectedDate) setStartTime(selectedDate);
+                    if (selectedDate) setStartTime(selectedDate);
                   }}
+                  onDismiss={() => setShowStartTimePicker(false)}
                 />
               )}
             </View>
@@ -424,10 +426,11 @@ export default function AddTaskScreen() {
                   mode="time"
                   is24Hour={false}
                   display="default"
-                  onChange={(event, selectedDate) => {
+                  onValueChange={(_, selectedDate) => {
                     setShowEndTimePicker(false);
-                    if (event.type === 'set' && selectedDate) setEndTime(selectedDate);
+                    if (selectedDate) setEndTime(selectedDate);
                   }}
+                  onDismiss={() => setShowEndTimePicker(false)}
                 />
               )}
             </View>

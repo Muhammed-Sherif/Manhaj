@@ -617,7 +617,7 @@ export class AdminService {
       questionId,
       imageUrl: stored.url,
       displayOrder: 0,
-      isAnswer: 0
+      isAnswer: false
     });
     
     // Update the question's updatedAt so sync picks it up
