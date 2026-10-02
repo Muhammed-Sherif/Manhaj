@@ -32,6 +32,7 @@ interface Item { id?: string; name?: string; description?: string }
 export type QuestionRow = Question & {
   choices?: Choice[];
   writtenQuestion?: { questionId: string; writtenAnswer: string } | null;
+  images?: { id: string; imageUrl: string; isAnswer: boolean }[];
 };
 
 const STEPS: { key: Step; label: string }[] = [
@@ -448,7 +449,17 @@ export function EditQuestionModal({
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Question Image</label>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3">
+              {(question.images && question.images.length > 0) && (
+                <div className="flex flex-wrap gap-2">
+                  {question.images.map((img) => (
+                    <div key={img.id} className="relative group rounded-md border border-slate-200 overflow-hidden">
+                      <img src={img.imageUrl} alt="Question" className="h-20 w-auto object-cover" />
+                      {/* You can add a delete button here later if an endpoint exists */}
+                    </div>
+                  ))}
+                </div>
+              )}
               <input
                 type="file"
                 accept="image/png, image/jpeg, image/webp"
@@ -463,6 +474,8 @@ export function EditQuestionModal({
                       headers: { 'Content-Type': file.type }
                     });
                     toast.success('Image uploaded successfully! (Save to refresh)');
+                    // We could ideally refresh the local state here if the API returned the image,
+                    // but onSaved will refetch data anyway.
                   } catch (error) {
                     const toast = (await import('@/components/ui/sonner')).toast;
                     toast.error('Failed to upload image');

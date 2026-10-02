@@ -3,7 +3,7 @@
     "name": "Manhaj",
     "slug": "manhaj",
     "scheme": "manhaj",
-    "version": "1.2.0",
+    "version": "1.2.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

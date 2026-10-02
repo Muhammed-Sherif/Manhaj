@@ -475,3 +475,51 @@ export const choicesRelations = relations(choices, ({ one }) => ({
     references: [questions.id],
   }),
 }));
+
+export const zekrTasksRelations = relations(zekrTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [zekrTasks.taskId],
+    references: [tasks.id],
+  }),
+  category: one(zekrCategories, {
+    fields: [zekrTasks.categoryId],
+    references: [zekrCategories.id],
+  }),
+  zekr: one(zekrCatalog, {
+    fields: [zekrTasks.zekrId],
+    references: [zekrCatalog.id],
+  }),
+}));
+
+export const wirdTasksRelations = relations(wirdTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [wirdTasks.taskId],
+    references: [tasks.id],
+  }),
+  startVerse: one(quranVerses, {
+    fields: [wirdTasks.startVerseId],
+    references: [quranVerses.id],
+  }),
+  endVerse: one(quranVerses, {
+    fields: [wirdTasks.endVerseId],
+    references: [quranVerses.id],
+  }),
+}));
+
+export const workTasksRelations = relations(workTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [workTasks.taskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const studyTasksRelations = relations(studyTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [studyTasks.taskId],
+    references: [tasks.id],
+  }),
+  studyUnit: one(studyUnits, {
+    fields: [studyTasks.studyUnitId],
+    references: [studyUnits.id],
+  }),
+}));

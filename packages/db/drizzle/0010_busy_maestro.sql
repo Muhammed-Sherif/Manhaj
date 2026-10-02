@@ -1,0 +1,1 @@
+ALTER TABLE "questions" ADD CONSTRAINT "questions_telegram_message_id_unique" UNIQUE("telegram_message_id");

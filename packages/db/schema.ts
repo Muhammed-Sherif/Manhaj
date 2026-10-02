@@ -768,6 +768,24 @@ export const wirdTasksRelations = relations(wirdTasks, ({ one }) => ({
   }),
 }));
 
+export const workTasksRelations = relations(workTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [workTasks.taskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const studyTasksRelations = relations(studyTasks, ({ one }) => ({
+  task: one(tasks, {
+    fields: [studyTasks.taskId],
+    references: [tasks.id],
+  }),
+  studyUnit: one(studyUnits, {
+    fields: [studyTasks.studyUnitId],
+    references: [studyUnits.id],
+  }),
+}));
+
 // TypeScript types
 export type Grade = typeof grades.$inferSelect;
 export type NewGrade = typeof grades.$inferInsert;

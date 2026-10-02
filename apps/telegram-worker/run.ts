@@ -3,7 +3,7 @@ import { StringSession } from 'teleproto/sessions';
 import { Api } from 'teleproto/tl';
 import dotenv from 'dotenv';
 import { db, questions, choices, mcqQuestions, writtenQuestions, questionImages } from '@manhaj/db';
-import { max } from 'drizzle-orm';
+import { max, eq } from 'drizzle-orm';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 dotenv.config();
@@ -102,6 +102,18 @@ async function insertQuestion(
   imageUrl?: string
 ): Promise<boolean> {
   try {
+    // Check if already exists since unique constraint was removed
+    const existing = await database
+      .select({ id: questions.id })
+      .from(questions)
+      .where(eq(questions.telegramMessageId, channelMessageId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      console.log(`⏭️  Skipped duplicate question (message ${channelMessageId})`);
+      return false;
+    }
+
     // Insert question
     const [question] = await database
       .insert(questions)
@@ -110,19 +122,11 @@ async function insertQuestion(
         explanation: poll.explanation || '',
         questionType: 'mcq',
         source: 'telegram_auto',
-        lectureId: null,
+        studyUnitId: null,
         createdBy: null,
         telegramMessageId: channelMessageId,
       })
-      .onConflictDoNothing({
-        target: [questions.telegramMessageId],
-      })
       .returning();
-
-    if (!question) {
-      console.log(`⏭️  Skipped duplicate question (message ${channelMessageId})`);
-      return false;
-    }
 
     console.log(`✅ Inserted poll question: "${poll.question.substring(0, 50)}..."`);    
 
@@ -195,6 +199,18 @@ async function insertTextQuestion(
       return false;
     }
 
+    // Check if already exists since unique constraint was removed
+    const existing = await database
+      .select({ id: questions.id })
+      .from(questions)
+      .where(eq(questions.telegramMessageId, channelMessageId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      console.log(`⏭️  Skipped duplicate question (message ${channelMessageId})`);
+      return false;
+    }
+
     // Insert base question row
     const [question] = await database
       .insert(questions)
@@ -203,19 +219,11 @@ async function insertTextQuestion(
         explanation: '',
         questionType: 'written',
         source: 'telegram_auto',
-        lectureId: null,
+        studyUnitId: null,
         createdBy: null,
         telegramMessageId: channelMessageId,
       })
-      .onConflictDoNothing({
-        target: [questions.telegramMessageId],
-      })
       .returning();
-
-    if (!question) {
-      console.log(`⏭️  Skipped duplicate question (message ${channelMessageId})`);
-      return false;
-    }
 
     console.log(`✅ Inserted ${fromMedia ? 'text with media' : 'text'} question: "${questionText.substring(0, 50)}..."`);
 
@@ -417,7 +425,7 @@ async function main() {
 
     console.log(`Starting message fetch from ID: 3967\n`);
 
-    let offsetId = 4230;
+    let offsetId = 4741;
 
     while (true) {
       console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);
