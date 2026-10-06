@@ -425,7 +425,7 @@ async function main() {
 
     console.log(`Starting message fetch from ID: 3967\n`);
 
-    let offsetId = 4741;
+    let offsetId = 5093;
 
     while (true) {
       console.log(`📥 Fetching messages from ID ${offsetId + 1}...`);

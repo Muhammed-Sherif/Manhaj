@@ -178,10 +178,13 @@ export const syncContent = async (contentData: ContentSyncData): Promise<void> =
           },
         });
 
-      // Sync question images
+      // Sync question images. The API serialises the relation as `images` (drizzle relation
+      // name); `questionImages` is accepted too for older payloads.
       await tx.delete(schema.questionImages).where(eq(schema.questionImages.questionId, question.id));
-      if (question.questionImages && question.questionImages.length > 0) {
-        for (const img of question.questionImages) {
+      const incomingImages: any[] = question.images ?? question.questionImages ?? [];
+      if (incomingImages.length > 0) {
+        console.log(`[ContentSync] question ${question.id}: syncing ${incomingImages.length} image(s): ${incomingImages.map((i: any) => `${i.isAnswer ? 'A' : 'Q'}:${i.imageUrl}`).join(', ')}`);
+        for (const img of incomingImages) {
           await tx.insert(schema.questionImages).values({
             id: img.id,
             questionId: question.id,
@@ -414,6 +417,18 @@ export const syncContentFromServer = async (): Promise<void> => {
     const buffered = new Date(new Date(rawCursor).getTime() - 5000);
     cursor = buffered.toISOString();
   }
+  // One-time backfill: before the `images` key fix, question images were silently dropped
+  // during sync, so a device with an existing cursor would never receive them via delta
+  // sync. Force one full sync to repopulate them.
+  const BACKFILL_KEY = 'question_images_backfill_v1';
+  const [backfillDone] = await db
+    .select()
+    .from(schema.syncState)
+    .where(eq(schema.syncState.key, BACKFILL_KEY));
+  if (!backfillDone && cursor) {
+    console.log('[ContentSync] question image backfill pending — forcing full sync');
+    cursor = null;
+  }
   console.log(`[ContentSync] using cursor: ${cursor ?? 'none (full sync)'}`);
   const response = await getContentSync(cursor ? { since: cursor } : {});
   const contentData: ContentSyncData = {
@@ -433,6 +448,12 @@ export const syncContentFromServer = async (): Promise<void> => {
     `[ContentSync] fetched from server: ${contentData.grades.length} grades, ${contentData.terms.length} terms, ${contentData.modules.length} modules, ${contentData.subjects.length} subjects, ${contentData.studyUnits.length} studyUnits, ${contentData.questions.length} questions, ${contentData.choices.length} choices, ${contentData.studyUnitVideos.length} videos, ${contentData.studyUnitFiles.length} files, nextCursor: ${contentData.nextCursor ?? 'none'}`
   );
   await syncContent(contentData);
+  if (!backfillDone) {
+    await db
+      .insert(schema.syncState)
+      .values({ key: BACKFILL_KEY, value: new Date().toISOString() })
+      .onConflictDoUpdate({ target: schema.syncState.key, set: { value: new Date().toISOString() } });
+  }
   console.log('[ContentSync] syncContentFromServer: finished successfully');
 };
 

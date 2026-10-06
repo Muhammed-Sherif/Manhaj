@@ -330,6 +330,46 @@ export function EditQuestionModal({
   const [telegramMessageId, setTelegramMessageId] = useState<string>(
     question.telegramMessageId ? question.telegramMessageId.toString() : ''
   );
+  const [images, setImages] = useState<{ id: string; imageUrl: string; isAnswer: boolean }[]>(
+    question.images ?? []
+  );
+  const [uploading, setUploading] = useState<'question' | 'answer' | null>(null);
+
+  const uploadImage = async (file: File, isAnswer: boolean) => {
+    if (!question.id) return;
+    setUploading(isAnswer ? 'answer' : 'question');
+    try {
+      const { axios } = await import('@/api/client');
+      const res = await axios.post(
+        `/admin/questions/${question.id}/image${isAnswer ? '?isAnswer=true' : ''}`,
+        file,
+        { headers: { 'Content-Type': file.type } }
+      );
+      console.log('[EditQuestion] image uploaded:', res.data);
+      setImages((prev) => [...prev, { id: res.data.imageId, imageUrl: res.data.imageUrl, isAnswer }]);
+      toast.success('Image uploaded');
+      onSaved();
+    } catch (error: any) {
+      console.error('[EditQuestion] image upload failed:', error?.response?.data ?? error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const deleteImage = async (imageId: string) => {
+    if (!question.id) return;
+    try {
+      const { axios } = await import('@/api/client');
+      await axios.delete(`/admin/questions/${question.id}/images/${imageId}`);
+      setImages((prev) => prev.filter((img) => img.id !== imageId));
+      toast.success('Image removed');
+      onSaved();
+    } catch (error: any) {
+      console.error('[EditQuestion] image delete failed:', error?.response?.data ?? error);
+      toast.error('Failed to delete image');
+    }
+  };
   const [choices, setChoices] = useState<EditableChoice[]>(
     (question.choices ?? []).map((c) => ({
       ...c,
@@ -446,44 +486,53 @@ export function EditQuestionModal({
             />
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Question Image</label>
-            <div className="flex flex-col gap-3">
-              {(question.images && question.images.length > 0) && (
-                <div className="flex flex-wrap gap-2">
-                  {question.images.map((img) => (
-                    <div key={img.id} className="relative group rounded-md border border-slate-200 overflow-hidden">
-                      <img src={img.imageUrl} alt="Question" className="h-20 w-auto object-cover" />
-                      {/* You can add a delete button here later if an endpoint exists */}
+          {/* Images */}
+          {([
+            { isAnswer: false, title: 'Question image', accent: 'teal' },
+            { isAnswer: true, title: 'Answer image', accent: 'violet' },
+          ] as const).map(({ isAnswer, title, accent }) => {
+            const group = images.filter((img) => !!img.isAnswer === isAnswer);
+            return (
+              <div key={title}>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{title}</label>
+                <div className="flex flex-col gap-3">
+                  {group.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {group.map((img) => (
+                        <div key={img.id} className="relative group rounded-md border border-slate-200 overflow-hidden">
+                          <img
+                            src={img.imageUrl}
+                            alt={title}
+                            className="h-20 w-auto object-cover"
+                            onError={() => console.error('[EditQuestion] image failed to load:', img.imageUrl)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deleteImage(img.id)}
+                            className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-red-600 transition-colors"
+                            aria-label="Delete image"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    disabled={uploading !== null}
+                    className={`text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold ${accent === 'violet' ? 'file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100' : 'file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100'}`}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (file) await uploadImage(file, isAnswer);
+                    }}
+                  />
                 </div>
-              )}
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/webp"
-                className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !question.id) return;
-                  try {
-                    const { axios } = await import('@/api/client');
-                    const toast = (await import('@/components/ui/sonner')).toast;
-                    await axios.post(`/admin/questions/${question.id}/image`, file, {
-                      headers: { 'Content-Type': file.type }
-                    });
-                    toast.success('Image uploaded successfully! (Save to refresh)');
-                    // We could ideally refresh the local state here if the API returned the image,
-                    // but onSaved will refetch data anyway.
-                  } catch (error) {
-                    const toast = (await import('@/components/ui/sonner')).toast;
-                    toast.error('Failed to upload image');
-                  }
-                }}
-              />
-            </div>
-          </div>
+              </div>
+            );
+          })}
 
           {/* Written Answer / Choices */}
           {(question as any).questionType === 'written' ? (

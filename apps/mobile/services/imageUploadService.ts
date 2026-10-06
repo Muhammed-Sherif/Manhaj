@@ -63,6 +63,7 @@ export async function attachImage(params: {
   await ensureImagesDir();
 
   const localPath = `${IMAGES_DIR}${ownerId}.${extensionFor(mimeType)}`;
+  await FileSystem.deleteAsync(localPath, { idempotent: true });
   await FileSystem.copyAsync({ from: sourceUri, to: localPath });
 
   if (ownerKind === 'case') {
@@ -196,11 +197,13 @@ export async function uploadPendingImages(): Promise<void> {
  * nothing. Anything already absolute (a CDN host, once Neon storage is switched on) is
  * passed through untouched.
  */
-function toAbsoluteUrl(url: string): string {
+export function toAbsoluteUrl(url: string): string {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) return url;
 
   const baseUrl = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  const absolute = `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  console.log(`[Image] relative url "${url}" resolved to "${absolute}" (baseURL="${baseUrl}")`);
+  return absolute;
 }
 
 /**
@@ -216,8 +219,58 @@ export async function resolveImageUri(
 ): Promise<string | null> {
   if (localPath) {
     const info = await FileSystem.getInfoAsync(localPath);
-    if (info.exists) return localPath;
+    if (info.exists) {
+      console.log(`[Image] using local file ${localPath}`);
+      return localPath;
+    }
+    console.warn(`[Image] local file missing (${localPath}), falling back to remote=${remoteUrl}`);
   }
 
-  return remoteUrl ? toAbsoluteUrl(remoteUrl) : null;
+  if (!remoteUrl) {
+    if (localPath) console.warn('[Image] no remote url available either — nothing to display');
+    return null;
+  }
+
+  return toAbsoluteUrl(remoteUrl);
+}
+
+/**
+ * Remove a card's image: delete the local file, clear the columns, and drop the server
+ * copy. The server delete is best-effort — offline, the card is still cleaned up locally
+ * and the orphaned object is harmless.
+ */
+export async function removeImage(params: {
+  ownerKind: ImageOwnerKind;
+  ownerId: string;
+}): Promise<void> {
+  const { ownerKind, ownerId } = params;
+
+  const table: any = ownerKind === 'case' ? schema.caseItems : schema.noteItems;
+  const [row] = (await db.select().from(table).where(eq(table.id, ownerId))) as any[];
+  if (!row) return;
+
+  if (row.imageLocalPath) {
+    try {
+      await FileSystem.deleteAsync(row.imageLocalPath, { idempotent: true });
+    } catch (error) {
+      console.warn(`[Image] failed to delete local file ${row.imageLocalPath}`, error);
+    }
+  }
+
+  await db
+    .update(table)
+    .set({ imageLocalPath: null, imageUrl: null, imageUploadStatus: 'none' })
+    .where(eq(table.id, ownerId));
+
+  if (row.imageUrl) {
+    try {
+      const token = await SecureStore.getItemAsync('accessToken');
+      await apiClient.delete(`/student/images/${ownerKind}/${ownerId}`, {
+        headers: token ? { 'x-auth-token': token, Authorization: `Bearer ${token}` } : undefined,
+      });
+      console.log(`[Image] deleted server image for ${ownerKind} ${ownerId}`);
+    } catch (error) {
+      console.warn(`[Image] server delete failed for ${ownerKind} ${ownerId}`, error);
+    }
+  }
 }

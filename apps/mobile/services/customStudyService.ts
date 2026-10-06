@@ -70,6 +70,8 @@ export interface StudyCard {
   studyUnit?: any;
   choices?: any[];
   writtenAnswer?: string | null;
+  /** Question-card images, ordered; `isAnswer` marks the ones shown on reveal. */
+  images?: { id: string; imageUrl: string; displayOrder: number; isAnswer: number }[];
   /** Scheduling state to hand to `scheduleCard`. */
   card: CardStateData;
   /** Null for never-reviewed content; used only for ordering. */
@@ -278,6 +280,25 @@ async function questionCards(
     }
   }
 
+  const imagesByQuestion = new Map<string, any[]>();
+  const imageRows = await db
+    .select()
+    .from(schema.questionImages)
+    .where(
+      inArray(
+        schema.questionImages.questionId,
+        admitted.map(row => row.id),
+      ),
+    );
+  for (const image of imageRows) {
+    const list = imagesByQuestion.get(image.questionId) ?? [];
+    list.push(image);
+    imagesByQuestion.set(image.questionId, list);
+  }
+  console.log(
+    `[StudyQueue] loaded ${imageRows.length} question image(s) for ${admitted.length} question card(s)`,
+  );
+
   return admitted.map(row => {
     const reviewable = reviewables.get(row.id) ?? null;
     return {
@@ -287,6 +308,9 @@ async function questionCards(
       studyUnit: row.studyUnitId ? studyUnitById.get(row.studyUnitId) ?? null : null,
       choices: choicesByQuestion.get(row.id) ?? [],
       writtenAnswer: writtenAnswerByQuestion.get(row.id) ?? null,
+      images: (imagesByQuestion.get(row.id) ?? []).sort(
+        (a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+      ),
       card: reviewable ? toCardState(reviewable) : newCard(),
       nextReviewDate: reviewable?.nextReviewDate ?? null,
     };

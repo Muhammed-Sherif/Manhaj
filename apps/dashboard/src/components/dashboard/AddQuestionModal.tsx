@@ -22,6 +22,7 @@ export function AddQuestionModal({
   const [explanation, setExplanation] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [answerImageFile, setAnswerImageFile] = useState<File | null>(null);
   const [telegramMessageId, setTelegramMessageId] = useState<string>('');
   const [choices, setChoices] = useState<EditableChoice[]>([
     { choiceText: '', isCorrect: true },
@@ -57,20 +58,35 @@ export function AddQuestionModal({
   const removeChoice = (index: number) =>
     setChoices((prev) => prev.filter((_, i) => i !== index));
 
+  const uploadImage = async (file: File, label: string): Promise<string | null> => {
+    try {
+      const res = await axios.post('/admin/questions/upload-image', file, {
+        headers: { 'Content-Type': file.type },
+      });
+      console.log(`[AddQuestion] ${label} image uploaded:`, res.data);
+      return res.data.imageUrl as string;
+    } catch (err: any) {
+      console.error(`[AddQuestion] ${label} image upload failed:`, err?.response?.data ?? err);
+      toast.error(`Failed to upload ${label} image`);
+      return null;
+    }
+  };
+
   const handleSubmit = async () => {
     const isWritten = questionType === 'written';
     let imageUrl: string | undefined = undefined;
+    let answerImageUrl: string | undefined = undefined;
 
     if (imageFile) {
-      try {
-        const uploadRes = await axios.post('/admin/questions/upload-image', imageFile, {
-          headers: { 'Content-Type': imageFile.type },
-        });
-        imageUrl = uploadRes.data.imageUrl;
-      } catch (err: any) {
-        toast.error('Failed to upload image');
-        return;
-      }
+      const url = await uploadImage(imageFile, 'question');
+      if (!url) return;
+      imageUrl = url;
+    }
+
+    if (answerImageFile) {
+      const url = await uploadImage(answerImageFile, 'answer');
+      if (!url) return;
+      answerImageUrl = url;
     }
 
     createMutation.mutate({
@@ -80,6 +96,7 @@ export function AddQuestionModal({
         questionType,
         source: 'admin_manual',
         imageUrl,
+        answerImageUrl,
         telegramMessageId: telegramMessageId ? parseInt(telegramMessageId, 10) : undefined,
         ...(isWritten ? { writtenAnswer } : { choices }),
       },
@@ -173,6 +190,20 @@ export function AddQuestionModal({
             />
             {imageFile && (
               <p className="mt-2 text-xs text-slate-500 truncate">Selected: {imageFile.name}</p>
+            )}
+          </div>
+
+          {/* Answer Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Answer image <span className="text-slate-400 font-normal">(optional, shown when the answer is revealed)</span></label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setAnswerImageFile(e.target.files?.[0] || null)}
+              className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+            />
+            {answerImageFile && (
+              <p className="mt-2 text-xs text-slate-500 truncate">Selected: {answerImageFile.name}</p>
             )}
           </div>
 

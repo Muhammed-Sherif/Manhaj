@@ -300,6 +300,7 @@ router.delete('/subjects/:id', adminController.deleteSubject);
  *                     isCorrect: { type: boolean }
  *                     imageUrl: { type: string, nullable: true }
  *               imageUrl: { type: string, nullable: true }
+ *               answerImageUrl: { type: string, nullable: true }
  *     responses:
  *       200:
  *         description: Question created
@@ -428,6 +429,7 @@ router.patch('/questions/bulk-assign-telegram-range', adminController.bulkAssign
 router.patch('/questions/bulk-unassign-study-unit', adminController.bulkUnassignStudyUnit);
 const imageBodyParser = express.raw({ type: 'image/*', limit: '10mb' });
 router.post('/questions/:id/image', imageBodyParser, adminController.uploadQuestionImage);
+router.delete('/questions/:id/images/:imageId', adminController.deleteQuestionImage);
 
 /**
  * @swagger

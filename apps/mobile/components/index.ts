@@ -5,6 +5,7 @@ export * from './LoadingView';
 export * from './ErrorView';
 export * from './ScreenHeader';
 export * from './ImagePickerField';
+export * from './TappableImage';
 export * from './browse';
 export * from './study-unit';
 export * from './home';

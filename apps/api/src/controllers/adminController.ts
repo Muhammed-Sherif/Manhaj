@@ -195,11 +195,32 @@ export class AdminController {
       }
 
       const { id } = req.params;
-      const imageUrl = await this.adminService.uploadQuestionImage(id, body, contentType);
+      const isAnswer = req.query.isAnswer === 'true' || req.query.isAnswer === '1';
 
-      res.status(200).json({ imageUrl });
+      // No question id: the "add question" form uploads before the question exists, so just
+      // store the bytes and hand the URL back for `createQuestion`.
+      if (!id) {
+        const stored = await this.adminService.storeStandaloneQuestionImage(body, contentType);
+        res.status(200).json({ imageUrl: stored.url, imageKey: stored.key });
+        return;
+      }
+
+      const result = await this.adminService.uploadQuestionImage(id, body, contentType, isAnswer);
+
+      res.status(200).json(result);
     } catch (error) {
+      console.error('[QuestionImage] upload failed:', error);
       res.status(500).json({ error: (error as Error).message });
+    }
+  };
+
+  deleteQuestionImage = async (req: Request, res: Response) => {
+    try {
+      const { id, imageId } = req.params;
+      res.json(await this.adminService.deleteQuestionImage(id, imageId));
+    } catch (error) {
+      const status = (error as any)?.statusCode ?? 400;
+      res.status(status).json({ error: (error as Error).message });
     }
   };
 

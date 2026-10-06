@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';
-import { attachImage } from '../services/imageUploadService';
+import { attachImage, removeImage, resolveImageUri } from '../services/imageUploadService';
 import { StudentContentService } from '../services/studentContentService';
 
 export default function AddCaseScreen() {
@@ -22,15 +22,20 @@ export default function AddCaseScreen() {
   const [content, setContent] = useState('');
   const [answer, setAnswer] = useState('');
   const [image, setImage] = useState<PickedImage | null>(null);
+  // Image already attached to the case being edited, and whether the user dropped it.
+  const [existingUri, setExistingUri] = useState<string | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
 
   useEffect(() => {
     if (caseId) {
-      db.select().from(schema.caseItems).where(eq(schema.caseItems.id, caseId as string)).then(([c]) => {
+      db.select().from(schema.caseItems).where(eq(schema.caseItems.id, caseId as string)).then(async ([c]) => {
         if (c) {
           setCategory(c.category);
           setTitle(c.title);
           setContent(c.content);
           setAnswer(c.answer || '');
+          console.log(`[EditCase] ${caseId} imageLocalPath=${c.imageLocalPath} imageUrl=${c.imageUrl} status=${c.imageUploadStatus}`);
+          setExistingUri(await resolveImageUri(c.imageLocalPath ?? null, c.imageUrl ?? null));
         }
       });
     }
@@ -45,6 +50,17 @@ export default function AddCaseScreen() {
     try {
       if (caseId) {
         await StudentContentService.updateCase(caseId as string, title, content, category, answer.trim() || undefined);
+        if (removeExisting) {
+          await removeImage({ ownerKind: 'case', ownerId: caseId as string });
+        }
+        if (image) {
+          await attachImage({
+            ownerKind: 'case',
+            ownerId: caseId as string,
+            sourceUri: image.uri,
+            mimeType: image.mimeType,
+          });
+        }
         Alert.alert('Success', 'Case updated!', [{ text: 'OK', onPress: () => router.back() }]);
         return;
       }
@@ -186,7 +202,12 @@ export default function AddCaseScreen() {
             className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 mb-4 h-32"
           />
 
-          <ImagePickerField value={image} onChange={setImage} />
+          <ImagePickerField
+            value={image}
+            onChange={setImage}
+            existingUri={removeExisting ? null : existingUri}
+            onRemoveExisting={() => setRemoveExisting(true)}
+          />
 
           <TouchableOpacity
             onPress={handleSave}

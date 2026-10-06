@@ -17,6 +17,8 @@ import {
   QuestionSRSButton } from
 '../components/question';
 import { useSolveStore, type Question, type SolveMode } from '../store/solveStore';
+import { TappableImage } from '../components/TappableImage';
+import { toAbsoluteUrl } from '../services/imageUploadService';
 
 export default function SolveScreen() {
   const router = useRouter();
@@ -171,25 +173,36 @@ export default function SolveScreen() {
         {/* Question Text with Flag Button and Images */}
         <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
           
-          {(currentQuestion.questionImages && currentQuestion.questionImages.length > 0 ||
-          (currentQuestion as any).images && (currentQuestion as any).images.length > 0) &&
-          <View className="mb-4">
-              {(() => {
-              const images = currentQuestion.questionImages?.length ? currentQuestion.questionImages : (currentQuestion as any).images || [];
-              return images.
-              sort((a: any, b: any) => a.displayOrder - b.displayOrder).
-              map((img: any) =>
-              <Image
-                key={img.id}
-                source={{ uri: img.imageUrl }}
-                style={{ width: '100%', height: 192 }}
-                className="rounded-lg bg-slate-100 dark:bg-slate-700 mb-2"
-                resizeMode="contain" />
+          {(() => {
+            const all: any[] = currentQuestion.questionImages?.length ?
+            currentQuestion.questionImages :
+            (currentQuestion as any).images || [];
+            // Answer images belong to the answer reveal, not the question.
+            const images = all.filter((img: any) => !img.isAnswer);
 
-              );
-            })()}
-            </View>
-          }
+            console.log(
+              `[SolveScreen] question ${currentQuestion.id}: ${all.length} image(s) total, ${images.length} question image(s)` +
+              (all.length ? ` urls=${all.map((i: any) => i.imageUrl).join(', ')}` : ''));
+
+            if (images.length === 0) return null;
+
+            return (
+              <View className="mb-4">
+                {[...images].
+                sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)).
+                map((img: any) =>
+                <View key={img.id} className="mb-2">
+                      <TappableImage
+                    uri={toAbsoluteUrl(img.imageUrl)}
+                    logTag="solve-question-image"
+                    style={{ width: '100%', height: 192 }}
+                    className="rounded-lg bg-slate-100 dark:bg-slate-700"
+                    resizeMode="contain" />
+                    </View>
+                )}
+              </View>);
+
+          })()}
 
           <View className="flex-row items-start justify-between">
             <Text className="flex-1 text-lg text-slate-800 dark:text-slate-100 leading-relaxed mr-3">

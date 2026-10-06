@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { ImageIcon, XIcon } from 'lucide-react-native';
+import { ImageIcon, XIcon, Trash2Icon } from 'lucide-react-native';
+import { TappableImage } from './TappableImage';
 
 export interface PickedImage {
   uri: string;
@@ -12,6 +13,10 @@ export interface ImagePickerFieldProps {
   label?: string;
   value: PickedImage | null;
   onChange: (image: PickedImage | null) => void;
+  /** Image already attached to the card (local file or server URL) — edit mode only. */
+  existingUri?: string | null;
+  /** Called when the user removes the already-attached image. */
+  onRemoveExisting?: () => void;
 }
 
 /**
@@ -25,6 +30,8 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   label = 'Image (Optional)',
   value,
   onChange,
+  existingUri,
+  onRemoveExisting,
 }) => {
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,6 +68,22 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             onPress={() => onChange(null)}
           >
             <XIcon size={16} color="white" />
+          </TouchableOpacity>
+        </View>
+      ) : existingUri ? (
+        <View className="relative">
+          <TappableImage
+            uri={existingUri}
+            logTag="edit-existing"
+            className="w-full h-44 rounded-lg"
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            className="absolute top-2 right-2 bg-red-600/90 rounded-full p-2"
+            onPress={onRemoveExisting}
+            accessibilityLabel="Remove image"
+          >
+            <Trash2Icon size={16} color="white" />
           </TouchableOpacity>
         </View>
       ) : (

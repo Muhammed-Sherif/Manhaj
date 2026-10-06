@@ -22,4 +22,6 @@ export type PostAdminQuestionsBody = {
   choices?: PostAdminQuestionsBodyChoicesItem[];
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  answerImageUrl?: string | null;
 };

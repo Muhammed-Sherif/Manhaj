@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSolveStore } from '../../store/solveStore';
+import { TappableImage } from '../TappableImage';
+import { toAbsoluteUrl } from '../../services/imageUploadService';
 
 export const QuestionAnswerFooter: React.FC = () => {
   const router = useRouter();
@@ -13,6 +15,7 @@ export const QuestionAnswerFooter: React.FC = () => {
   if (!currentQuestion) return null;
 
   const explanationText = explanation || currentQuestion?.explanation || '';
+  const answerImages = (currentQuestion.questionImages ?? []).filter((img) => !!img.isAnswer);
 
   const handleNext = async () => {
     if (currentIndex < questions.length - 1) {
@@ -82,6 +85,24 @@ export const QuestionAnswerFooter: React.FC = () => {
             <CheckCircleIcon size={16} color="#22c55e" />
             <Text className="text-green-600 dark:text-green-400 text-sm ml-2">Verified Explanation</Text>
           </View>
+        </View>
+      ) : null}
+
+      {/* Answer images */}
+      {showAnswer && answerImages.length > 0 ? (
+        <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
+          <Text className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-base">Answer</Text>
+          {answerImages.map((img) => (
+            <View key={img.id} className="mb-2">
+              <TappableImage
+                uri={toAbsoluteUrl(img.imageUrl)}
+                logTag="solve-answer-image"
+                style={{ width: '100%', height: 192 }}
+                className="rounded-lg bg-slate-100 dark:bg-slate-700"
+                resizeMode="contain"
+              />
+            </View>
+          ))}
         </View>
       ) : null}
 

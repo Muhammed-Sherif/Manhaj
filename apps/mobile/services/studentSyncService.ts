@@ -121,6 +121,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
               title: item.caseItem.title || '',
               content: item.caseItem.content || '',
               answer: item.caseItem.answer,
+              imageUrl: item.caseItem.imageUrl ?? null,
               imageUploadStatus: item.caseItem.imageUploadStatus || 'none',
               createdAt: item.caseItem.createdAt || new Date().toISOString(),
             })
@@ -132,6 +133,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
                 title: item.caseItem.title || '',
                 content: item.caseItem.content || '',
                 answer: item.caseItem.answer,
+                ...(item.caseItem.imageUrl ? { imageUrl: item.caseItem.imageUrl } : {}),
                 imageUploadStatus: item.caseItem.imageUploadStatus || 'none',
               },
             });
@@ -156,6 +158,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
               type: item.noteItem.type || 'general',
               content: item.noteItem.content || '',
               sourceQuestionId: item.noteItem.sourceQuestionId,
+              imageUrl: item.noteItem.imageUrl ?? null,
               imageUploadStatus: item.noteItem.imageUploadStatus || 'none',
               createdAt: item.noteItem.createdAt || new Date().toISOString(),
             })
@@ -166,6 +169,7 @@ export const syncStudentItems = async (studentData: StudentSyncData): Promise<vo
                 type: item.noteItem.type || 'general',
                 content: item.noteItem.content || '',
                 sourceQuestionId: item.noteItem.sourceQuestionId,
+                ...(item.noteItem.imageUrl ? { imageUrl: item.noteItem.imageUrl } : {}),
                 imageUploadStatus: item.noteItem.imageUploadStatus || 'none',
               },
             });

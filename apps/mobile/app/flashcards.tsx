@@ -6,7 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { Rating } from '@manhaj/srs/src/anki';
 import { ScreenHeader, ReviewChoices } from '../components';
 import { BookOpenIcon, CheckCircleIcon } from 'lucide-react-native';
-import { resolveImageUri } from '../services/imageUploadService';
+import { resolveImageUri, toAbsoluteUrl } from '../services/imageUploadService';
+import { TappableImage } from '../components/TappableImage';
 import {
   buildCustomStudyQueue,
   gradeStudyCard,
@@ -137,6 +138,9 @@ export default function FlashcardsScreen() {
 
   const currentItem: any = items[currentIndex];
   const { data, itemType } = currentItem;
+  const allQuestionImages: any[] = itemType === 'question' ? currentItem.images ?? [] : [];
+  const questionImages = allQuestionImages.filter((img) => !img.isAnswer);
+  const answerImages = allQuestionImages.filter((img) => !!img.isAnswer);
 
   return (
     <ScreenContainer className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -168,14 +172,26 @@ export default function FlashcardsScreen() {
             {data.content || data.questionText}
           </Text>
 
-          {/* Only case and note cards carry images; questions never do. */}
+          {/* Case and note cards carry one image of their own. */}
           {imageUri &&
-          <Image
-            source={{ uri: imageUri }}
+          <TappableImage
+            uri={imageUri}
+            logTag={`srs-${itemType}`}
             className="w-full h-52 rounded-xl mb-6"
             resizeMode="contain" />
 
           }
+
+          {/* Question cards: images flagged as question images show on the front. */}
+          {itemType === 'question' && questionImages.map((img: any) =>
+          <View key={img.id} className="mb-4">
+              <TappableImage
+              uri={toAbsoluteUrl(img.imageUrl)}
+              logTag="srs-question-image"
+              className="w-full h-52 rounded-xl bg-slate-100 dark:bg-slate-700"
+              resizeMode="contain" />
+            </View>
+          )}
 
           {/* Options belong to the question, not to the answer: a student cannot attempt an
                MCQ without seeing the alternatives, so they sit on the front unmarked and only
@@ -199,8 +215,18 @@ export default function FlashcardsScreen() {
                   {itemType === 'question' ?
               currentItem.writtenAnswer || data.explanation || 'No written answer provided.' :
               data.answer || data.explanation || 'No written answer provided.'}
-                </Text>
+            </Text>
             }
+              {/* Answer images (question cards) reveal together with the answer. */}
+              {itemType === 'question' && answerImages.map((img: any) =>
+              <View key={img.id} className="mt-4">
+                  <TappableImage
+                  uri={toAbsoluteUrl(img.imageUrl)}
+                  logTag="srs-answer-image"
+                  className="w-full h-52 rounded-xl bg-slate-100 dark:bg-slate-700"
+                  resizeMode="contain" />
+                </View>
+              )}
             </View> :
 
           <TouchableOpacity

@@ -250,7 +250,7 @@ export class AdminService {
 
   // Questions
   async createQuestion(questionData: any) {
-    const { choices: questionChoices, writtenAnswer, ...questionFields } = questionData;
+    const { choices: questionChoices, writtenAnswer, answerImageUrl, ...questionFields } = questionData;
 
     const questionType = questionFields.questionType ?? 'mcq';
 
@@ -300,6 +300,15 @@ export class AdminService {
           imageUrl: questionFields.imageUrl,
           displayOrder: 0,
           isAnswer: false,
+        });
+      }
+
+      if (answerImageUrl) {
+        await transaction.insert(questionImages).values({
+          questionId: question.id,
+          imageUrl: answerImageUrl,
+          displayOrder: 0,
+          isAnswer: true,
         });
       }
 
@@ -598,7 +607,23 @@ export class AdminService {
     return { success: true, deletedCount: deleted.length };
   }
 
-  async uploadQuestionImage(questionId: string, fileBuffer: Buffer, contentType: string) {
+  /**
+   * Store an image without attaching it to any question yet. Used by the "add question"
+   * form, where the question row (and so its id) does not exist until submit; the returned
+   * URL is then passed to `createQuestion` as `imageUrl` / `answerImageUrl`.
+   */
+  async storeStandaloneQuestionImage(fileBuffer: Buffer, contentType: string) {
+    const { getStorage } = await import('./storage/index.js');
+    const crypto = await import('crypto');
+
+    const extension = contentType.includes('png') ? '.png' : contentType.includes('webp') ? '.webp' : contentType.includes('heic') ? '.heic' : '.jpg';
+    const key = `questions/pending/${crypto.randomUUID()}${extension}`;
+    const stored = await getStorage().put({ key, body: fileBuffer, contentType });
+    console.log(`[QuestionImage] stored standalone image key=${stored.key} url=${stored.url}`);
+    return stored;
+  }
+
+  async uploadQuestionImage(questionId: string, fileBuffer: Buffer, contentType: string, isAnswer = false) {
     const { getStorage } = await import('./storage/index.js');
     const crypto = await import('crypto');
     
@@ -607,23 +632,38 @@ export class AdminService {
     if (!q) throw new AdminNotFoundError('Question not found');
     
     // Save image to storage
-    const extension = contentType.includes('png') ? '.png' : contentType.includes('webp') ? '.webp' : '.jpg';
+    const extension = contentType.includes('png') ? '.png' : contentType.includes('webp') ? '.webp' : contentType.includes('heic') ? '.heic' : '.jpg';
     const key = `questions/${questionId}/${crypto.randomUUID()}${extension}`;
     const stored = await getStorage().put({ key, body: fileBuffer, contentType });
+    console.log(`[QuestionImage] stored ${isAnswer ? 'answer' : 'question'} image for ${questionId} key=${stored.key} url=${stored.url}`);
     
     // Insert into question_images table
+    const imageId = crypto.randomUUID();
     await db.insert(questionImages).values({
-      id: crypto.randomUUID(),
+      id: imageId,
       questionId,
       imageUrl: stored.url,
       displayOrder: 0,
-      isAnswer: false
+      isAnswer
     });
     
     // Update the question's updatedAt so sync picks it up
     await db.update(questions).set({ updatedAt: new Date() }).where(eq(questions.id, questionId));
     
-    return stored.url;
+    return { imageUrl: stored.url, imageId };
+  }
+
+  async deleteQuestionImage(questionId: string, imageId: string) {
+    const deleted = await db
+      .delete(questionImages)
+      .where(and(eq(questionImages.id, imageId), eq(questionImages.questionId, questionId)))
+      .returning({ id: questionImages.id });
+
+    if (deleted.length === 0) throw new AdminNotFoundError('Image not found');
+
+    // Bump updatedAt so clients re-sync the question and drop the image locally.
+    await db.update(questions).set({ updatedAt: new Date() }).where(eq(questions.id, questionId));
+    return { success: true };
   }
 
 

@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm';
 import * as Crypto from 'expo-crypto';
 import { newCard } from '@manhaj/srs/src/anki';
 import { useAuthStore } from '../store/authStore';
-import { attachImage } from '../services/imageUploadService';
+import { attachImage, removeImage, resolveImageUri } from '../services/imageUploadService';
 import { StudentContentService } from '../services/studentContentService';
 
 export default function AddNoteScreen() {
@@ -20,13 +20,18 @@ export default function AddNoteScreen() {
   const [type, setType] = useState(presetType || 'note');
   const [content, setContent] = useState('');
   const [image, setImage] = useState<PickedImage | null>(null);
+  // Image already attached to the note being edited, and whether the user dropped it.
+  const [existingUri, setExistingUri] = useState<string | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
 
   useEffect(() => {
     if (noteId) {
-      db.select().from(schema.noteItems).where(eq(schema.noteItems.id, noteId)).then(([note]) => {
+      db.select().from(schema.noteItems).where(eq(schema.noteItems.id, noteId)).then(async ([note]) => {
         if (note) {
           setType(note.type);
           setContent(note.content);
+          console.log(`[EditNote] ${noteId} imageLocalPath=${note.imageLocalPath} imageUrl=${note.imageUrl} status=${note.imageUploadStatus}`);
+          setExistingUri(await resolveImageUri(note.imageLocalPath ?? null, note.imageUrl ?? null));
         }
       });
     }
@@ -41,6 +46,17 @@ export default function AddNoteScreen() {
     try {
       if (noteId) {
         await StudentContentService.updateNote(noteId as string, content, type);
+        if (removeExisting) {
+          await removeImage({ ownerKind: 'note', ownerId: noteId as string });
+        }
+        if (image) {
+          await attachImage({
+            ownerKind: 'note',
+            ownerId: noteId as string,
+            sourceUri: image.uri,
+            mimeType: image.mimeType,
+          });
+        }
         Alert.alert('Success', 'Note updated!', [{ text: 'OK', onPress: () => router.back() }]);
         return;
       }
@@ -144,7 +160,14 @@ export default function AddNoteScreen() {
             className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-slate-800 dark:text-slate-100 mb-4 h-48"
           />
 
-          {type !== 'summary' && <ImagePickerField value={image} onChange={setImage} />}
+          {type !== 'summary' && (
+            <ImagePickerField
+              value={image}
+              onChange={setImage}
+              existingUri={removeExisting ? null : existingUri}
+              onRemoveExisting={() => setRemoveExisting(true)}
+            />
+          )}
 
           <TouchableOpacity
             onPress={handleSave}
