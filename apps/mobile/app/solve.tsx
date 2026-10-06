@@ -179,11 +179,6 @@ export default function SolveScreen() {
             (currentQuestion as any).images || [];
             // Answer images belong to the answer reveal, not the question.
             const images = all.filter((img: any) => !img.isAnswer);
-
-            console.log(
-              `[SolveScreen] question ${currentQuestion.id}: ${all.length} image(s) total, ${images.length} question image(s)` +
-              (all.length ? ` urls=${all.map((i: any) => i.imageUrl).join(', ')}` : ''));
-
             if (images.length === 0) return null;
 
             return (

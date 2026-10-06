@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { CheckCircleIcon, XCircleIcon } from 'lucide-react-native';
 import { useSolveStore } from '../../store/solveStore';
+import { TappableImage } from '../TappableImage';
+import { toAbsoluteUrl } from '../../services/imageUploadService';
 
 export interface QuestionChoicesProps {
   isOnline?: boolean;
@@ -11,6 +13,11 @@ export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = tru
   const { questions, currentIndex, selectedChoice, showAnswer, hasEvaluatedWritten, selectChoice, revealAnswer, submitWrittenAnswer } = useSolveStore();
   const currentQuestion = questions[currentIndex];
   const [writtenText, setWrittenText] = useState('');
+
+  const allImages: any[] = currentQuestion?.questionImages?.length ?
+    currentQuestion.questionImages :
+    (currentQuestion as any)?.images || [];
+  const answerImages = allImages.filter((img: any) => img.isAnswer).sort((a: any, b: any) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
   // Reset local state when question changes
   React.useEffect(() => {
@@ -53,6 +60,24 @@ export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = tru
                 {currentQuestion.writtenQuestion.writtenAnswer}
               </Text>
             </View>
+
+            {/* Answer images below model answer */}
+            {showAnswer && answerImages.length > 0 && (
+              <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mt-2">
+                <Text className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-base">Answer Images</Text>
+                {answerImages.map((img) => (
+                  <View key={img.id} className="mb-2">
+                    <TappableImage
+                      uri={toAbsoluteUrl(img.imageUrl)}
+                      logTag="solve-answer-image"
+                      style={{ width: '100%', height: 192 }}
+                      className="rounded-lg bg-slate-100 dark:bg-slate-700"
+                      resizeMode="contain"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
 
             {!hasEvaluatedWritten && (
               <View className="mt-4">
@@ -141,6 +166,24 @@ export const QuestionChoices: React.FC<QuestionChoicesProps> = ({ isOnline = tru
           </TouchableOpacity>
         );
       })}
+
+      {/* Answer images below choices */}
+      {showAnswer && answerImages.length > 0 && (
+        <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mt-2">
+          <Text className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-base">Answer</Text>
+          {answerImages.map((img) => (
+            <View key={img.id} className="mb-2">
+              <TappableImage
+                uri={toAbsoluteUrl(img.imageUrl)}
+                logTag="solve-answer-image"
+                style={{ width: '100%', height: 192 }}
+                className="rounded-lg bg-slate-100 dark:bg-slate-700"
+                resizeMode="contain"
+              />
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 };

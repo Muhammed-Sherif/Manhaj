@@ -88,24 +88,6 @@ export const QuestionAnswerFooter: React.FC = () => {
         </View>
       ) : null}
 
-      {/* Answer images */}
-      {showAnswer && answerImages.length > 0 ? (
-        <View className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm mb-4">
-          <Text className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-base">Answer</Text>
-          {answerImages.map((img) => (
-            <View key={img.id} className="mb-2">
-              <TappableImage
-                uri={toAbsoluteUrl(img.imageUrl)}
-                logTag="solve-answer-image"
-                style={{ width: '100%', height: 192 }}
-                className="rounded-lg bg-slate-100 dark:bg-slate-700"
-                resizeMode="contain"
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
-
       {/* Navigation Buttons */}
       <View className="flex-row justify-between gap-3">
         {currentIndex > 0 ? (
